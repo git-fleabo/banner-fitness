@@ -102,7 +102,7 @@ export const prototypeContentSeed: PrototypeContentSeed = prototypeContentSeedSc
     title: "Anatomy and movement",
     description: "A five-lesson Human Movement Studio prototype using the squat as a recurring anchor.",
     recommendedOrder: 1,
-    origymModule: "Module 1 (joint-action source cross-check: Module 2)",
+    origymModule: "Module 1",
     mappingStatus: "provisional",
   },
   misconceptions: [

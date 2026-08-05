@@ -1,0 +1,29 @@
+.skipLink {
+  position: fixed;
+  z-index: 100;
+  top: .75rem;
+  left: .75rem;
+  transform: translateY(-170%);
+  padding: .75rem 1rem;
+  border-radius: .55rem;
+  color: white;
+  background: var(--deep-teal);
+}
+
+.skipLink:focus { transform: translateY(0); }
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skipLink { transition: transform 160ms ease; }
+}

@@ -181,6 +181,13 @@ seven named misconception paths and source metadata for every authored target.
 All content remains draft and the authoritative live check reports zero
 published lessons.
 
-Continue with implementation step 4 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
-build the shared responsive lesson shell and accessibility primitives. Do not
-expand beyond the polished anatomy-and-movement vertical slice.
+Implementation step 4 is complete. The live Neon-backed lesson route now uses a
+shared responsive shell with the approved laptop rail, mobile progress treatment,
+outcome placement, structured-text disclosure, keyboard-reachable navigation,
+owner draft labelling and content mapping. Signed-in laptop and 390 px phone
+checks passed without browser runtime errors.
+
+Continue with implementation step 5 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
+build the planes-and-axes and squat joint-action interactions, including their
+accepted feedback and overlay states. Do not expand beyond the polished
+anatomy-and-movement vertical slice.

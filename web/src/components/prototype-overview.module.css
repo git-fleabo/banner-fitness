@@ -49,6 +49,7 @@
 .rhythmCard li { display: flex; align-items: center; gap: .75rem; font-size: .9rem; font-weight: 700; }
 .rhythmCard li span { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; color: var(--deep-teal); background: var(--sage-light); }
 .note { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; line-height: 1.55; }
+.openLesson { display: inline-flex; min-height: 2.75rem; align-items: center; margin-top: 1rem; padding: .65rem .9rem; border-radius: .65rem; color: white; background: var(--deep-teal); font-size: .82rem; font-weight: 800; }
 @media (max-width: 900px) { .workspace { grid-template-columns: minmax(0, 1fr); } .rail { overflow: hidden; border-right: 0; border-bottom: 1px solid var(--line); } .lessonList { display: flex; max-width: 100%; overflow-x: auto; padding-bottom: .5rem; } .lessonList li { flex: 0 0 12rem; } .hero { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .header { min-height: 4.75rem; } .foundationStatus { display: none; } .rail { padding: 1.4rem 1.2rem; } .main { padding: 1.4rem 1.2rem 2.5rem; } .hero { padding: 1.75rem 0; gap: 1rem; } .previewGrid, .visualCard { grid-template-columns: 1fr; } .figureBackdrop { min-height: 18rem; } .visualCopy { align-self: auto; } .outcomeCard { align-items: start; } }
 @media (prefers-reduced-motion: no-preference) { .skipLink { transition: transform 160ms ease; } }

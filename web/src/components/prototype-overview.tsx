@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { LearningLessonSummary } from "@/lib/content/repository";
 
 import styles from "./prototype-overview.module.css";
@@ -40,7 +42,7 @@ export function PrototypeOverview({ lessons, ownerPreview }: { lessons: Learning
             {lessons.map((lesson, index) => (
               <li key={lesson.slug} className={index === 0 ? styles.currentLesson : undefined}>
                 <span className={styles.lessonNumber}>{lesson.order}</span>
-                <span><strong>{lesson.title}</strong><small>{lesson.durationMinutes} min · {formatStatus(lesson.status)}</small></span>
+                <span><Link href={`/learn/${lesson.slug}`}><strong>{lesson.title}</strong></Link><small>{lesson.durationMinutes} min · {formatStatus(lesson.status)}</small></span>
               </li>
             ))}
           </ol>
@@ -84,6 +86,7 @@ export function PrototypeOverview({ lessons, ownerPreview }: { lessons: Learning
                 <li><span>3</span>Apply to movement</li><li><span>4</span>Check and close</li>
               </ol>
               <p className={styles.note}>Structured text and keyboard operation will be available for every visual interaction.</p>
+              <Link className={styles.openLesson} href={`/learn/${firstLesson.slug}`}>Open lesson 1 →</Link>
             </div>
           </section>
         </main>

@@ -181,7 +181,9 @@ Studio editor belongs in this slice.
 3. **Complete (5 August 2026):** implement the versioned content contract and
    seed the five draft lessons, learning objects, questions, glossary and source
    links without publishing them.
-4. Build the shared responsive lesson shell and accessibility primitives.
+4. **Complete (5 August 2026):** build the shared responsive lesson shell and
+   accessibility primitives, including laptop rail, mobile progress treatment,
+   structured-text disclosure and keyboard-reachable step navigation.
 5. Build planes-and-axes and squat joint-action interactions, including every
    feedback and overlay state.
 6. Add progress, attempts, explainable review queue, resume and close.
@@ -199,7 +201,7 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 4. The live Neon `main` branch contains
+The next action is implementation step 5. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
 published-version protection triggers. Neon Auth Google OAuth is configured and
 application access remains invitation-only. The first owner Auth user is linked
@@ -209,8 +211,10 @@ Postgres. Neon also contains five draft lesson versions, 31 draft learning-objec
 versions, 24 draft question versions, 25 draft glossary versions and 85 source
 links; it contains zero published lessons. The idempotent seed and authoritative
 inventory check live under `web/scripts/`. Deployment authentication is not yet
-claimed. Phase 1 must remain a polished vertical slice rather than an early
-whole-curriculum build.
+claimed. The reusable `/learn/[slug]` shell has been verified through the signed-in
+owner route against live Neon at laptop and 390 px phone widths; no browser
+runtime errors were observed. Phase 1 must remain a polished vertical slice
+rather than an early whole-curriculum build.
 
 ## 9. Technical decision evidence
 
