@@ -1,6 +1,6 @@
 # PT Learning Lab — Product Blueprint
 
-Status: planning document, no application build started
+Status: Phase 0 complete enough to begin the approved vertical slice
 
 Working title: **PT Learning Lab**
 
@@ -477,11 +477,13 @@ The first low-fidelity laptop and mobile interaction pass and its open review qu
 
 ### Phase 0 — Evidence and design
 
-- Confirm the curriculum inventory and source ledger.
-- Resolve open practical-content gaps.
-- Explore the three visual directions.
-- Produce low-fidelity mobile and laptop wireframes.
-- Test the lesson rhythm with the owner.
+- **Complete enough for Phase 1.** The curriculum inventory, selected visual
+  direction, prototype learning contract, responsive wireframes and final
+  interaction states are recorded in the project decision documents.
+- Practical-content gaps remain deferred because they do not belong to the
+  anatomy-and-movement slice.
+- The joint-action mapping discrepancy is stored transparently and remains a
+  publication check rather than a build blocker.
 
 ### Phase 1 — Vertical slice
 
@@ -528,9 +530,14 @@ The first release is successful if:
 
 ## 17. Decisions still to make
 
-The visual direction, prototype outcomes and prototype interactions are settled in the decision register and prototype learning plan. The first low-fidelity mobile and laptop wireframe pass now requires owner review and completion of the remaining lesson states. Other choices that do not block that review are:
+The visual direction, prototype outcomes, prototype interactions, responsive
+wireframe set and Phase 1 technical foundation are settled in the decision
+register, prototype learning plan, wireframe record and
+`PT_LEARNING_LAB_BUILD_READINESS.md`. The remaining choices do not block the
+vertical slice:
 
 1. the Owner Studio’s minimum editing workflow;
 2. the initial glossary and calculator scope beyond the prototype glossary;
 3. the practical guidance material still needing verification;
-4. the future hosting and technical architecture, considered only after the experience is defined.
+4. hosting beyond the initial Vercel target and any future infrastructure needed
+   after the private road-test.

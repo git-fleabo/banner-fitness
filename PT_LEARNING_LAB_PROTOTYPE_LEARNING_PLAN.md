@@ -1,6 +1,6 @@
 # PT Learning Lab — Squat-led Prototype Learning Plan
 
-Status: planning complete enough to begin low-fidelity wireframes; no application build started
+Status: approved learning contract for Phase 1 implementation
 
 Date: 5 August 2026
 Depends on: `PT_LEARNING_LAB_DECISIONS.md` and `PT_LEARNING_LAB_PRODUCT_BLUEPRINT.md`
@@ -440,7 +440,7 @@ Before moving from wireframes to implementation, owner review should confirm tha
 - a wrong answer produces an understandable and overridable revision recommendation;
 - one successful attempt is never presented as durable security.
 
-## 13. Decisions now made and next planning step
+## 13. Decisions now made and implementation handoff
 
 This plan settles:
 
@@ -450,4 +450,13 @@ This plan settles:
 - the required misconception, feedback and revision behaviour;
 - the minimum visual and content inventory needed for the vertical slice.
 
-The next planning step is to produce **low-fidelity mobile and laptop wireframes** for the shared lesson rhythm, using Lesson 2’s plane-and-axis explorer and Lesson 3’s squat sequence as the two demanding responsive cases. Before wireframes are approved, the owner should also confirm the current OriGym portal mapping for the joint-action topic.
+The responsive wireframes and remaining interaction states are now approved as a
+set. The joint-action discrepancy is represented transparently as provisional
+Module 1 curriculum mapping with `Module 2/L3 Module 2.pdf`, pages 5-9, retained
+as the primary source location; current portal placement remains a publication
+check.
+
+The next step is Phase 1 implementation. Follow the technical contract, schema
+boundary and build order in `PT_LEARNING_LAB_BUILD_READINESS.md`. This document
+continues to define the learning and content acceptance criteria; it does not
+authorise publication of draft lesson content.

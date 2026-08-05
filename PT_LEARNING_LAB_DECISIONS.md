@@ -4,7 +4,9 @@ Last updated: 5 August 2026
 
 This is the concise source of truth for decisions made during the PT Learning Lab planning conversation. A future chat should read this file first, then `PT_LEARNING_LAB_PRODUCT_BLUEPRINT.md`, before proposing or building anything.
 
-No application has been built yet. The current artifacts are research, planning documents and visual concept boards only.
+No application has been built yet. Phase 0 is complete enough to begin the
+five-lesson vertical slice; the frozen build contract is recorded in
+`PT_LEARNING_LAB_BUILD_READINESS.md`.
 
 ## Product purpose
 
@@ -92,6 +94,19 @@ No application has been built yet. The current artifacts are research, planning 
 - Explore and approve wireframes before application code.
 - Later technical choices must preserve content versioning, curriculum mapping, invite-only access and account status controls.
 
+## Technical foundation for Phase 1
+
+- Use Next.js App Router with TypeScript.
+- Use CSS custom properties and CSS Modules for the Human Movement Studio system.
+- Use Supabase Postgres, passwordless Auth and Row Level Security.
+- Disable automatic public sign-up; owner-created invitations only.
+- Store role and account status from the first migration.
+- Keep curriculum mapping separate from source-container metadata.
+- Use immutable published content versions and migration-controlled schema changes.
+- Use Vercel as the initial deployment target without coupling the product to it.
+- Use Vitest/Testing Library for component and logic tests and Playwright for responsive end-to-end coverage.
+- The detailed schema boundary, route boundary and build sequence are frozen in `PT_LEARNING_LAB_BUILD_READINESS.md`.
+
 ## Selected visual direction
 
 - The chosen direction is the original **Human Movement Studio** board: `design/concept-boards/03-human-movement-studio.png`.
@@ -130,12 +145,19 @@ No application has been built yet. The current artifacts are research, planning 
 - Those conversations include OriGym YouTube transcripts followed by structured ChatGPT-generated breakdowns. The OriGym videos are publicly accessible on YouTube; they are not private course materials.
 - Before using the breakdowns in learner-facing content, classify claims as transcript-supported, supported by another approved source, ChatGPT interpretation requiring verification, or current professional guidance. Use original wording and visuals rather than reproducing the transcripts or videos.
 
-## Next planning step
+## Joint-action mapping status
+
+- Use provisional Module 1 curriculum mapping for the prototype.
+- Record `Module 2/L3 Module 2.pdf`, pages 5-9, as the primary local source location.
+- Preserve the fact that the Module 2 contents page lists Joint Actions while the topic opener labels itself Module 1.
+- The local Module 1 book also introduces joint actions on pages 38-40.
+- This explicit dual metadata resolves the implementation ambiguity and remains visible in owner review.
+- Current signed-in portal placement must still be rechecked before invited-learner publication; the portal session had expired during the final pass.
+
+## Next step
 
 The detailed learning outcomes and interactions for the squat-led anatomy-and-movement prototype are recorded in `PT_LEARNING_LAB_PROTOTYPE_LEARNING_PLAN.md`.
 
-The first low-fidelity mobile and laptop wireframes for the shared lesson rhythm, planes-and-axes explorer and squat joint-action sequence have now been produced. Their decisions and review questions are recorded in `PT_LEARNING_LAB_WIREFRAME_DECISIONS.md`.
+The mobile and laptop wireframes now cover the shared lesson rhythm, primary interactions, partly correct and named-misconception feedback, glossary and mapping overlays, resume, close, explainable revision and challenge summary. Their final decisions are recorded in `PT_LEARNING_LAB_WIREFRAME_DECISIONS.md`.
 
-Next, review and revise this first pass, then wireframe the remaining feedback, glossary, mapping, resume and close states. Do not begin application code until the prototype wireframes have been reviewed and approved as a set.
-
-Before learner-facing publication, confirm the current OriGym portal mapping for the joint-action topic: the local joint-action pages are stored in the Module 2 PDF but label themselves as Module 1.
+The owner approved the core wireframe hierarchy and authorised completion of the final pre-build pass. Phase 0 is therefore complete enough to begin application code. Start with implementation step 1 in `PT_LEARNING_LAB_BUILD_READINESS.md`; do not expand beyond the polished anatomy-and-movement vertical slice.

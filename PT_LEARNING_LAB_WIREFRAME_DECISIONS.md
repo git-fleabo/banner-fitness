@@ -1,6 +1,6 @@
 # PT Learning Lab — Prototype Wireframe Decisions
 
-Status: low-fidelity wireframes produced for owner review; no application build started
+Status: approved as a complete low-fidelity set; ready for Phase 1 implementation
 
 Date: 5 August 2026
 Depends on: `PT_LEARNING_LAB_PROTOTYPE_LEARNING_PLAN.md`
@@ -93,7 +93,7 @@ The wireframes establish space for:
 - retry without losing lesson progress;
 - continue to application.
 
-The polished wireframes should add explicit examples of partly correct and misconception-specific feedback. A single successful interaction must not display **Secure**.
+The final wireframe set includes explicit examples of partly correct and named-misconception feedback. A single successful interaction must not display **Secure**.
 
 ## 6. Accessibility decisions
 
@@ -116,7 +116,9 @@ The wireframes lightly apply the approved Human Movement Studio direction only t
 - sage feedback state;
 - softly rounded but restrained containers.
 
-Final typography, illustration style, spacing scale, contrast values and component polish remain open until the wireframes are approved.
+Typography, illustration detail, spacing tokens and final component polish will
+be resolved inside the approved Human Movement Studio direction during Phase 1;
+they may not alter the accepted hierarchy or interaction-state contract.
 
 ## 8. Content and provenance boundaries
 
@@ -125,19 +127,20 @@ Final typography, illustration style, spacing scale, contrast values and compone
 - Course terminology is used for mapping, while learner-facing explanations remain original.
 - The unresolved portal mapping for joint actions remains visible in content planning and must be confirmed before publication.
 
-## 9. Owner-review questions
+## 9. Owner-review outcome
 
-Approval should focus on five decisions:
+The owner responded "Looks good" to the first responsive pass. The five review
+questions are therefore settled as follows:
 
-1. Does the laptop lesson rail help orientation without feeling like course-platform clutter?
-2. Is the outcome prominent enough without delaying the interaction?
-3. Is one dominant visual with controls and feedback the right density?
-4. On mobile, should the visual remain above the choices in every step?
-5. Does the persistent structured-text action feel useful rather than intrusive?
+1. Retain the laptop lesson rail.
+2. Retain the outcome immediately above the interaction.
+3. Retain one dominant visual with adjacent controls and feedback on laptop.
+4. Keep the visual above choices on mobile for the prototype interactions.
+5. Retain the persistent structured-text action.
 
 ## 10. Acceptance status
 
-The low-fidelity pass now covers:
+The approved low-fidelity set covers:
 
 - laptop and mobile lesson shells;
 - the shared Explore state;
@@ -145,16 +148,19 @@ The low-fidelity pass now covers:
 - squat stage and joint selection;
 - structured-text access placement;
 - responsive stacking and touch-oriented controls.
+- partly correct feedback that preserves the correct part;
+- named plane-axis and phase/action misconceptions;
+- glossary and sources/mapping overlays that preserve lesson position;
+- resumed-lesson state with evidence-recording clarity;
+- lesson close with optional confidence and an explainable revision reason; and
+- mixed-challenge summary that separates coverage, practice and security.
 
-Still required before implementation approval:
-
-- owner review of the five questions above;
-- one partly correct feedback wireframe;
-- one named-misconception feedback wireframe;
-- glossary and source/mapping overlays;
-- resumed-lesson and lesson-close states;
-- confirmation of the current OriGym mapping for joint actions.
+The joint-action discrepancy is represented as dual metadata: provisional
+Module 1 curriculum mapping and a Module 2 PDF source location. Current portal
+placement remains a publication check rather than an implementation blocker.
 
 ## 11. Next step
 
-Review and revise this low-fidelity pass. Once its hierarchy and responsive behaviour are approved, complete the remaining lesson states listed above. Application architecture and code remain deferred until the prototype wireframes are approved as a set.
+Begin Phase 1 implementation using the scope, schema boundary and build order in
+`PT_LEARNING_LAB_BUILD_READINESS.md`. Preserve these interaction states as
+acceptance fixtures rather than redesigning the learning loop during scaffolding.

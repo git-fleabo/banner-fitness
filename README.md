@@ -6,9 +6,10 @@ squat-led anatomy and movement experience.
 
 ## Current stage
 
-The project is in the final pre-build design pass. No application has been
-built yet. The current decisions, curriculum plan, research findings, and
-wireframe decisions are recorded in the `PT_LEARNING_LAB_*.md` documents.
+The final pre-build pass is complete and the project is ready for the approved
+Phase 1 vertical slice. No application has been built yet. The current
+decisions, curriculum plan, research findings, wireframe decisions and frozen
+technical contract are recorded in the `PT_LEARNING_LAB_*.md` documents.
 
 ## Repository contents
 
