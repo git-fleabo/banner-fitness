@@ -30,7 +30,7 @@ export function PrototypeOverview({ lessons, ownerPreview }: { lessons: Learning
           <span className={styles.brandMark} aria-hidden="true">PL</span>
           <span><strong>PT Learning Lab</strong><small>Human Movement Studio</small></span>
         </a>
-        <span className={styles.foundationStatus}>{ownerPreview ? "Owner draft preview" : "Learning path"}</span>
+        <div className={styles.headerActions}><Link href="/review">Review queue</Link><span className={styles.foundationStatus}>{ownerPreview ? "Owner draft preview" : "Learning path"}</span></div>
       </header>
 
       <div className={styles.workspace}>
@@ -42,7 +42,7 @@ export function PrototypeOverview({ lessons, ownerPreview }: { lessons: Learning
             {lessons.map((lesson, index) => (
               <li key={lesson.slug} className={index === 0 ? styles.currentLesson : undefined}>
                 <span className={styles.lessonNumber}>{lesson.order}</span>
-                <span><Link href={`/learn/${lesson.slug}`}><strong>{lesson.title}</strong></Link><small>{lesson.durationMinutes} min · {formatStatus(lesson.status)}</small></span>
+                <span><Link href={`/learn/${lesson.slug}${lesson.coverageState === "in_progress" ? `?step=${lesson.resumeStep ?? "check"}` : ""}`}><strong>{lesson.title}</strong></Link><small>{lesson.durationMinutes} min · {lesson.coverageState === "covered" ? "Covered · Revisit" : lesson.coverageState === "in_progress" ? "Continue check" : formatStatus(lesson.status)}</small></span>
               </li>
             ))}
           </ol>

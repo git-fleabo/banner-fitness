@@ -8,6 +8,8 @@
 .brand strong { font-size: 1rem; letter-spacing: .01em; }
 .brand small { margin-top: .15rem; color: var(--mist); font-size: .74rem; }
 .foundationStatus { padding: .55rem .8rem; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; color: var(--mist); font-size: .78rem; }
+.headerActions { display: flex; align-items: center; gap: .8rem; color: var(--mist); font-size: .78rem; }
+.headerActions > a { display: inline-flex; min-height: 2.75rem; align-items: center; text-decoration: underline; text-underline-offset: .2em; }
 .workspace { display: grid; grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr); min-width: 0; min-height: calc(100vh - 5.25rem); }
 .rail { min-width: 0; padding: 2.5rem 1.5rem; border-right: 1px solid var(--line); background: var(--sand-light); }
 .rail h2 { margin-top: .35rem; font-size: 1.45rem; line-height: 1.2; }

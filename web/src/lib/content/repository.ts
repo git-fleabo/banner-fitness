@@ -1,16 +1,27 @@
 import "server-only";
 
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 
 import { getDb } from "@/lib/db/client";
-import { learningObjectContentSchema } from "@/lib/content/contracts";
+import {
+  feedbackRulesSchema,
+  learningObjectContentSchema,
+  responseSchema as questionResponseSchema,
+  scoringSchema as questionScoringSchema,
+} from "@/lib/content/contracts";
 import {
   curriculumTopics,
   learningObjects,
   learningObjectVersions,
+  learningObjectVersionQuestions,
   lessons,
+  lessonProgress,
   lessonVersionObjects,
   lessonVersions,
+  questions,
+  questionVersions,
+  reviewQueue,
 } from "@/lib/db/schema";
 
 export type LearningLessonSummary = {
@@ -22,7 +33,30 @@ export type LearningLessonSummary = {
   mapping: string;
   status: "draft" | "in_review" | "approved" | "published" | "retired";
   versionNumber: number;
+  coverageState?: "not_started" | "in_progress" | "covered";
+  resumeStep?: string;
 };
+
+export type LessonResumeState = {
+  stepStableKey: string;
+  questionStableKey: string;
+  selected: string[];
+  submitted: boolean;
+  evidenceRecorded: boolean;
+  feedbackCategory?: "correct" | "incorrect" | "partly_correct" | "misconception";
+};
+
+function parseResumeState(value: unknown): LessonResumeState | null {
+  const result = z.object({
+    stepStableKey: z.string(),
+    questionStableKey: z.string(),
+    selected: z.array(z.string()),
+    submitted: z.boolean(),
+    evidenceRecorded: z.boolean(),
+    feedbackCategory: z.enum(["correct", "incorrect", "partly_correct", "misconception"]).optional(),
+  }).safeParse(value);
+  return result.success ? result.data : null;
+}
 
 export type LessonPageData = LearningLessonSummary & {
   objects: Array<{
@@ -32,10 +66,18 @@ export type LessonPageData = LearningLessonSummary & {
     content: ReturnType<typeof learningObjectContentSchema.parse>;
     structuredText: string | null;
     position: number;
+    questions: Array<{
+      stableKey: string;
+      prompt: string;
+      response: ReturnType<typeof questionResponseSchema.parse>;
+      scoring: ReturnType<typeof questionScoringSchema.parse>;
+      feedback: ReturnType<typeof feedbackRulesSchema.parse>;
+      position: number;
+    }>;
   }>;
 };
 
-export async function listLessonSummaries(role: "owner" | "learner"): Promise<LearningLessonSummary[]> {
+export async function listLessonSummaries(role: "owner" | "learner", learnerId: string): Promise<LearningLessonSummary[]> {
   const db = getDb();
   const query = db
     .select({
@@ -48,10 +90,13 @@ export async function listLessonSummaries(role: "owner" | "learner"): Promise<Le
       origymModule: curriculumTopics.origymModule,
       status: lessonVersions.status,
       versionNumber: lessonVersions.versionNumber,
+      coverageState: lessonProgress.coverageState,
+      resumeState: lessonProgress.resumeState,
     })
     .from(lessons)
     .innerJoin(curriculumTopics, eq(lessons.curriculumTopicId, curriculumTopics.id))
     .innerJoin(lessonVersions, eq(lessonVersions.lessonId, lessons.id))
+    .leftJoin(lessonProgress, and(eq(lessonProgress.lessonId, lessons.id), eq(lessonProgress.learnerId, learnerId)))
     .orderBy(asc(lessons.recommendedOrder), desc(lessonVersions.versionNumber));
 
   const rows = role === "learner"
@@ -72,7 +117,20 @@ export async function listLessonSummaries(role: "owner" | "learner"): Promise<Le
     mapping: `${row.origymModule} · ${row.mappingStatus.replaceAll("_", " ")}`,
     status: row.status,
     versionNumber: row.versionNumber,
+    coverageState: row.coverageState ?? "not_started",
+    resumeStep: parseResumeState(row.resumeState)?.stepStableKey,
   }));
+}
+
+export async function getLessonResumeState(slug: string, learnerId: string): Promise<LessonResumeState | null> {
+  const db = getDb();
+  const [row] = await db
+    .select({ resumeState: lessonProgress.resumeState })
+    .from(lessonProgress)
+    .innerJoin(lessons, eq(lessonProgress.lessonId, lessons.id))
+    .where(and(eq(lessons.slug, slug), eq(lessonProgress.learnerId, learnerId)))
+    .limit(1);
+  return parseResumeState(row?.resumeState);
 }
 
 export async function getLessonBySlug(slug: string, role: "owner" | "learner"): Promise<LessonPageData | null> {
@@ -109,12 +167,37 @@ export async function getLessonBySlug(slug: string, role: "owner" | "learner"): 
       content: learningObjectVersions.content,
       structuredText: learningObjectVersions.structuredText,
       position: lessonVersionObjects.position,
+      learningObjectVersionId: learningObjectVersions.id,
     })
     .from(lessonVersionObjects)
     .innerJoin(learningObjectVersions, eq(lessonVersionObjects.learningObjectVersionId, learningObjectVersions.id))
     .innerJoin(learningObjects, eq(learningObjectVersions.learningObjectId, learningObjects.id))
     .where(eq(lessonVersionObjects.lessonVersionId, version.lessonVersionId))
     .orderBy(asc(lessonVersionObjects.position));
+
+  const objectVersionIds = objectRows.map((item) => item.learningObjectVersionId);
+  const questionRows = objectVersionIds.length === 0 ? [] : await db
+    .select({
+      learningObjectVersionId: learningObjectVersionQuestions.learningObjectVersionId,
+      stableKey: questions.stableKey,
+      prompt: questionVersions.prompt,
+      response: questionVersions.responseSchema,
+      scoring: questionVersions.scoringSchema,
+      feedback: questionVersions.feedbackRules,
+      position: learningObjectVersionQuestions.position,
+    })
+    .from(learningObjectVersionQuestions)
+    .innerJoin(questionVersions, eq(learningObjectVersionQuestions.questionVersionId, questionVersions.id))
+    .innerJoin(questions, eq(questionVersions.questionId, questions.id))
+    .where(inArray(learningObjectVersionQuestions.learningObjectVersionId, objectVersionIds))
+    .orderBy(asc(learningObjectVersionQuestions.position));
+
+  const questionsByObject = new Map<string, typeof questionRows>();
+  for (const question of questionRows) {
+    const items = questionsByObject.get(question.learningObjectVersionId) ?? [];
+    items.push(question);
+    questionsByObject.set(question.learningObjectVersionId, items);
+  }
 
   return {
     order: version.order,
@@ -129,6 +212,44 @@ export async function getLessonBySlug(slug: string, role: "owner" | "learner"): 
       ...item,
       title: item.title ?? "Untitled learning step",
       content: learningObjectContentSchema.parse(item.content),
+      questions: (questionsByObject.get(item.learningObjectVersionId) ?? []).map((question) => ({
+        stableKey: question.stableKey,
+        prompt: question.prompt,
+        response: questionResponseSchema.parse(question.response),
+        scoring: questionScoringSchema.parse(question.scoring),
+        feedback: feedbackRulesSchema.parse(question.feedback),
+        position: question.position,
+      })),
     })),
   };
+}
+
+export type LearningReviewItem = {
+  id: string;
+  lessonSlug: string;
+  lessonTitle: string;
+  questionPrompt: string | null;
+  reason: "incorrect" | "partly_correct" | "misconception" | "low_confidence" | "manual";
+  dueAt: Date;
+  evidence: unknown;
+};
+
+export async function listReviewItems(learnerId: string): Promise<LearningReviewItem[]> {
+  const db = getDb();
+  return db
+    .select({
+      id: reviewQueue.id,
+      lessonSlug: lessons.slug,
+      lessonTitle: lessonVersions.title,
+      questionPrompt: questionVersions.prompt,
+      reason: reviewQueue.reason,
+      dueAt: reviewQueue.dueAt,
+      evidence: reviewQueue.evidence,
+    })
+    .from(reviewQueue)
+    .innerJoin(lessons, eq(reviewQueue.lessonId, lessons.id))
+    .innerJoin(lessonVersions, eq(reviewQueue.lessonVersionId, lessonVersions.id))
+    .leftJoin(questionVersions, eq(reviewQueue.questionVersionId, questionVersions.id))
+    .where(and(eq(reviewQueue.learnerId, learnerId), eq(reviewQueue.status, "queued")))
+    .orderBy(asc(reviewQueue.dueAt));
 }

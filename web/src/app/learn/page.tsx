@@ -13,7 +13,7 @@ export default async function LearnPage() {
   if (access.state === "unprovisioned") redirect("/auth/sign-in?access=pending");
   if (access.state === "blocked") redirect("/auth/sign-in?access=blocked");
 
-  const lessons = await listLessonSummaries(access.account.role);
+  const lessons = await listLessonSummaries(access.account.role, access.account.authUserId);
 
   return <PrototypeOverview lessons={lessons} ownerPreview={access.account.role === "owner"} />;
 }

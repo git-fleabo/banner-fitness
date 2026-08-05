@@ -196,6 +196,13 @@ the approved ankle-return wording and identifies muscle-action substitution as
 a named misconception. Both work without dragging and stack to one current
 stage on mobile.
 
-Continue with implementation step 6 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
-add progress, attempts, explainable review queue, resume and lesson close. Do not
-expand beyond the polished anatomy-and-movement vertical slice.
+Implementation step 6 is complete. Progress and attempts are stored in Neon;
+resume restores the exact evidence-recording check and selected answer; lesson
+close records coverage separately from security; and the explainable review
+queue supports revisit, reschedule and remove overrides. Signed-in local checks
+and authoritative Neon reads passed without publishing any draft content.
+
+Continue with implementation step 7 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
+add owner review/preview and publication gating. Do not approve or publish a
+draft merely to test the controls, and do not expand beyond the polished
+anatomy-and-movement vertical slice.

@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "db:seed": "tsx scripts/seed-prototype.ts",
-    "db:verify-content": "tsx scripts/verify-prototype.ts"
+    "db:verify-content": "tsx scripts/verify-prototype.ts",
+    "db:verify-learning-loop": "tsx scripts/verify-learning-loop.ts"
   },
   "dependencies": {
     "@neondatabase/auth": "0.4.2-beta",

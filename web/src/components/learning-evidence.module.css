@@ -1,0 +1,22 @@
+.practice, .closePanel, .summary { margin-top: 1.5rem; padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--line); border-radius: .85rem; background: var(--sand-light); }
+.practiceHeader { display: flex; justify-content: space-between; gap: 1rem; }
+.practiceHeader > span { color: var(--muted); font-size: .72rem; }
+.kicker { color: var(--clay); font-size: .7rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.practice h3, .closePanel h3, .summary h3 { max-width: 42rem; margin-top: .35rem; font-size: clamp(1.2rem, 2.4vw, 1.6rem); line-height: 1.25; }
+.resumeNotice { margin-top: .9rem; padding: .75rem .9rem; border-left: 3px solid var(--clay); color: var(--muted); background: white; line-height: 1.5; }
+.closePanel > p:not(.kicker), .summary > p { margin-top: .65rem; color: var(--muted); line-height: 1.6; }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .55rem; margin-top: 1rem; }
+.choices button, .confidence button { min-height: 3rem; padding: .65rem .8rem; border: 1px solid var(--deep-teal); border-radius: .65rem; color: var(--deep-teal); background: white; font: inherit; font-weight: 800; }
+.choices button[aria-pressed="true"], .confidence button[aria-pressed="true"] { color: white; background: var(--deep-teal); }
+.submit, .feedback button, .summary button { min-height: 2.9rem; margin-top: 1rem; padding: .65rem 1rem; border: 0; border-radius: .65rem; color: white; background: var(--deep-teal); font: inherit; font-weight: 800; }
+.submit:disabled { opacity: .5; }
+.feedback { margin-top: 1rem; padding: 1rem; border-left: 4px solid; border-radius: .55rem; background: white; }
+.feedback p { margin-top: .4rem; line-height: 1.5; }
+.correct { border-color: var(--sage); background: var(--sage-light); }
+.partly_correct { border-color: #b48536; background: #fff3d6; }
+.misconception, .incorrect { border-color: var(--clay); background: #f8dfd8; }
+.revision { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid currentColor; }
+.revision small { display: block; margin-top: .35rem; }
+.confidence { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.confidence button { width: 3rem; padding: .5rem; }
+@media (forced-colors: active) { .choices button[aria-pressed="true"], .confidence button[aria-pressed="true"] { outline: 3px solid Highlight; } }

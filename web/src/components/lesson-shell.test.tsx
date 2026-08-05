@@ -1,5 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/app/learn/actions", () => ({
+  completeLesson: vi.fn(),
+  recordPracticeAttempt: vi.fn(),
+}));
 
 import type { LessonPageData } from "@/lib/content/repository";
 import { prototypeContentSeed } from "@/lib/content/prototype-seed";
@@ -16,7 +21,7 @@ const lesson: LessonPageData = {
   mapping: seed.mapping,
   status: "draft",
   versionNumber: 1,
-  objects: seed.objects.map((object, index) => ({ ...object, structuredText: object.structuredText ?? null, position: index + 1 })),
+  objects: seed.objects.map((object, index) => ({ ...object, structuredText: object.structuredText ?? null, position: index + 1, questions: object.questions.map((question, questionIndex) => ({ ...question, position: questionIndex + 1 })) })),
 };
 
 afterEach(cleanup);

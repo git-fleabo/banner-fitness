@@ -187,7 +187,9 @@ Studio editor belongs in this slice.
 5. **Complete (5 August 2026):** build planes-and-axes and squat joint-action
    interactions, including selected, submitted, correct, partly-correct,
    named-misconception, retry, overlay and responsive states.
-6. Add progress, attempts, explainable review queue, resume and close.
+6. **Complete (5 August 2026):** add progress, evidence-recording attempts,
+   exact-step-and-selection resume, lesson close, and an explainable review
+   queue with learner reschedule and remove controls.
 7. Add owner review/preview and publication gating.
 8. Validate keyboard use, structured-text equivalence, phone/laptop layouts,
    authorization boundaries and production builds before the first private
@@ -202,7 +204,7 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 6. The live Neon `main` branch contains
+The next action is implementation step 7. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
 published-version protection triggers. Neon Auth Google OAuth is configured and
 application access remains invitation-only. The first owner Auth user is linked
@@ -219,6 +221,12 @@ rather than an early whole-curriculum build. The two demanding interactions
 have also been verified through the signed-in route: all plane-axis pairs,
 stage-and-joint squat controls, correct/partly-correct/misconception feedback,
 retry, structured text and phone stacking are present without drag dependence.
+The learning-evidence loop has now also been verified through the signed-in
+owner route and authoritative Neon reads: a completed lesson remains `covered`
+rather than secure, an in-progress lesson restores its exact check and selected
+answer with the prior evidence state stated explicitly, and queued review
+recommendations expose their recorded reason plus working reschedule and remove
+overrides. No draft content has been approved or published.
 
 ## 9. Technical decision evidence
 

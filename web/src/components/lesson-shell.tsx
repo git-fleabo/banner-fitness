@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 import { LiveStatus, SkipLink, VisuallyHidden } from "@/components/a11y";
+import { LessonClose, QuestionPractice } from "@/components/learning-evidence";
 import { PlaneAxisExplorer, SquatJointSequence } from "@/components/movement-interactions";
-import type { LessonPageData } from "@/lib/content/repository";
+import type { LessonPageData, LessonResumeState } from "@/lib/content/repository";
 
 import styles from "./lesson-shell.module.css";
 
@@ -12,9 +13,10 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1).replaceAll("_", " ");
 }
 
-export function LessonShell({ lesson, requestedStep, ownerPreview }: { lesson: LessonPageData; requestedStep?: string; ownerPreview: boolean }) {
+export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }: { lesson: LessonPageData; requestedStep?: string; resumeState?: LessonResumeState | null; ownerPreview: boolean }) {
   const steps = lesson.objects.filter((object) => visibleStepTypes.has(object.type));
-  const currentIndex = Math.max(0, steps.findIndex((object) => object.stableKey === requestedStep || object.type === requestedStep));
+  const activeStep = requestedStep ?? resumeState?.stepStableKey;
+  const currentIndex = Math.max(0, steps.findIndex((object) => object.stableKey === activeStep || object.type === activeStep));
   const current = steps[currentIndex] ?? steps[0];
   const previous = steps[currentIndex - 1];
   const next = steps[currentIndex + 1];
@@ -23,6 +25,11 @@ export function LessonShell({ lesson, requestedStep, ownerPreview }: { lesson: L
     ? <PlaneAxisExplorer />
     : current.type === "explore" && lesson.slug === "joint-actions"
       ? <SquatJointSequence />
+      : null;
+  const evidenceActivity = current.type === "check" && current.questions.length > 0
+    ? <QuestionPractice lessonSlug={lesson.slug} questions={current.questions} resumeState={resumeState} />
+    : current.type === "close"
+      ? <LessonClose lessonSlug={lesson.slug} />
       : null;
 
   return (
@@ -84,8 +91,9 @@ export function LessonShell({ lesson, requestedStep, ownerPreview }: { lesson: L
             <p className={styles.bodyCopy}>{current.content.body}</p>
 
             {customInteraction}
+            {evidenceActivity}
 
-            {!customInteraction && current.content.interaction && (
+            {!customInteraction && !evidenceActivity && current.content.interaction && (
               <section className={styles.interactionFrame} aria-labelledby="interaction-heading">
                 <div className={styles.interactionVisual} aria-hidden="true"><span>{titleCase(current.type)}</span></div>
                 <div className={styles.interactionCopy}>
