@@ -98,8 +98,12 @@ five-lesson vertical slice; the frozen build contract is recorded in
 
 - Use Next.js App Router with TypeScript.
 - Use CSS custom properties and CSS Modules for the Human Movement Studio system.
-- Use Supabase Postgres, passwordless Auth and Row Level Security.
+- Use Neon Postgres through server-only application code and Drizzle migrations.
+- Use Neon Auth passwordless magic links behind a small application adapter;
+  Managed Better Auth is currently beta, so replacement must remain possible.
 - Disable automatic public sign-up; owner-created invitations only.
+- Keep database credentials out of browser code and enforce role, status and
+  record ownership in server-side authorization checks.
 - Store role and account status from the first migration.
 - Keep curriculum mapping separate from source-container metadata.
 - Use immutable published content versions and migration-controlled schema changes.
@@ -160,4 +164,12 @@ The detailed learning outcomes and interactions for the squat-led anatomy-and-mo
 
 The mobile and laptop wireframes now cover the shared lesson rhythm, primary interactions, partly correct and named-misconception feedback, glossary and mapping overlays, resume, close, explainable revision and challenge summary. Their final decisions are recorded in `PT_LEARNING_LAB_WIREFRAME_DECISIONS.md`.
 
-The owner approved the core wireframe hierarchy and authorised completion of the final pre-build pass. Phase 0 is therefore complete enough to begin application code. Start with implementation step 1 in `PT_LEARNING_LAB_BUILD_READINESS.md`; do not expand beyond the polished anatomy-and-movement vertical slice.
+The owner approved the core wireframe hierarchy and authorised implementation.
+Foundation step 1 is complete: the typed Next.js application, Human Movement
+Studio tokens, validated prototype metadata, server-only Neon/Auth adapters and
+test harnesses now live in `web/`.
+
+Continue with implementation step 2 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
+create the Neon/Drizzle schema and migrations, then connect invite-only
+passwordless authentication and account-status enforcement. Do not expand
+beyond the polished anatomy-and-movement vertical slice.

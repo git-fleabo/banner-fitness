@@ -97,20 +97,27 @@ model. It remains a learner-publication gate.
 
 ### Data, authentication and permissions
 
-- Supabase Postgres, Auth and Row Level Security.
-- Passwordless email magic links with automatic public sign-up disabled.
+- Neon Postgres, accessed only from server-side application code through the
+  Neon serverless driver and Drizzle.
+- Neon Auth passwordless email magic links with automatic public sign-up
+  disabled through the magic-link plugin.
 - Owner-created invitations only.
+- Neon Managed Better Auth is currently beta. Authentication stays behind a
+  small application adapter so it can be replaced without changing lesson or
+  progress contracts.
 - A profile has `role` (`owner` or `learner`) and `status` (`invited`, `active`
   or `blocked`) from the first migration.
 - Learners can read only published content and their own progress records.
 - The owner can review content; publication requires an owner action.
-- Service-role credentials never enter browser code.
+- Database credentials never enter browser code. Every write passes through a
+  server-side authorization boundary that verifies session, role, account
+  status and record ownership.
 
 ### Delivery and quality
 
 - Vercel is the initial deployment target; the application remains a normal
   Next.js project so hosting can change later.
-- Supabase migrations and generated database types are committed.
+- Drizzle schema, migrations and generated migration metadata are committed.
 - Vitest and Testing Library cover content and interaction logic.
 - Playwright covers the complete phone and laptop lesson route.
 - Automated accessibility checks supplement keyboard and screen-reader-minded
@@ -161,9 +168,11 @@ Studio editor belongs in this slice.
 
 ## 7. Build sequence
 
-1. Scaffold the typed application, design tokens, validation and test harness.
-2. Add Supabase migrations, RLS, invite-only passwordless authentication and
-   account status enforcement.
+1. **Complete (5 August 2026):** scaffold the typed application, design tokens,
+   validation and test harness.
+2. Add the Neon/Drizzle schema and migrations, invite-only passwordless
+   authentication, and server-side role, status and record-ownership
+   enforcement.
 3. Implement the versioned content contract and seed the five draft lessons.
 4. Build the shared responsive lesson shell and accessibility primitives.
 5. Build planes-and-axes and squat joint-action interactions, including every
@@ -171,7 +180,8 @@ Studio editor belongs in this slice.
 6. Add progress, attempts, explainable review queue, resume and close.
 7. Add owner review/preview and publication gating.
 8. Validate keyboard use, structured-text equivalence, phone/laptop layouts,
-   RLS and production builds before the first private deployment.
+   authorization boundaries and production builds before the first private
+   deployment.
 
 ## 8. Deferred decisions that do not block Phase 1
 
@@ -182,7 +192,8 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 1. Phase 1 must remain a polished
+The next action is implementation step 2. No live Neon project, database schema
+or authentication route is claimed by step 1. Phase 1 must remain a polished
 vertical slice rather than an early whole-curriculum build.
 
 ## 9. Technical decision evidence
@@ -192,10 +203,13 @@ Reviewed 5 August 2026:
 - [Next.js App Router documentation](https://nextjs.org/docs/app)
 - [Next.js installation and TypeScript defaults](https://nextjs.org/docs/app/getting-started/installation)
 - [Next.js deployment options](https://nextjs.org/docs/app/getting-started/deploying)
-- [Supabase Auth documentation](https://supabase.com/docs/guides/auth)
-- [Supabase email templates and magic-link flows](https://supabase.com/docs/guides/auth/auth-email-templates)
+- [Neon Next.js guide](https://neon.com/docs/guides/nextjs)
+- [Neon Auth Next.js API-only quick start](https://neon.com/docs/auth/quick-start/nextjs-api-only)
+- [Neon Auth magic-link plugin](https://neon.com/docs/auth/guides/plugins/magic-link)
+- [Neon serverless driver](https://neon.com/docs/serverless/serverless-driver)
 
 These sources confirm the chosen framework's current App Router and TypeScript
-path, normal Node deployment support, and Supabase's passwordless email and
-Row Level Security integration. They do not replace project-specific RLS,
-privacy or deployment testing.
+path, normal Node deployment support, Neon serverless Postgres access and the
+current passwordless magic-link flow. Neon Managed Better Auth is documented as
+beta. These sources do not replace project-specific authorization, privacy or
+deployment testing.

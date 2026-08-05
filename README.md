@@ -6,17 +6,33 @@ squat-led anatomy and movement experience.
 
 ## Current stage
 
-The final pre-build pass is complete and the project is ready for the approved
-Phase 1 vertical slice. No application has been built yet. The current
-decisions, curriculum plan, research findings, wireframe decisions and frozen
-technical contract are recorded in the `PT_LEARNING_LAB_*.md` documents.
+Phase 1 implementation has started with the typed application foundation in
+`web/`: Human Movement Studio design tokens, a responsive prototype overview,
+validated five-lesson metadata, server-only Neon/Auth adapters and unit/E2E test
+harnesses. No live database or authentication project is connected yet.
+
+The product decisions, curriculum plan, research findings, wireframe decisions
+and frozen technical contract are recorded in the `PT_LEARNING_LAB_*.md`
+documents.
 
 ## Repository contents
 
 - Product, curriculum, research, and design decision records
 - Human Movement Studio concept boards
 - Reviewed reference-source manifests and approved source files
-- Application source and tests once implementation begins
+- Next.js application source and tests in `web/`
+
+## Local application
+
+From `web/`, copy `.env.example` to `.env.local` only when connecting a Neon
+project. The current foundation builds without secrets.
+
+- `pnpm dev` — run the local application
+- `pnpm typecheck` — check TypeScript contracts
+- `pnpm lint` — run ESLint
+- `pnpm test` — run Vitest unit/component tests
+- `pnpm build` — create the production build
+- `pnpm test:e2e` — run phone and laptop Playwright checks once Chromium is installed
 
 ## Source-material policy
 

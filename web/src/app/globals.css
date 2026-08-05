@@ -1,0 +1,33 @@
+:root {
+  --cream: #f7f2e8;
+  --cream-deep: #e9dfcf;
+  --sand: #e5d1ad;
+  --sand-light: #f1e8d8;
+  --deep-teal: #163f3d;
+  --ink: #20302f;
+  --muted: #66706d;
+  --clay: #ad5847;
+  --sage: #849b78;
+  --sage-light: #dce5d4;
+  --mist: #d9e7e4;
+  --line: #d8d0c2;
+  --radius-large: 1.15rem;
+  --shadow-small: 0 .35rem 1.2rem rgba(32, 48, 47, .07);
+}
+
+* { box-sizing: border-box; padding: 0; margin: 0; }
+html { height: 100%; }
+html, body { max-width: 100vw; overflow-x: hidden; }
+body {
+  min-height: 100%;
+  color: var(--ink);
+  background: var(--cream);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a { color: inherit; text-decoration: none; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--clay); outline-offset: 3px; }
+::selection { color: white; background: var(--deep-teal); }
+@media (forced-colors: active) { :focus-visible { outline-color: Highlight; } }
