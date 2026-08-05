@@ -1,14 +1,15 @@
 # PT Learning Lab application
 
 This is the Next.js App Router application for the private PT Learning Lab.
-The current implementation completes foundation step 1: typed content
+The current implementation completes foundation steps 1 and 2: typed content
 contracts, Human Movement Studio design tokens, a responsive overview shell,
-server-only Neon/Auth adapters, and unit plus browser test harnesses.
+the versioned Neon/Drizzle schema, invitation-only magic-link authentication,
+server-side profile authorization, and unit plus browser test harnesses.
 
 ## Environment
 
-The preview and production build do not require secrets. Before database or
-authentication work, copy `.env.example` to `.env.local` and supply:
+Before database, authentication, development-server or production-build work,
+copy `.env.example` to `.env.local` and supply:
 
 - `DATABASE_URL`: server-only Neon Postgres connection string;
 - `NEON_AUTH_BASE_URL`: the Neon Auth endpoint; and
@@ -24,8 +25,11 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm db:check
+pnpm db:migrate
 pnpm test:e2e
 ```
 
-The E2E suite expects a locally installed Playwright Chromium browser. No live
-Neon schema, authentication route, or deployment is claimed by this foundation.
+The E2E suite expects a locally installed Playwright Chromium browser. The live
+Neon schema and authentication route are connected; deployment and a fully
+verified signed-in owner session are not yet claimed.

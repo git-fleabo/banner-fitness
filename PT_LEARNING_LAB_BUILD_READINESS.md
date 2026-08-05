@@ -170,9 +170,9 @@ Studio editor belongs in this slice.
 
 1. **Complete (5 August 2026):** scaffold the typed application, design tokens,
    validation and test harness.
-2. Add the Neon/Drizzle schema and migrations, invite-only passwordless
-   authentication, and server-side role, status and record-ownership
-   enforcement.
+2. **Complete (5 August 2026):** add the live Neon/Drizzle schema and migrations,
+   invite-only passwordless authentication, and server-side role, status and
+   record-ownership enforcement.
 3. Implement the versioned content contract and seed the five draft lessons.
 4. Build the shared responsive lesson shell and accessibility primitives.
 5. Build planes-and-axes and squat joint-action interactions, including every
@@ -192,9 +192,13 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 2. No live Neon project, database schema
-or authentication route is claimed by step 1. Phase 1 must remain a polished
-vertical slice rather than an early whole-curriculum build.
+The next action is implementation step 3. The live Neon `main` branch contains
+the three tracked migrations, the required content and progress tables, and
+published-version protection triggers. Neon Auth magic links are enabled with
+new-user registration disabled. No first owner profile or signed-in owner flow
+is claimed until the owner email is explicitly supplied and verified. Phase 1
+must remain a polished vertical slice rather than an early whole-curriculum
+build.
 
 ## 9. Technical decision evidence
 

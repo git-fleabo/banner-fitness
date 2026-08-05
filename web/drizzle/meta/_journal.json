@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785931388354,
+      "tag": "0000_noisy_beyonder",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785931424711,
+      "tag": "0001_harden_content_invariants",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785931458672,
+      "tag": "0002_protect_published_versions",
+      "breakpoints": true
+    }
+  ]
+}

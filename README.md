@@ -6,10 +6,11 @@ squat-led anatomy and movement experience.
 
 ## Current stage
 
-Phase 1 implementation has started with the typed application foundation in
-`web/`: Human Movement Studio design tokens, a responsive prototype overview,
-validated five-lesson metadata, server-only Neon/Auth adapters and unit/E2E test
-harnesses. No live database or authentication project is connected yet.
+Phase 1 implementation now includes the typed application foundation and live
+data/authentication boundary in `web/`: Human Movement Studio design tokens, a
+responsive prototype overview, validated five-lesson metadata, a versioned
+Neon/Drizzle schema, invitation-only magic-link authentication, server-side
+profile authorization and unit/E2E test harnesses.
 
 The product decisions, curriculum plan, research findings, wireframe decisions
 and frozen technical contract are recorded in the `PT_LEARNING_LAB_*.md`
@@ -24,14 +25,16 @@ documents.
 
 ## Local application
 
-From `web/`, copy `.env.example` to `.env.local` only when connecting a Neon
-project. The current foundation builds without secrets.
+From `web/`, copy `.env.example` to `.env.local` and supply the server-only Neon
+values before running database, authentication or production-build commands.
 
 - `pnpm dev` — run the local application
 - `pnpm typecheck` — check TypeScript contracts
 - `pnpm lint` — run ESLint
 - `pnpm test` — run Vitest unit/component tests
 - `pnpm build` — create the production build
+- `pnpm db:check` — validate the tracked migration history
+- `pnpm db:migrate` — apply unapplied migrations to `DATABASE_URL`
 - `pnpm test:e2e` — run phone and laptop Playwright checks once Chromium is installed
 
 ## Source-material policy

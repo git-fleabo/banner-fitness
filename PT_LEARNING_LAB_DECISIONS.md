@@ -165,11 +165,14 @@ The detailed learning outcomes and interactions for the squat-led anatomy-and-mo
 The mobile and laptop wireframes now cover the shared lesson rhythm, primary interactions, partly correct and named-misconception feedback, glossary and mapping overlays, resume, close, explainable revision and challenge summary. Their final decisions are recorded in `PT_LEARNING_LAB_WIREFRAME_DECISIONS.md`.
 
 The owner approved the core wireframe hierarchy and authorised implementation.
-Foundation step 1 is complete: the typed Next.js application, Human Movement
-Studio tokens, validated prototype metadata, server-only Neon/Auth adapters and
-test harnesses now live in `web/`.
+Foundation steps 1 and 2 are complete. The typed Next.js application, Human
+Movement Studio tokens, validated prototype metadata, live Neon/Drizzle schema,
+passwordless authentication route, profile authorization boundary and test
+harnesses now live in `web/`. Magic-link sign-in is enabled on the Neon `main`
+branch with new-user registration disabled; access to protected routes also
+requires an application profile with an allowed account status.
 
-Continue with implementation step 2 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
-create the Neon/Drizzle schema and migrations, then connect invite-only
-passwordless authentication and account-status enforcement. Do not expand
-beyond the polished anatomy-and-movement vertical slice.
+Continue with implementation step 3 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
+implement the versioned content contract in application services and seed the
+five draft anatomy-and-movement lessons. Do not expand beyond the polished
+anatomy-and-movement vertical slice.
