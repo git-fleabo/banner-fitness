@@ -99,8 +99,13 @@ model. It remains a learner-publication gate.
 
 - Neon Postgres, accessed only from server-side application code through the
   Neon serverless driver and Drizzle.
-- Neon Auth passwordless email magic links with automatic public sign-up
-  disabled through the magic-link plugin.
+- Neon Auth Google OAuth for the first vertical slice, with access still gated
+  by an owner-created profile. The local magic-link route is disabled because
+  Neon verified the link on its Auth domain without transferring the session
+  cookie to the application origin, and the live Magic Link plugin is disabled.
+  The application auth adapter explicitly uses `SameSite=Lax` for its signed
+  session-challenge cookies so top-level Google/Neon callbacks can complete
+  without enabling cross-site subrequests.
 - Owner-created invitations only.
 - Neon Managed Better Auth is currently beta. Authentication stays behind a
   small application adapter so it can be replaced without changing lesson or
@@ -194,12 +199,12 @@ Studio editor belongs in this slice.
 
 The next action is implementation step 3. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
-published-version protection triggers. Neon Auth magic links are enabled with
-new-user registration disabled. The first owner Auth user and matching
-`owner`/`invited` application profile have been provisioned; the profile must
-remain invited until the first successful magic-link session activates it. A
-signed-in owner flow is not yet claimed. Phase 1 must remain a polished vertical
-slice rather than an early whole-curriculum build.
+published-version protection triggers. Neon Auth Google OAuth is configured and
+application access remains invitation-only. The first owner Auth user is linked
+to Google, its matching application profile is `owner`/`active`, and the
+signed-in `/learn` flow has been verified locally against live Neon Auth and
+Postgres. Deployment authentication is not yet claimed. Phase 1 must remain a
+polished vertical slice rather than an early whole-curriculum build.
 
 ## 9. Technical decision evidence
 
@@ -210,11 +215,12 @@ Reviewed 5 August 2026:
 - [Next.js deployment options](https://nextjs.org/docs/app/getting-started/deploying)
 - [Neon Next.js guide](https://neon.com/docs/guides/nextjs)
 - [Neon Auth Next.js API-only quick start](https://neon.com/docs/auth/quick-start/nextjs-api-only)
-- [Neon Auth magic-link plugin](https://neon.com/docs/auth/guides/plugins/magic-link)
 - [Neon serverless driver](https://neon.com/docs/serverless/serverless-driver)
 
 These sources confirm the chosen framework's current App Router and TypeScript
 path, normal Node deployment support, Neon serverless Postgres access and the
-current passwordless magic-link flow. Neon Managed Better Auth is documented as
+current Neon Auth integration path. Neon Managed Better Auth is documented as
 beta. These sources do not replace project-specific authorization, privacy or
-deployment testing.
+deployment testing. The local magic-link loop was diagnosed from the generated
+email destination, live Auth session rows and the absence of an application
+session cookie after redirect.

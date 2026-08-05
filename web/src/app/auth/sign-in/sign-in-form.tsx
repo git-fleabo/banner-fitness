@@ -1,44 +1,34 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 
 import { authClient } from "@/lib/auth/client";
 
 import styles from "./sign-in.module.css";
 
-type FormState = "idle" | "sending" | "sent" | "error";
+type SignInState = "idle" | "redirecting" | "error";
 
 export function SignInForm() {
-  const [state, setState] = useState<FormState>("idle");
+  const [state, setState] = useState<SignInState>("idle");
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setState("sending");
+  async function handleSignIn() {
+    setState("redirecting");
 
-    const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim();
-    const { error } = await authClient.signIn.magicLink({ email, callbackURL: "/learn" });
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/learn",
+      errorCallbackURL: "/auth/sign-in?error=google",
+    });
 
-    setState(error && error.status >= 500 ? "error" : "sent");
-  }
-
-  if (state === "sent") {
-    return (
-      <div className={styles.message} role="status">
-        <strong>Check your email</strong>
-        <p>If that address has an invitation, its sign-in link will arrive shortly.</p>
-      </div>
-    );
+    if (error) setState("error");
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <label htmlFor="email">Email address</label>
-      <input id="email" name="email" type="email" autoComplete="email" required />
+    <div className={styles.form}>
       {state === "error" ? <p className={styles.error} role="alert">Sign-in is temporarily unavailable. Please try again.</p> : null}
-      <button type="submit" disabled={state === "sending"}>
-        {state === "sending" ? "Sending link…" : "Email me a sign-in link"}
+      <button type="button" disabled={state === "redirecting"} onClick={handleSignIn}>
+        {state === "redirecting" ? "Opening Google…" : "Continue with Google"}
       </button>
-    </form>
+    </div>
   );
 }

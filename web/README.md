@@ -3,7 +3,7 @@
 This is the Next.js App Router application for the private PT Learning Lab.
 The current implementation completes foundation steps 1 and 2: typed content
 contracts, Human Movement Studio design tokens, a responsive overview shell,
-the versioned Neon/Drizzle schema, invitation-only magic-link authentication,
+the versioned Neon/Drizzle schema, invitation-gated Google authentication,
 server-side profile authorization, and unit plus browser test harnesses.
 
 ## Environment
@@ -31,7 +31,7 @@ pnpm test:e2e
 ```
 
 The E2E suite expects a locally installed Playwright Chromium browser. The live
-Neon schema and authentication route are connected, and the first owner has an
-invited application profile. Deployment and a fully verified signed-in owner
-session are not yet claimed; the profile remains invited until its first
-successful magic-link session.
+Neon schema and authentication route are connected. The first owner has an
+active application profile, and Google sign-in through to `/learn` has been
+verified locally against live Neon Auth. Deployment authentication is not yet
+claimed.

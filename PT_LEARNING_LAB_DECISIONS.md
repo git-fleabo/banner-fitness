@@ -99,9 +99,12 @@ five-lesson vertical slice; the frozen build contract is recorded in
 - Use Next.js App Router with TypeScript.
 - Use CSS custom properties and CSS Modules for the Human Movement Studio system.
 - Use Neon Postgres through server-only application code and Drizzle migrations.
-- Use Neon Auth passwordless magic links behind a small application adapter;
-  Managed Better Auth is currently beta, so replacement must remain possible.
-- Disable automatic public sign-up; owner-created invitations only.
+- Use Neon Auth Google OAuth behind a small application adapter for the first
+  vertical slice; Managed Better Auth is currently beta, so replacement must
+  remain possible. Do not restore email magic links until their cross-domain
+  session handoff has been verified in the deployed application architecture.
+- Never grant application access from an Auth sign-up alone; only
+  owner-created invitation profiles can pass the server authorization gate.
 - Keep database credentials out of browser code and enforce role, status and
   record ownership in server-side authorization checks.
 - Store role and account status from the first migration.
