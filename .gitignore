@@ -1,0 +1,32 @@
+# Local OriGym source archive. These folders contain licensed course material,
+# large binaries, duplicates, and (in Module 7) identifiable assessment data.
+/Module 1/
+/Module 2/
+/Module 3/
+/Module 4/
+/Module 5/
+/Module 6/
+/Module 7/
+/PT Level 3/
+/Muscle Structure_600x400.png
+
+# Google Drive pointer files and private/export artefacts.
+*.gdoc
+*.gsheet
+*.pkpass
+*.zip
+
+# Local operating-system and editor files.
+.DS_Store
+.idea/
+.vscode/
+
+# Application artefacts (for the later build).
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
