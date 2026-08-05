@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LiveStatus, SkipLink, VisuallyHidden } from "@/components/a11y";
+import { PlaneAxisExplorer, SquatJointSequence } from "@/components/movement-interactions";
 import type { LessonPageData } from "@/lib/content/repository";
 
 import styles from "./lesson-shell.module.css";
@@ -18,6 +19,11 @@ export function LessonShell({ lesson, requestedStep, ownerPreview }: { lesson: L
   const previous = steps[currentIndex - 1];
   const next = steps[currentIndex + 1];
   const reference = lesson.objects.find((object) => object.content.outsideMasteryPromise);
+  const customInteraction = current.type === "explore" && lesson.slug === "planes-and-axes"
+    ? <PlaneAxisExplorer />
+    : current.type === "explore" && lesson.slug === "joint-actions"
+      ? <SquatJointSequence />
+      : null;
 
   return (
     <div className={styles.shell} id="top">
@@ -77,7 +83,9 @@ export function LessonShell({ lesson, requestedStep, ownerPreview }: { lesson: L
             </div>
             <p className={styles.bodyCopy}>{current.content.body}</p>
 
-            {current.content.interaction && (
+            {customInteraction}
+
+            {!customInteraction && current.content.interaction && (
               <section className={styles.interactionFrame} aria-labelledby="interaction-heading">
                 <div className={styles.interactionVisual} aria-hidden="true"><span>{titleCase(current.type)}</span></div>
                 <div className={styles.interactionCopy}>

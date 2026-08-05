@@ -187,7 +187,15 @@ outcome placement, structured-text disclosure, keyboard-reachable navigation,
 owner draft labelling and content mapping. Signed-in laptop and 390 px phone
 checks passed without browser runtime errors.
 
-Continue with implementation step 5 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
-build the planes-and-axes and squat joint-action interactions, including their
-accepted feedback and overlay states. Do not expand beyond the polished
-anatomy-and-movement vertical slice.
+Implementation step 5 is complete. The plane explorer synchronises one plane,
+its perpendicular axis, body division and representative movement; its pairing
+check supports untouched, selected, correct, partly-correct, misconception and
+retry states. The squat sequence keeps explicit standing/lower/return and
+hip/knee/ankle controls, provides joint-and-phase-specific feedback, preserves
+the approved ankle-return wording and identifies muscle-action substitution as
+a named misconception. Both work without dragging and stack to one current
+stage on mobile.
+
+Continue with implementation step 6 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
+add progress, attempts, explainable review queue, resume and lesson close. Do not
+expand beyond the polished anatomy-and-movement vertical slice.

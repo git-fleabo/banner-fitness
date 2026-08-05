@@ -184,8 +184,9 @@ Studio editor belongs in this slice.
 4. **Complete (5 August 2026):** build the shared responsive lesson shell and
    accessibility primitives, including laptop rail, mobile progress treatment,
    structured-text disclosure and keyboard-reachable step navigation.
-5. Build planes-and-axes and squat joint-action interactions, including every
-   feedback and overlay state.
+5. **Complete (5 August 2026):** build planes-and-axes and squat joint-action
+   interactions, including selected, submitted, correct, partly-correct,
+   named-misconception, retry, overlay and responsive states.
 6. Add progress, attempts, explainable review queue, resume and close.
 7. Add owner review/preview and publication gating.
 8. Validate keyboard use, structured-text equivalence, phone/laptop layouts,
@@ -201,7 +202,7 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 5. The live Neon `main` branch contains
+The next action is implementation step 6. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
 published-version protection triggers. Neon Auth Google OAuth is configured and
 application access remains invitation-only. The first owner Auth user is linked
@@ -214,7 +215,10 @@ inventory check live under `web/scripts/`. Deployment authentication is not yet
 claimed. The reusable `/learn/[slug]` shell has been verified through the signed-in
 owner route against live Neon at laptop and 390 px phone widths; no browser
 runtime errors were observed. Phase 1 must remain a polished vertical slice
-rather than an early whole-curriculum build.
+rather than an early whole-curriculum build. The two demanding interactions
+have also been verified through the signed-in route: all plane-axis pairs,
+stage-and-joint squat controls, correct/partly-correct/misconception feedback,
+retry, structured text and phone stacking are present without drag dependence.
 
 ## 9. Technical decision evidence
 

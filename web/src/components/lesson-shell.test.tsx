@@ -26,14 +26,14 @@ describe("LessonShell", () => {
     render(<LessonShell lesson={lesson} requestedStep="explore" ownerPreview />);
     expect(screen.getByRole("heading", { name: seed.outcome })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Explore.*Plane-and-axis explorer/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.getByRole("status")).toHaveTextContent("Step 3 of 6");
+    expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("Step 3 of 6"))).toBe(true);
     expect(screen.getByText("Owner · Draft v1")).toBeInTheDocument();
   });
 
   it("keeps structured text and keyboard guidance available for the visual interaction", () => {
     render(<LessonShell lesson={lesson} requestedStep="explore" ownerPreview />);
     expect(screen.getByText("Open structured-text alternative")).toBeInTheDocument();
-    expect(screen.getByText(/Use Tab and Enter/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sagittal" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: "Apply →" })).toHaveAttribute("href", expect.stringContaining("planes-apply"));
   });
 });
