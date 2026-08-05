@@ -170,12 +170,17 @@ The mobile and laptop wireframes now cover the shared lesson rhythm, primary int
 The owner approved the core wireframe hierarchy and authorised implementation.
 Foundation steps 1 and 2 are complete. The typed Next.js application, Human
 Movement Studio tokens, validated prototype metadata, live Neon/Drizzle schema,
-passwordless authentication route, profile authorization boundary and test
-harnesses now live in `web/`. Magic-link sign-in is enabled on the Neon `main`
-branch with new-user registration disabled; access to protected routes also
-requires an application profile with an allowed account status.
+Google authentication route, profile authorization boundary and test harnesses
+now live in `web/`. Email magic-link sign-in remains disabled after its
+cross-domain callback loop; access to protected routes requires both Neon Auth
+and an application profile with an allowed account status.
 
-Continue with implementation step 3 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
-implement the versioned content contract in application services and seed the
-five draft anatomy-and-movement lessons. Do not expand beyond the polished
-anatomy-and-movement vertical slice.
+Implementation step 3 is complete. The versioned content package and Neon seed
+cover the five lessons, 31 learning objects, 24 questions, 25 glossary terms,
+seven named misconception paths and source metadata for every authored target.
+All content remains draft and the authoritative live check reports zero
+published lessons.
+
+Continue with implementation step 4 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
+build the shared responsive lesson shell and accessibility primitives. Do not
+expand beyond the polished anatomy-and-movement vertical slice.

@@ -1,9 +1,24 @@
-import { prototypeLessons } from "@/lib/content/prototype";
+import type { LearningLessonSummary } from "@/lib/content/repository";
 
 import styles from "./prototype-overview.module.css";
 
-export function PrototypeOverview() {
-  const firstLesson = prototypeLessons[0];
+function formatStatus(status: LearningLessonSummary["status"]) {
+  const label = status.replaceAll("_", " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export function PrototypeOverview({ lessons, ownerPreview }: { lessons: LearningLessonSummary[]; ownerPreview: boolean }) {
+  const firstLesson = lessons[0];
+
+  if (!firstLesson) {
+    return (
+      <main className={styles.emptyState} id="main-content">
+        <p className={styles.eyebrow}>Human Movement Studio</p>
+        <h1>No published lessons yet</h1>
+        <p>The first five lessons are still being reviewed. They will appear here after the owner publishes them.</p>
+      </main>
+    );
+  }
 
   return (
     <div className={styles.appShell} id="top">
@@ -13,7 +28,7 @@ export function PrototypeOverview() {
           <span className={styles.brandMark} aria-hidden="true">PL</span>
           <span><strong>PT Learning Lab</strong><small>Human Movement Studio</small></span>
         </a>
-        <span className={styles.foundationStatus}>Foundation preview</span>
+        <span className={styles.foundationStatus}>{ownerPreview ? "Owner draft preview" : "Learning path"}</span>
       </header>
 
       <div className={styles.workspace}>
@@ -22,10 +37,10 @@ export function PrototypeOverview() {
           <h2 id="lesson-map-heading">Anatomy and movement</h2>
           <p className={styles.railIntro}>Five short lessons, using the squat as a recurring anchor.</p>
           <ol className={styles.lessonList}>
-            {prototypeLessons.map((lesson, index) => (
+            {lessons.map((lesson, index) => (
               <li key={lesson.slug} className={index === 0 ? styles.currentLesson : undefined}>
                 <span className={styles.lessonNumber}>{lesson.order}</span>
-                <span><strong>{lesson.title}</strong><small>{lesson.durationMinutes} min · Draft</small></span>
+                <span><strong>{lesson.title}</strong><small>{lesson.durationMinutes} min · {formatStatus(lesson.status)}</small></span>
               </li>
             ))}
           </ol>

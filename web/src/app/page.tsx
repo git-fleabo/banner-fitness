@@ -1,5 +1,5 @@
-import { PrototypeOverview } from "@/components/prototype-overview";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <PrototypeOverview />;
+  redirect("/learn");
 }

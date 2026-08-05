@@ -178,7 +178,9 @@ Studio editor belongs in this slice.
 2. **Complete (5 August 2026):** add the live Neon/Drizzle schema and migrations,
    invite-only passwordless authentication, and server-side role, status and
    record-ownership enforcement.
-3. Implement the versioned content contract and seed the five draft lessons.
+3. **Complete (5 August 2026):** implement the versioned content contract and
+   seed the five draft lessons, learning objects, questions, glossary and source
+   links without publishing them.
 4. Build the shared responsive lesson shell and accessibility primitives.
 5. Build planes-and-axes and squat joint-action interactions, including every
    feedback and overlay state.
@@ -197,14 +199,18 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 3. The live Neon `main` branch contains
+The next action is implementation step 4. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
 published-version protection triggers. Neon Auth Google OAuth is configured and
 application access remains invitation-only. The first owner Auth user is linked
 to Google, its matching application profile is `owner`/`active`, and the
 signed-in `/learn` flow has been verified locally against live Neon Auth and
-Postgres. Deployment authentication is not yet claimed. Phase 1 must remain a
-polished vertical slice rather than an early whole-curriculum build.
+Postgres. Neon also contains five draft lesson versions, 31 draft learning-object
+versions, 24 draft question versions, 25 draft glossary versions and 85 source
+links; it contains zero published lessons. The idempotent seed and authoritative
+inventory check live under `web/scripts/`. Deployment authentication is not yet
+claimed. Phase 1 must remain a polished vertical slice rather than an early
+whole-curriculum build.
 
 ## 9. Technical decision evidence
 
