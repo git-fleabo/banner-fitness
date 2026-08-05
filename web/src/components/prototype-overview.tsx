@@ -30,7 +30,7 @@ export function PrototypeOverview({ lessons, ownerPreview }: { lessons: Learning
           <span className={styles.brandMark} aria-hidden="true">PL</span>
           <span><strong>PT Learning Lab</strong><small>Human Movement Studio</small></span>
         </a>
-        <div className={styles.headerActions}><Link href="/review">Review queue</Link><span className={styles.foundationStatus}>{ownerPreview ? "Owner draft preview" : "Learning path"}</span></div>
+        <div className={styles.headerActions}>{ownerPreview && <Link href="/owner/review">Owner review</Link>}<Link href="/review">Review queue</Link><Link href="/account/data">Your data</Link><span className={styles.foundationStatus}>{ownerPreview ? "Owner draft preview" : "Learning path"}</span></div>
       </header>
 
       <div className={styles.workspace}>

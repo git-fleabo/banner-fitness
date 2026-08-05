@@ -190,10 +190,15 @@ Studio editor belongs in this slice.
 6. **Complete (5 August 2026):** add progress, evidence-recording attempts,
    exact-step-and-selection resume, lesson close, and an explainable review
    queue with learner reschedule and remove controls.
-7. Add owner review/preview and publication gating.
-8. Validate keyboard use, structured-text equivalence, phone/laptop layouts,
-   authorization boundaries and production builds before the first private
-   deployment.
+7. **Complete (5 August 2026):** add owner-only review inventory, lesson
+   preview, recorded draft-to-review-to-approval workflow and publication
+   gating for source completeness, rationale, mapping acknowledgement and a
+   prior approval decision.
+8. **Local pre-deployment validation complete (5 August 2026):** validate
+   keyboard use, structured-text coverage, phone/laptop layouts,
+   unauthenticated and owner authorization boundaries, account data controls
+   and production builds. A deployed invited-learner smoke test remains a
+   release check rather than a local build task.
 
 ## 8. Deferred decisions that do not block Phase 1
 
@@ -227,6 +232,29 @@ rather than secure, an in-progress lesson restores its exact check and selected
 answer with the prior evidence state stated explicitly, and queued review
 recommendations expose their recorded reason plus working reschedule and remove
 overrides. No draft content has been approved or published.
+The owner review route now reports source coverage for every lesson, learning
+object and question; exposes the joint-action mapping uncertainty; and keeps
+preview, approval and publication as separate actions. Server-side transition
+rules and unit tests prevent direct draft publication and require explicit
+mapping acknowledgement where applicable. The signed-in owner route passed at
+laptop and 390 px phone widths, while a fresh authoritative Neon inventory still
+reports five drafts and zero published lessons. The state-changing approval and
+publication controls were intentionally not exercised against those drafts.
+The planned account-data boundary is also present: an authenticated learner can
+export their own progress, attempts, reviews and bookmarks; reset progress while
+keeping bookmarks; or delete all learning data while retaining the invited
+sign-in profile. Both destructive paths require exact typed confirmations and
+scope every deletion to the active account. The export returned successfully in
+the signed-in owner route; reset and delete were intentionally not exercised.
+
+The local pre-deployment pass now covers 23 unit/component tests, two Playwright
+projects (laptop and phone) for the unauthenticated route with automated
+serious/critical accessibility and overflow checks, signed-in owner checks at
+laptop and phone widths, explicit keyboard focus/Enter operation, live Neon
+inventory checks and a clean optimized production build. The remaining release
+boundary is a first private deployment followed by authentication and data
+ownership smoke tests using a separate invited learner account. That deployment
+does not require publishing the five draft lessons.
 
 ## 9. Technical decision evidence
 

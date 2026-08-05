@@ -202,7 +202,23 @@ close records coverage separately from security; and the explainable review
 queue supports revisit, reschedule and remove overrides. Signed-in local checks
 and authoritative Neon reads passed without publishing any draft content.
 
-Continue with implementation step 7 in `PT_LEARNING_LAB_BUILD_READINESS.md`:
-add owner review/preview and publication gating. Do not approve or publish a
-draft merely to test the controls, and do not expand beyond the polished
-anatomy-and-movement vertical slice.
+Implementation step 7 is complete. The owner-only review inventory shows each
+lesson version, source coverage, latest decision and any mapping uncertainty;
+preview does not change content state. The server enforces separate review,
+approval and publication transitions, including written rationale, complete
+source coverage, explicit mapping acknowledgement and a prior approval
+decision. The controls were not exercised against the five drafts, and Neon
+still reports zero published lessons.
+
+Implementation step 8 is locally complete. The test suite now covers keyboard
+operation, structured-text presence, workflow gates and destructive-data
+confirmation; unauthenticated Playwright checks run at laptop and phone sizes;
+signed-in owner routes were checked responsively against live Neon; and the
+optimized production build passes. Authenticated learners can export their own
+learning data, reset progress while retaining bookmarks, or delete all learning
+data after exact typed confirmation. The destructive actions were not exercised
+against the owner account.
+
+The next release step is a first private deployment plus smoke testing with a
+separate invited learner account. Keep all five lessons draft during deployment
+validation; publication remains a later explicit owner review decision.

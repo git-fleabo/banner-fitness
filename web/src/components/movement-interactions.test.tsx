@@ -29,6 +29,22 @@ describe("PlaneAxisExplorer", () => {
     expect(screen.getByText(/real anatomical axis/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry pairing" })).toBeEnabled();
   });
+
+  it("operates the native plane controls with keyboard focus and Enter", async () => {
+    const user = userEvent.setup();
+    render(<PlaneAxisExplorer />);
+    const sagittal = screen.getByRole("button", { name: "Sagittal" });
+    const frontal = screen.getByRole("button", { name: "Frontal" });
+
+    await user.tab();
+    expect(sagittal).toHaveFocus();
+    await user.tab();
+    expect(frontal).toHaveFocus();
+    await user.keyboard("{Enter}");
+
+    expect(frontal).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/Showing Frontal with its anterior-posterior axis/)).toBeInTheDocument();
+  });
 });
 
 describe("SquatJointSequence", () => {

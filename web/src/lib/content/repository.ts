@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "@/lib/db/client";
@@ -21,7 +21,9 @@ import {
   lessonVersions,
   questions,
   questionVersions,
+  reviewDecisions,
   reviewQueue,
+  sourceLinks,
 } from "@/lib/db/schema";
 
 export type LearningLessonSummary = {
@@ -252,4 +254,51 @@ export async function listReviewItems(learnerId: string): Promise<LearningReview
     .leftJoin(questionVersions, eq(reviewQueue.questionVersionId, questionVersions.id))
     .where(and(eq(reviewQueue.learnerId, learnerId), eq(reviewQueue.status, "queued")))
     .orderBy(asc(reviewQueue.dueAt));
+}
+
+export type OwnerReviewLesson = {
+  lessonVersionId: string;
+  slug: string;
+  title: string;
+  status: LearningLessonSummary["status"];
+  versionNumber: number;
+  objectCount: number;
+  questionCount: number;
+  sourcedTargetCount: number;
+  expectedSourceTargetCount: number;
+  mappingUncertainty: string | null;
+  latestDecision: LearningLessonSummary["status"] | null;
+  latestRationale: string | null;
+};
+
+export async function listOwnerReviewLessons(): Promise<OwnerReviewLesson[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      lessonVersionId: lessonVersions.id,
+      slug: lessons.slug,
+      title: lessonVersions.title,
+      status: lessonVersions.status,
+      versionNumber: lessonVersions.versionNumber,
+      objectCount: sql<number>`(select count(*)::int from ${lessonVersionObjects} lvo where lvo.lesson_version_id = ${lessonVersions.id})`,
+      questionCount: sql<number>`(select count(*)::int from ${lessonVersionObjects} lvo join ${learningObjectVersionQuestions} lovq on lovq.learning_object_version_id = lvo.learning_object_version_id where lvo.lesson_version_id = ${lessonVersions.id})`,
+      sourcedTargetCount: sql<number>`(
+        (select count(*)::int from (select 1 from ${sourceLinks} sl where sl.lesson_version_id = ${lessonVersions.id} limit 1) lesson_source) +
+        (select count(distinct lvo.learning_object_version_id)::int from ${lessonVersionObjects} lvo where lvo.lesson_version_id = ${lessonVersions.id} and exists (select 1 from ${sourceLinks} sl where sl.learning_object_version_id = lvo.learning_object_version_id)) +
+        (select count(distinct lovq.question_version_id)::int from ${learningObjectVersionQuestions} lovq join ${lessonVersionObjects} lvo on lvo.learning_object_version_id = lovq.learning_object_version_id where lvo.lesson_version_id = ${lessonVersions.id} and exists (select 1 from ${sourceLinks} sl where sl.question_version_id = lovq.question_version_id))
+      )`,
+      mappingUncertainty: sql<string | null>`(select max(sl.mapping_uncertainty) from ${sourceLinks} sl where sl.lesson_version_id = ${lessonVersions.id})`,
+      latestDecision: sql<LearningLessonSummary["status"] | null>`(select rd.decision from ${reviewDecisions} rd where rd.lesson_version_id = ${lessonVersions.id} order by rd.reviewed_at desc limit 1)`,
+      latestRationale: sql<string | null>`(select rd.rationale from ${reviewDecisions} rd where rd.lesson_version_id = ${lessonVersions.id} order by rd.reviewed_at desc limit 1)`,
+    })
+    .from(lessonVersions)
+    .innerJoin(lessons, eq(lessonVersions.lessonId, lessons.id))
+    .orderBy(asc(lessons.recommendedOrder), desc(lessonVersions.versionNumber));
+
+  const latestBySlug = new Map<string, (typeof rows)[number]>();
+  for (const row of rows) if (!latestBySlug.has(row.slug)) latestBySlug.set(row.slug, row);
+  return [...latestBySlug.values()].map((row) => ({
+    ...row,
+    expectedSourceTargetCount: 1 + row.objectCount + row.questionCount,
+  }));
 }

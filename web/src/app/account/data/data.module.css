@@ -1,0 +1,22 @@
+.shell { min-height: 100vh; background: var(--cream); }
+.header { min-height: 4.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1.2rem, 4vw, 3.5rem); color: white; background: var(--deep-teal); }
+.header strong, .header small { display: block; }
+.header small { color: var(--mist); font-size: .72rem; }
+.header > span { max-width: 50%; overflow-wrap: anywhere; font-size: .72rem; text-align: right; }
+.main { max-width: 60rem; margin: 0 auto; padding: clamp(1.4rem, 5vw, 4rem); }
+.back { display: inline-flex; min-height: 2.75rem; align-items: center; color: var(--deep-teal); font-size: .82rem; font-weight: 800; }
+.eyebrow { margin-top: 1rem; color: var(--clay); font-size: .7rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.main h1 { margin-top: .3rem; font-size: clamp(2.2rem, 6vw, 4.5rem); letter-spacing: -.04em; }
+.intro { max-width: 42rem; margin-top: .8rem; color: var(--muted); line-height: 1.65; }
+.notice { margin-top: 1rem; padding: .8rem 1rem; border-left: 4px solid var(--sage); background: var(--sage-light); }
+.card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, .75fr); gap: 1.2rem; margin-top: 1rem; padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--line); border-radius: .9rem; background: white; box-shadow: var(--shadow-small); }
+.card:first-of-type { margin-top: 2rem; }
+.card h2 { font-size: 1.35rem; }
+.card p { margin-top: .45rem; color: var(--muted); line-height: 1.55; }
+.card form { display: grid; gap: .7rem; }
+.card label { display: grid; gap: .35rem; color: var(--muted); font-size: .78rem; }
+.card input { min-height: 2.8rem; padding: .55rem .65rem; border: 1px solid var(--line); border-radius: .5rem; font: inherit; }
+.primary, .card button { display: inline-flex; min-height: 2.8rem; align-items: center; justify-content: center; align-self: end; padding: .6rem .8rem; border: 1px solid var(--deep-teal); border-radius: .55rem; color: white; background: var(--deep-teal); font: inherit; font-size: .82rem; font-weight: 900; }
+.danger { border-color: color-mix(in srgb, var(--clay) 55%, var(--line)); }
+.danger button { border-color: var(--clay); background: var(--clay); }
+@media (max-width: 650px) { .card { grid-template-columns: 1fr; } .header > span { display: none; } }
