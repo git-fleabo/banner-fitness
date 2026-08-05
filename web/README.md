@@ -31,5 +31,7 @@ pnpm test:e2e
 ```
 
 The E2E suite expects a locally installed Playwright Chromium browser. The live
-Neon schema and authentication route are connected; deployment and a fully
-verified signed-in owner session are not yet claimed.
+Neon schema and authentication route are connected, and the first owner has an
+invited application profile. Deployment and a fully verified signed-in owner
+session are not yet claimed; the profile remains invited until its first
+successful magic-link session.

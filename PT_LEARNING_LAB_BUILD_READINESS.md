@@ -195,10 +195,11 @@ Studio editor belongs in this slice.
 The next action is implementation step 3. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
 published-version protection triggers. Neon Auth magic links are enabled with
-new-user registration disabled. No first owner profile or signed-in owner flow
-is claimed until the owner email is explicitly supplied and verified. Phase 1
-must remain a polished vertical slice rather than an early whole-curriculum
-build.
+new-user registration disabled. The first owner Auth user and matching
+`owner`/`invited` application profile have been provisioned; the profile must
+remain invited until the first successful magic-link session activates it. A
+signed-in owner flow is not yet claimed. Phase 1 must remain a polished vertical
+slice rather than an early whole-curriculum build.
 
 ## 9. Technical decision evidence
 
