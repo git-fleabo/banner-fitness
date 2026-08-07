@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { PlaneAxisExplorer, PlaneAxisSorter, SquatJointSequence } from "@/components/movement-interactions";
+import { ExplanationDiagnosis, MixedMovementCase, MixedTransferSet, MovementDetective, PhaseDescriptionBuilder, PlaneAxisExplorer, PlaneAxisSorter, SquatJointSequence } from "@/components/movement-interactions";
 
 import styles from "./lesson-activities.module.css";
 
@@ -113,6 +113,11 @@ export function LessonActivity(props: Props) {
   if (props.lessonSlug === "planes-and-axes" && props.step === "explore") return <PlaneAxisExplorer />;
   if (props.lessonSlug === "planes-and-axes" && props.step === "apply") return <PlaneAxisSorter />;
   if (props.lessonSlug === "joint-actions" && props.step === "explore") return <SquatJointSequence />;
+  if (props.lessonSlug === "joint-actions" && props.step === "apply") return <PhaseDescriptionBuilder />;
+  if (props.lessonSlug === "recognising-actions" && props.step === "explore") return <MovementDetective />;
+  if (props.lessonSlug === "recognising-actions" && props.step === "apply") return <ExplanationDiagnosis />;
+  if (props.lessonSlug === "mixed-movement-challenge" && props.step === "explore") return <MixedMovementCase />;
+  if (props.lessonSlug === "mixed-movement-challenge" && props.step === "apply") return <MixedTransferSet />;
   if (props.lessonSlug === "anatomical-position" && props.step === "explore") return <AnatomicalPositionLab />;
   if (props.lessonSlug === "anatomical-position" && props.step === "apply") return <DirectionalComparisonBuilder />;
   if (props.lessonSlug === "anatomical-position" || props.lessonSlug === "recognising-actions" || props.lessonSlug === "mixed-movement-challenge") return <ChoiceActivity {...props} />;

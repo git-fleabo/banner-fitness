@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PlaneAxisExplorer, PlaneAxisSorter, SquatJointSequence } from "./movement-interactions";
+import { ExplanationDiagnosis, MixedMovementCase, MixedTransferSet, MovementDetective, PhaseDescriptionBuilder, PlaneAxisExplorer, PlaneAxisSorter, SquatJointSequence } from "./movement-interactions";
 
 afterEach(cleanup);
 
@@ -83,5 +83,68 @@ describe("PlaneAxisSorter", () => {
 
     expect(within(sorter).getByText(/predominant plane/)).toBeInTheDocument();
     expect(within(sorter).getByText(/smaller components in other planes/)).toBeInTheDocument();
+  });
+});
+
+describe("Lesson 3-5 authoring interactions", () => {
+  it("builds all three phase descriptions with the explicit ankle return wording", async () => {
+    const user = userEvent.setup();
+    render(<PhaseDescriptionBuilder />);
+    const builder = screen.getByTestId("phase-description-builder");
+    const cards = [
+      ["Descent", "Knee", "Flexion"],
+      ["Descent", "Ankle", "Dorsiflexion"],
+      ["Return", "Ankle", "Back towards neutral"],
+    ];
+
+    for (const [phase, joint, action] of cards) {
+      await user.click(within(builder).getByRole("button", { name: phase }));
+      await user.click(within(builder).getByRole("button", { name: joint }));
+      await user.click(within(builder).getByRole("button", { name: action }));
+      await user.click(within(builder).getByRole("button", { name: "Check description" }));
+      expect(within(builder).getByText("That sentence is precise")).toBeInTheDocument();
+      await user.click(within(builder).getByRole("button", { name: /Next description|Finish builder/ }));
+    }
+
+    expect(within(builder).getByText(/ankle return is described as movement back towards neutral/)).toBeInTheDocument();
+  });
+
+  it("moves the detective through evidence fields and diagnoses precise explanations", async () => {
+    const user = userEvent.setup();
+    render(<MovementDetective />);
+    const detective = screen.getByTestId("movement-detective");
+
+    await user.click(within(detective).getByRole("button", { name: "Knee" }));
+    await user.click(within(detective).getByRole("button", { name: "Check observation" }));
+    await user.click(within(detective).getByRole("button", { name: "Next observation" }));
+    expect(within(detective).getByText("Which phase is shown?")).toBeInTheDocument();
+
+    cleanup();
+    render(<ExplanationDiagnosis />);
+    const diagnosis = screen.getByTestId("explanation-diagnosis");
+    await user.click(within(diagnosis).getByRole("button", { name: /During the descent, the knee/ }));
+    await user.click(within(diagnosis).getByRole("button", { name: "Check explanation" }));
+    expect(within(diagnosis).getByText("That explanation carries the evidence")).toBeInTheDocument();
+  });
+
+  it("completes the mixed six-step case and fresh transfer set", async () => {
+    const user = userEvent.setup();
+    render(<MixedMovementCase />);
+    const mixed = screen.getByTestId("mixed-movement-case");
+    const answers = ["The client's left", "Proximal", "Sagittal", "Medio-lateral", "Hip flexion and knee flexion", "During descent, the knee moves into flexion as its angle decreases"];
+
+    for (const answer of answers) {
+      await user.click(within(mixed).getByRole("button", { name: answer }));
+      await user.click(within(mixed).getByRole("button", { name: "Check case step" }));
+      await user.click(within(mixed).getByRole("button", { name: /Next case step|Finish case/ }));
+    }
+    expect(within(mixed).getByText(/Check again soon: matching planes and axes/)).toBeInTheDocument();
+
+    cleanup();
+    render(<MixedTransferSet />);
+    const transfer = screen.getByTestId("mixed-transfer-set");
+    await user.click(within(transfer).getByRole("button", { name: /Shoulder abduction/ }));
+    await user.click(within(transfer).getByRole("button", { name: "Check transfer" }));
+    expect(within(transfer).getByText("The method transfers")).toBeInTheDocument();
   });
 });

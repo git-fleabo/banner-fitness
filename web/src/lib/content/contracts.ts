@@ -99,7 +99,7 @@ export const prototypeContentSeedSchema = z.object({
     origymModule: z.string().min(1),
     mappingStatus: z.enum(["confirmed", "provisional", "needs_confirmation"]),
   }),
-  misconceptions: z.array(misconceptionSeedSchema).length(11),
+  misconceptions: z.array(misconceptionSeedSchema).length(15),
   glossary: z.array(glossarySeedSchema).length(25),
   lessons: z.array(lessonSeedSchema).length(5),
 }).superRefine((seed, context) => {

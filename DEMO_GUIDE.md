@@ -53,6 +53,27 @@ remains draft by default; the owner can preview it without publishing.
 - Check covers plane-versus-axis reversal, sagittal-versus-forward language and the misconception that an exercise belongs absolutely to one plane.
 - Lesson 2 remains draft-only until the owner approves publication.
 
+## Lesson 3 authoring acceptance
+
+- Explore compares standing, lower and return squat states across hip, knee and ankle, keeping the ankle description as dorsiflexion on descent and movement back towards neutral on return.
+- Apply builds a precise sentence from phase, joint and action, with native controls and written structured text as the keyboard-accessible alternative.
+- Check distinguishes joint action from muscle action, phase from action and flexion from forward travel, with named misconception feedback.
+- Lesson 3 remains draft-only until the owner approves publication.
+
+## Lesson 4 authoring acceptance
+
+- Explore analyses squat descent, elbow-curl lowering, lateral-raise lifting and standing torso rotation with progressively fewer prompts.
+- Apply diagnoses explanation quality by checking for phase, named joint or region, action and an observable clue such as angle change or relation to the midline.
+- Check includes single-frame evidence, exercise-name and overall-direction traps, with retry or revision guidance.
+- Lesson 4 remains draft-only until the owner approves publication.
+
+## Lesson 5 authoring acceptance
+
+- Explore runs a six-step mixed movement case covering viewpoint, directional comparison, predominant plane, perpendicular axis, phase-specific joint actions and explanation repair.
+- Apply transfers the method to changed viewpoints, body proportions and movement directions so the learner cannot rely on artwork recognition.
+- Check contains six core questions and six variations, with outcome-level feedback and no claim that one attempt creates Secure.
+- Lesson 5 remains draft-only until the owner approves publication.
+
 ## Validation
 
 ```bash

@@ -177,16 +177,19 @@ harnesses now live in `web/`. Access to protected routes requires both Neon
 Auth and an application profile with an allowed account status.
 
 Implementation step 3 is complete. The versioned content package and Neon seed
-cover the five lessons, 31 learning objects, 28 questions, 25 glossary terms,
-eleven named misconception paths and source metadata for every authored target.
+cover the five lessons, 31 learning objects, 32 questions, 25 glossary terms,
+fifteen named misconception paths and source metadata for every authored target.
 All content remains draft and the authoritative live check reports zero
 published lessons.
 
-Current milestone: Lessons 1 and 2 are now fully authored as the content-quality
+Current milestone: Lessons 1–5 are now fully authored as the content-quality
 template. Lesson 1 includes its reference-position lab, five-pair directional
 comparison builder and squat transfer; Lesson 2 includes its plane-and-axis
-explorer, three-card predominant-plane sorter and expanded checks. Both remain
-draft-only pending owner approval.
+explorer, three-card predominant-plane sorter and expanded checks; Lesson 3
+includes its three-stage squat joint-action sequence and phase-description
+builder; Lesson 4 includes its four-card movement detective and explanation
+diagnosis; and Lesson 5 includes its six-step mixed case and fresh transfer set.
+All five remain draft-only pending owner approval.
 
 Implementation step 4 is complete. The live Neon-backed lesson route now uses a
 shared responsive shell with the approved laptop rail, mobile progress treatment,
@@ -202,6 +205,13 @@ hip/knee/ankle controls, provides joint-and-phase-specific feedback, preserves
 the approved ankle-return wording and identifies muscle-action substitution as
 a named misconception. Both work without dragging and stack to one current
 stage on mobile.
+
+Implementation step 6 is complete. Lessons 3–5 now carry detailed original
+learner-facing copy, source-aware structured text, expanded checks and named
+misconception feedback. Their interactions are distinct: joint-and-phase
+description for Lesson 3, evidence-led movement recognition for Lesson 4, and
+mixed retrieval plus transfer for Lesson 5. All content remains draft-only;
+this milestone does not publish or deploy the lessons.
 
 Implementation step 6 is complete. Progress and attempts are stored in Neon;
 resume restores the exact evidence-recording check and selected answer; lesson
