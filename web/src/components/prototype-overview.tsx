@@ -9,8 +9,10 @@ function formatStatus(status: LearningLessonSummary["status"]) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export function PrototypeOverview({ lessons, ownerPreview }: { lessons: LearningLessonSummary[]; ownerPreview: boolean }) {
+export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: { lessons: LearningLessonSummary[]; revisionCount?: number; ownerPreview: boolean }) {
   const firstLesson = lessons[0];
+  const continueLesson = lessons.find((lesson) => lesson.coverageState === "in_progress") ?? firstLesson;
+  const coveredCount = lessons.filter((lesson) => lesson.coverageState === "covered").length;
 
   if (!firstLesson) {
     return (
@@ -54,14 +56,23 @@ export function PrototypeOverview({ lessons, ownerPreview }: { lessons: Learning
           </nav>
           <section className={styles.hero} aria-labelledby="page-heading">
             <div>
-              <p className={styles.eyebrow}>First vertical slice</p>
+              <p className={styles.eyebrow}>Anatomy and movement</p>
               <h1 id="page-heading">{firstLesson.title}</h1>
-              <p className={styles.lede}>A calm, visual practice space for learning how to describe the body and movement precisely.</p>
+              <p className={styles.lede}>Learn by noticing movement. Short visual lessons help you distinguish, apply and explain movement concepts with confidence.</p>
             </div>
             <div className={styles.mappingCard}>
               <span>Qualification mapping</span><strong>{firstLesson.mapping}</strong>
             </div>
           </section>
+
+          <section className={styles.actionGrid} aria-label="Your next actions">
+            <Link className={styles.continueCard} href={`/learn/${continueLesson.slug}${continueLesson.coverageState === "in_progress" ? `?step=${continueLesson.resumeStep ?? "check"}` : ""}`}>
+              <span className={styles.eyebrow}>Continue learning</span><strong>{continueLesson.title}</strong><span>{continueLesson.coverageState === "in_progress" ? "Resume where you left off" : "Start the recommended path"} →</span>
+            </Link>
+            <Link className={styles.revisionCard} href="/review"><span className={styles.eyebrow}>Today’s revision</span><strong>{revisionCount ? `${revisionCount} useful ${revisionCount === 1 ? "revisit" : "revisits"}` : "Build your first revision"}</strong><span>{revisionCount ? "See why each one was recommended" : "Practice adds explainable recommendations"} →</span></Link>
+          </section>
+
+          <section className={styles.progressSummary} aria-label="Progress summary"><div><span className={styles.eyebrow}>Your progress</span><strong>{coveredCount} of {lessons.length} lessons covered</strong></div><p>Coverage, first-attempt practice and later understanding are kept separate. One correct response never becomes a mastery label.</p></section>
 
           <section className={styles.outcomeCard} aria-labelledby="outcome-heading">
             <div className={styles.outcomeIcon} aria-hidden="true">01</div>

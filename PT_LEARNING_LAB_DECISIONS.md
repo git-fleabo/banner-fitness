@@ -4,8 +4,8 @@ Last updated: 5 August 2026
 
 This is the concise source of truth for decisions made during the PT Learning Lab planning conversation. A future chat should read this file first, then `PT_LEARNING_LAB_PRODUCT_BLUEPRINT.md`, before proposing or building anything.
 
-No application has been built yet. Phase 0 is complete enough to begin the
-five-lesson vertical slice; the frozen build contract is recorded in
+The Phase 1 five-lesson vertical slice is implemented locally. The remaining
+production/authenticated smoke checks are release work; the frozen build contract is recorded in
 `PT_LEARNING_LAB_BUILD_READINESS.md`.
 
 ## Product purpose
@@ -110,7 +110,9 @@ five-lesson vertical slice; the frozen build contract is recorded in
 - Store role and account status from the first migration.
 - Keep curriculum mapping separate from source-container metadata.
 - Use immutable published content versions and migration-controlled schema changes.
-- Use Vercel as the initial deployment target without coupling the product to it.
+- Use Cloudflare Workers with the official OpenNext adapter as the preferred
+  production target; retain normal Next.js local development and use Netlify
+  only for a demonstrated compatibility blocker.
 - Use Vitest/Testing Library for component and logic tests and Playwright for responsive end-to-end coverage.
 - The detailed schema boundary, route boundary and build sequence are frozen in `PT_LEARNING_LAB_BUILD_READINESS.md`.
 
@@ -222,3 +224,12 @@ against the owner account.
 The next release step is a first private deployment plus smoke testing with a
 separate invited learner account. Keep all five lessons draft during deployment
 validation; publication remains a later explicit owner review decision.
+
+Implementation step 9 is locally complete. The Learn home leads with Continue
+learning, Today’s revision and a progress summary; all five lessons have
+reusable explore/apply interactions; Joint Actions preserves correct joints
+during targeted retry; and meaningful lesson position is persisted without
+overwriting submitted evidence. OpenNext, Wrangler and static asset caching
+configuration are committed. The Cloudflare build passes after removing the
+redundant Node-only auth proxy; route-level server authorization remains the
+protected-content boundary.

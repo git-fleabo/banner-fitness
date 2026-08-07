@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { LiveStatus, SkipLink, VisuallyHidden } from "@/components/a11y";
 import { LessonClose, QuestionPractice } from "@/components/learning-evidence";
-import { PlaneAxisExplorer, SquatJointSequence } from "@/components/movement-interactions";
+import { LessonActivity } from "@/components/lesson-activities";
+import { LessonPositionTracker } from "@/components/lesson-position-tracker";
 import type { LessonPageData, LessonResumeState } from "@/lib/content/repository";
 
 import styles from "./lesson-shell.module.css";
@@ -21,11 +22,9 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
   const previous = steps[currentIndex - 1];
   const next = steps[currentIndex + 1];
   const reference = lesson.objects.find((object) => object.content.outsideMasteryPromise);
-  const customInteraction = current.type === "explore" && lesson.slug === "planes-and-axes"
-    ? <PlaneAxisExplorer />
-    : current.type === "explore" && lesson.slug === "joint-actions"
-      ? <SquatJointSequence />
-      : null;
+  const customInteraction = ["hook", "explain", "explore", "apply"].includes(current.type)
+    ? <LessonActivity lessonSlug={lesson.slug} step={current.type as "hook" | "explain" | "explore" | "apply"} />
+    : null;
   const evidenceActivity = current.type === "check" && current.questions.length > 0
     ? <QuestionPractice lessonSlug={lesson.slug} questions={current.questions} resumeState={resumeState} />
     : current.type === "close"
@@ -34,6 +33,7 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
 
   return (
     <div className={styles.shell} id="top">
+      <LessonPositionTracker lessonSlug={lesson.slug} stepStableKey={current.stableKey} />
       <SkipLink />
       <LiveStatus>Step {currentIndex + 1} of {steps.length}: {current.title}</LiveStatus>
 

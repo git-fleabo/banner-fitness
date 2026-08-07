@@ -120,8 +120,9 @@ model. It remains a learner-publication gate.
 
 ### Delivery and quality
 
-- Vercel is the initial deployment target; the application remains a normal
-  Next.js project so hosting can change later.
+- Cloudflare Workers is the preferred production target through the official
+  OpenNext adapter; the application remains a normal Next.js project for local
+  development and testing.
 - Drizzle schema, migrations and generated migration metadata are committed.
 - Vitest and Testing Library cover content and interaction logic.
 - Playwright covers the complete phone and laptop lesson route.
@@ -209,7 +210,7 @@ Studio editor belongs in this slice.
 - animation, narration, notes, reminders and source-grounded AI; and
 - any invited pilot beyond the owner.
 
-The next action is implementation step 7. The live Neon `main` branch contains
+The local Phase 1 implementation is complete. The live Neon `main` branch contains
 the three tracked migrations, the required content and progress tables, and
 published-version protection triggers. Neon Auth Google OAuth is configured and
 application access remains invitation-only. The first owner Auth user is linked
@@ -274,3 +275,7 @@ beta. These sources do not replace project-specific authorization, privacy or
 deployment testing. The local magic-link loop was diagnosed from the generated
 email destination, live Auth session rows and the absence of an application
 session cookie after redirect.
+
+The local Phase 1 implementation is complete and `pnpm cf-build` passes.
+Production Cloudflare deployment and Google callback verification remain
+unclaimed because production credentials were not available in this workspace.

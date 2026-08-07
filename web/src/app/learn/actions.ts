@@ -31,6 +31,8 @@ const completionInputSchema = z.object({
   confidence: z.number().int().min(1).max(5).optional(),
 });
 
+const positionInputSchema = z.object({ lessonSlug: z.string().regex(/^[a-z0-9-]+$/), stepStableKey: z.string().min(1) });
+
 function sameAnswers(left: string[], right: string[]) {
   return [...left].sort().join("\u0000") === [...right].sort().join("\u0000");
 }
@@ -192,4 +194,19 @@ export async function completeLesson(input: unknown) {
   revalidatePath("/learn");
   revalidatePath(`/learn/${values.lessonSlug}`);
   return { completedAt: completedAt.toISOString(), confidence: values.confidence ?? null, securityState: "Not yet secure" as const };
+}
+
+export async function recordLessonPosition(input: unknown) {
+  const values = positionInputSchema.parse(input);
+  const account = await requireActiveAccount();
+  const db = getDb();
+  const [target] = await db.select({ lessonId: lessons.id, lessonVersionId: lessonVersions.id, status: lessonVersions.status })
+    .from(lessons).innerJoin(lessonVersions, eq(lessonVersions.lessonId, lessons.id))
+    .where(eq(lessons.slug, values.lessonSlug)).orderBy(lessonVersions.versionNumber).limit(1);
+  if (!target || (account.role === "learner" && target.status !== "published")) throw new Error("This lesson is not available to this account.");
+  const [existing] = await db.select({ resumeState: lessonProgress.resumeState }).from(lessonProgress).where(and(eq(lessonProgress.learnerId, account.authUserId), eq(lessonProgress.lessonId, target.lessonId))).limit(1);
+  const previous = typeof existing?.resumeState === "object" && existing.resumeState !== null ? existing.resumeState as Record<string, unknown> : {};
+  const resumeState = { ...previous, stepStableKey: values.stepStableKey };
+  await db.insert(lessonProgress).values({ learnerId: account.authUserId, lessonId: target.lessonId, lessonVersionId: target.lessonVersionId, coverageState: "in_progress", lastObjectPosition: 1, resumeState, startedAt: new Date() }).onConflictDoUpdate({ target: [lessonProgress.learnerId, lessonProgress.lessonId], set: { lessonVersionId: target.lessonVersionId, coverageState: "in_progress", resumeState, completedAt: null, updatedAt: new Date() } });
+  revalidatePath("/learn");
 }

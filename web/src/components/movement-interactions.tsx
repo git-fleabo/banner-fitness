@@ -105,10 +105,12 @@ export function SquatJointSequence() {
   const [joint, setJoint] = useState<Joint>("knee");
   const [answer, setAnswer] = useState<JointAnswer | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [mapAnswers, setMapAnswers] = useState<Partial<Record<Joint, JointAnswer>>>({});
+  const [mapSubmitted, setMapSubmitted] = useState(false);
   const action = stage === "standing" ? null : actions[stage][joint];
   const correct = answer === action?.answer;
 
-  function resetAnswer() { setAnswer(null); setSubmitted(false); }
+  function resetAnswer() { setAnswer(null); setSubmitted(false); setMapSubmitted(false); }
   function chooseStage(next: Stage) { setStage(next); resetAnswer(); }
   function chooseJoint(next: Joint) { setJoint(next); resetAnswer(); }
 
@@ -149,6 +151,14 @@ export function SquatJointSequence() {
           <p className={styles.liveUpdate} role="status" aria-live="polite">Showing the {joint} in the {stage} stage.</p>
         </section>
       </div>
+      {stage !== "standing" && <section className={styles.phaseMap} aria-labelledby="phase-map-heading">
+        <p className={styles.kicker}>Compare the phase</p><h3 id="phase-map-heading">Match all three joints before you continue</h3>
+        <p>Correct work stays selected when one joint still needs another look.</p>
+        <div className={styles.phaseMapGrid}>{(Object.keys(jointLabels) as Joint[]).map((item) => <fieldset key={item}><legend>{jointLabels[item]}</legend><div className={styles.answerGrid}>{actionChoices.filter((choice) => choice.id !== "muscle").map((choice) => <button key={choice.id} type="button" aria-label={`${choice.label} for ${jointLabels[item]}`} aria-pressed={mapAnswers[item] === choice.id} disabled={mapSubmitted && mapAnswers[item] === actions[stage][item].answer} onClick={() => { setMapAnswers((current) => ({ ...current, [item]: choice.id })); setMapSubmitted(false); }}>{choice.label}</button>)}</div></fieldset>)}</div>
+        {!mapSubmitted ? <button className={styles.submit} type="button" disabled={Object.keys(mapAnswers).length !== 3} onClick={() => setMapSubmitted(true)}>Check the phase map</button> : <div className={`${styles.feedback} ${Object.entries(actions[stage]).every(([item, value]) => mapAnswers[item as Joint] === value.answer) ? styles.correct : styles.partly}`} role="status" aria-live="polite">
+          {Object.entries(actions[stage]).every(([item, value]) => mapAnswers[item as Joint] === value.answer) ? <><strong>All three observations line up</strong><p>You named each joint action for this phase rather than applying one label to the whole body.</p></> : <><strong>Partly correct — keep the correct joints</strong><p>{(Object.keys(jointLabels) as Joint[]).filter((item) => mapAnswers[item] !== actions[stage][item].answer).map((item) => jointLabels[item]).join(" and ")} still need another look. The correct selections remain in place.</p><button type="button" onClick={() => { setMapAnswers((current) => Object.fromEntries((Object.keys(current) as Joint[]).filter((item) => current[item] === actions[stage][item].answer).map((item) => [item, current[item]]))); setMapSubmitted(false); }}>Retry unresolved joints</button></>}
+        </div>}
+      </section>}
     </div>
   );
 }

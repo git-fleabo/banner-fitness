@@ -58,6 +58,13 @@
 .jointMarker.hip { top: 5rem; left: 1.95rem; }
 .jointMarker.knee { top: 7.4rem; left: 1.55rem; }
 .jointMarker.ankle { top: 9.1rem; left: 2rem; }
+.phaseMap { margin-top: 1rem; padding: 1.2rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--sand-light); }
+.phaseMap h3 { margin-top: .3rem; font-size: 1.1rem; }
+.phaseMap > p:not(.kicker) { margin-top: .45rem; color: var(--muted); }
+.phaseMapGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: 1rem; }
+.phaseMapGrid fieldset { min-width: 0; padding: .7rem; border: 1px solid var(--line); border-radius: .65rem; background: white; }
+.phaseMapGrid legend { padding: 0 .3rem; font-weight: 800; }
+.phaseMapGrid .answerGrid { display: grid; }
 @media (max-width: 760px) {
   .planeWorkspace, .squatWorkspace { grid-template-columns: 1fr; }
   .figure { min-height: 19rem; }
@@ -65,6 +72,7 @@
   .frames { grid-template-columns: 1fr; min-height: 15rem; }
   .squatFrame { display: none; }
   .squatFrame.activeFrame { display: grid; }
+  .phaseMapGrid { grid-template-columns: 1fr; }
 }
 @media (forced-colors: active) {
   .selector button[aria-pressed="true"], .answerGrid button[aria-pressed="true"] { outline: 3px solid Highlight; }
