@@ -9,7 +9,7 @@ squat-led anatomy and movement experience.
 Phase 1 implementation now includes the typed application foundation and live
 data/authentication boundary in `web/`: Human Movement Studio design tokens, a
 responsive prototype overview, validated five-lesson metadata, a versioned
-Neon/Drizzle schema, invitation-only magic-link authentication, server-side
+Neon/Drizzle schema, invitation-only Google OAuth authentication, server-side
 profile authorization and unit/E2E test harnesses.
 
 The product decisions, curriculum plan, research findings, wireframe decisions
@@ -28,14 +28,15 @@ documents.
 From `web/`, copy `.env.example` to `.env.local` and supply the server-only Neon
 values before running database, authentication or production-build commands.
 
-- `pnpm dev` — run the local application
-- `pnpm typecheck` — check TypeScript contracts
-- `pnpm lint` — run ESLint
-- `pnpm test` — run Vitest unit/component tests
-- `pnpm build` — create the production build
-- `pnpm db:check` — validate the tracked migration history
-- `pnpm db:migrate` — apply unapplied migrations to `DATABASE_URL`
-- `pnpm test:e2e` — run phone and laptop Playwright checks once Chromium is installed
+- `npm run dev` — run the local application
+- `npm run typecheck` — check TypeScript contracts
+- `npm run lint` — run ESLint
+- `npm test` — run Vitest unit/component tests
+- `npm run build` — create the production build
+- `npm run cf-build` — validate the Cloudflare OpenNext bundle
+- `npm run db:check` — validate the tracked migration history
+- `npm run db:migrate` — apply unapplied migrations to `DATABASE_URL`
+- `./node_modules/.bin/playwright test` — run phone and laptop Playwright checks once Chromium is installed
 
 ## Source-material policy
 

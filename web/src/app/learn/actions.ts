@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
@@ -12,6 +12,7 @@ import {
   learningObjectVersionQuestions,
   lessons,
   lessonProgress,
+  learningObjects,
   lessonVersionObjects,
   lessonVersions,
   practiceAttempts,
@@ -19,6 +20,7 @@ import {
   questionVersions,
   reviewQueue,
 } from "@/lib/db/schema";
+import { parseLessonResumeState } from "@/lib/content/progress";
 
 const attemptInputSchema = z.object({
   lessonSlug: z.string().regex(/^[a-z0-9-]+$/),
@@ -77,6 +79,11 @@ export async function recordPracticeAttempt(input: unknown) {
   const isPartlyCorrect = !isCorrect && (scoring.partlyCorrect ?? []).some((answer) => sameAnswers(values.selected, answer));
   const feedbackCategory = isCorrect ? "correct" : isPartlyCorrect ? "partly_correct" : feedback.misconceptionCode ? "misconception" : "incorrect";
 
+  const [existingProgress] = await db.select({ coverageState: lessonProgress.coverageState, completedAt: lessonProgress.completedAt })
+    .from(lessonProgress)
+    .where(and(eq(lessonProgress.learnerId, account.authUserId), eq(lessonProgress.lessonId, target.lessonId)))
+    .limit(1);
+  const retainsCoverage = existingProgress?.coverageState === "covered";
   const [attempt] = await db.insert(practiceAttempts).values({
     learnerId: account.authUserId,
     lessonVersionId: target.lessonVersionId,
@@ -90,7 +97,7 @@ export async function recordPracticeAttempt(input: unknown) {
     learnerId: account.authUserId,
     lessonId: target.lessonId,
     lessonVersionId: target.lessonVersionId,
-    coverageState: "in_progress",
+    coverageState: retainsCoverage ? "covered" : "in_progress",
     lastObjectPosition: target.objectPosition,
     resumeState: {
       stepStableKey: "check",
@@ -105,7 +112,7 @@ export async function recordPracticeAttempt(input: unknown) {
     target: [lessonProgress.learnerId, lessonProgress.lessonId],
     set: {
       lessonVersionId: target.lessonVersionId,
-      coverageState: "in_progress",
+      coverageState: retainsCoverage ? "covered" : "in_progress",
       lastObjectPosition: target.objectPosition,
       resumeState: {
         stepStableKey: "check",
@@ -115,7 +122,7 @@ export async function recordPracticeAttempt(input: unknown) {
         evidenceRecorded: true,
         feedbackCategory,
       },
-      completedAt: null,
+      completedAt: retainsCoverage ? existingProgress?.completedAt ?? null : null,
       updatedAt: new Date(),
     },
   });
@@ -167,6 +174,7 @@ export async function completeLesson(input: unknown) {
     .from(lessons)
     .innerJoin(lessonVersions, eq(lessonVersions.lessonId, lessons.id))
     .where(eq(lessons.slug, values.lessonSlug))
+    .orderBy(desc(lessonVersions.versionNumber))
     .limit(1);
 
   if (!target || (account.role === "learner" && target.status !== "published")) throw new Error("This lesson is not available to this account.");
@@ -177,7 +185,7 @@ export async function completeLesson(input: unknown) {
     lessonVersionId: target.lessonVersionId,
     coverageState: "covered",
     lastObjectPosition: 1,
-    resumeState: { complete: true, confidence: values.confidence ?? null },
+    resumeState: { stepStableKey: "close", complete: true, confidence: values.confidence ?? null },
     startedAt: completedAt,
     completedAt,
   }).onConflictDoUpdate({
@@ -185,7 +193,7 @@ export async function completeLesson(input: unknown) {
     set: {
       lessonVersionId: target.lessonVersionId,
       coverageState: "covered",
-      resumeState: { complete: true, confidence: values.confidence ?? null },
+      resumeState: { stepStableKey: "close", complete: true, confidence: values.confidence ?? null },
       completedAt,
       updatedAt: completedAt,
     },
@@ -200,13 +208,20 @@ export async function recordLessonPosition(input: unknown) {
   const values = positionInputSchema.parse(input);
   const account = await requireActiveAccount();
   const db = getDb();
-  const [target] = await db.select({ lessonId: lessons.id, lessonVersionId: lessonVersions.id, status: lessonVersions.status })
-    .from(lessons).innerJoin(lessonVersions, eq(lessonVersions.lessonId, lessons.id))
-    .where(eq(lessons.slug, values.lessonSlug)).orderBy(lessonVersions.versionNumber).limit(1);
+  const [target] = await db.select({ lessonId: lessons.id, lessonVersionId: lessonVersions.id, status: lessonVersions.status, objectPosition: lessonVersionObjects.position })
+    .from(lessons)
+    .innerJoin(lessonVersions, eq(lessonVersions.lessonId, lessons.id))
+    .innerJoin(lessonVersionObjects, eq(lessonVersionObjects.lessonVersionId, lessonVersions.id))
+    .innerJoin(learningObjectVersions, eq(learningObjectVersions.id, lessonVersionObjects.learningObjectVersionId))
+    .innerJoin(learningObjects, eq(learningObjects.id, learningObjectVersions.learningObjectId))
+    .where(and(eq(lessons.slug, values.lessonSlug), eq(learningObjects.stableKey, values.stepStableKey)))
+    .orderBy(desc(lessonVersions.versionNumber))
+    .limit(1);
   if (!target || (account.role === "learner" && target.status !== "published")) throw new Error("This lesson is not available to this account.");
-  const [existing] = await db.select({ resumeState: lessonProgress.resumeState }).from(lessonProgress).where(and(eq(lessonProgress.learnerId, account.authUserId), eq(lessonProgress.lessonId, target.lessonId))).limit(1);
-  const previous = typeof existing?.resumeState === "object" && existing.resumeState !== null ? existing.resumeState as Record<string, unknown> : {};
+  const [existing] = await db.select({ resumeState: lessonProgress.resumeState, coverageState: lessonProgress.coverageState, completedAt: lessonProgress.completedAt }).from(lessonProgress).where(and(eq(lessonProgress.learnerId, account.authUserId), eq(lessonProgress.lessonId, target.lessonId))).limit(1);
+  const previous = parseLessonResumeState(existing?.resumeState) ?? {};
   const resumeState = { ...previous, stepStableKey: values.stepStableKey };
-  await db.insert(lessonProgress).values({ learnerId: account.authUserId, lessonId: target.lessonId, lessonVersionId: target.lessonVersionId, coverageState: "in_progress", lastObjectPosition: 1, resumeState, startedAt: new Date() }).onConflictDoUpdate({ target: [lessonProgress.learnerId, lessonProgress.lessonId], set: { lessonVersionId: target.lessonVersionId, coverageState: "in_progress", resumeState, completedAt: null, updatedAt: new Date() } });
+  const retainsCoverage = existing?.coverageState === "covered";
+  await db.insert(lessonProgress).values({ learnerId: account.authUserId, lessonId: target.lessonId, lessonVersionId: target.lessonVersionId, coverageState: retainsCoverage ? "covered" : "in_progress", lastObjectPosition: target.objectPosition, resumeState, startedAt: new Date() }).onConflictDoUpdate({ target: [lessonProgress.learnerId, lessonProgress.lessonId], set: { lessonVersionId: target.lessonVersionId, lastObjectPosition: target.objectPosition, coverageState: retainsCoverage ? "covered" : "in_progress", resumeState, completedAt: retainsCoverage ? existing?.completedAt ?? null : null, updatedAt: new Date() } });
   revalidatePath("/learn");
 }

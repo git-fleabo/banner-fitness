@@ -1,7 +1,6 @@
 import "server-only";
 
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { z } from "zod";
 
 import { getDb } from "@/lib/db/client";
 import {
@@ -25,6 +24,9 @@ import {
   reviewQueue,
   sourceLinks,
 } from "@/lib/db/schema";
+import { parseLessonResumeState, type LessonResumeState } from "./progress";
+
+export type { LessonResumeState } from "./progress";
 
 export type LearningLessonSummary = {
   order: number;
@@ -38,27 +40,6 @@ export type LearningLessonSummary = {
   coverageState?: "not_started" | "in_progress" | "covered";
   resumeStep?: string;
 };
-
-export type LessonResumeState = {
-  stepStableKey: string;
-  questionStableKey: string;
-  selected: string[];
-  submitted: boolean;
-  evidenceRecorded: boolean;
-  feedbackCategory?: "correct" | "incorrect" | "partly_correct" | "misconception";
-};
-
-function parseResumeState(value: unknown): LessonResumeState | null {
-  const result = z.object({
-    stepStableKey: z.string(),
-    questionStableKey: z.string(),
-    selected: z.array(z.string()),
-    submitted: z.boolean(),
-    evidenceRecorded: z.boolean(),
-    feedbackCategory: z.enum(["correct", "incorrect", "partly_correct", "misconception"]).optional(),
-  }).safeParse(value);
-  return result.success ? result.data : null;
-}
 
 export type LessonPageData = LearningLessonSummary & {
   objects: Array<{
@@ -120,7 +101,7 @@ export async function listLessonSummaries(role: "owner" | "learner", learnerId: 
     status: row.status,
     versionNumber: row.versionNumber,
     coverageState: row.coverageState ?? "not_started",
-    resumeStep: parseResumeState(row.resumeState)?.stepStableKey,
+    resumeStep: parseLessonResumeState(row.resumeState)?.stepStableKey,
   }));
 }
 
@@ -132,7 +113,7 @@ export async function getLessonResumeState(slug: string, learnerId: string): Pro
     .innerJoin(lessons, eq(lessonProgress.lessonId, lessons.id))
     .where(and(eq(lessons.slug, slug), eq(lessonProgress.learnerId, learnerId)))
     .limit(1);
-  return parseResumeState(row?.resumeState);
+  return parseLessonResumeState(row?.resumeState);
 }
 
 export async function getLessonBySlug(slug: string, role: "owner" | "learner"): Promise<LessonPageData | null> {

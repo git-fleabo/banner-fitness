@@ -276,6 +276,6 @@ deployment testing. The local magic-link loop was diagnosed from the generated
 email destination, live Auth session rows and the absence of an application
 session cookie after redirect.
 
-The local Phase 1 implementation is complete and `pnpm cf-build` passes.
+The local Phase 1 implementation is complete and `npm run cf-build` passes.
 Production Cloudflare deployment and Google callback verification remain
 unclaimed because production credentials were not available in this workspace.

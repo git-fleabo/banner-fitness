@@ -28,7 +28,7 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
   const evidenceActivity = current.type === "check" && current.questions.length > 0
     ? <QuestionPractice lessonSlug={lesson.slug} questions={current.questions} resumeState={resumeState} />
     : current.type === "close"
-      ? <LessonClose lessonSlug={lesson.slug} />
+      ? <LessonClose lessonSlug={lesson.slug} completed={resumeState?.complete} confidence={resumeState?.confidence} />
       : null;
 
   return (

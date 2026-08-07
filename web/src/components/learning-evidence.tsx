@@ -14,7 +14,7 @@ type CompletionResult = Awaited<ReturnType<typeof completeLesson>>;
 export function QuestionPractice({ lessonSlug, questions, resumeState }: { lessonSlug: string; questions: Question[]; resumeState?: LessonResumeState | null }) {
   const resumedIndex = Math.max(0, questions.findIndex((question) => question.stableKey === resumeState?.questionStableKey));
   const [index, setIndex] = useState(resumedIndex);
-  const [selected, setSelected] = useState<string | null>(resumeState?.selected[0] ?? null);
+  const [selected, setSelected] = useState<string | null>(resumeState?.selected?.[0] ?? null);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [finished, setFinished] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -71,7 +71,7 @@ export function QuestionPractice({ lessonSlug, questions, resumeState }: { lesso
   );
 }
 
-export function LessonClose({ lessonSlug }: { lessonSlug: string }) {
+export function LessonClose({ lessonSlug, completed = false, confidence: savedConfidence = null }: { lessonSlug: string; completed?: boolean; confidence?: number | null }) {
   const [confidence, setConfidence] = useState<number | undefined>();
   const [result, setResult] = useState<CompletionResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -80,13 +80,14 @@ export function LessonClose({ lessonSlug }: { lessonSlug: string }) {
     startTransition(async () => setResult(await completeLesson({ lessonSlug, confidence })));
   }
 
-  if (result) {
+  if (result || completed) {
+    const recordedConfidence = result?.confidence ?? savedConfidence;
     return (
       <section className={styles.summary} aria-labelledby="lesson-complete-heading">
         <p className={styles.kicker}>Lesson covered</p>
         <h3 id="lesson-complete-heading">Coverage recorded—not yet secure</h3>
         <p>You completed this lesson and can revisit it at any time. Security requires correct retrieval on more than one occasion and in more than one question form.</p>
-        {result.confidence && <p>Your optional confidence: {result.confidence} of 5.</p>}
+        {recordedConfidence && <p>Your optional confidence: {recordedConfidence} of 5.</p>}
       </section>
     );
   }

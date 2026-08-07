@@ -64,4 +64,11 @@ describe("LessonClose", () => {
     expect(completeLesson).toHaveBeenCalledWith({ lessonSlug: "planes-and-axes", confidence: 4 });
     expect(await screen.findByRole("heading", { name: "Coverage recorded—not yet secure" })).toBeInTheDocument();
   });
+
+  it("shows persisted coverage without asking the learner to complete the lesson again", () => {
+    render(<LessonClose lessonSlug="planes-and-axes" completed confidence={4} />);
+    expect(screen.getByRole("heading", { name: "Coverage recorded—not yet secure" })).toBeInTheDocument();
+    expect(screen.getByText("Your optional confidence: 4 of 5.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark lesson covered" })).not.toBeInTheDocument();
+  });
 });
