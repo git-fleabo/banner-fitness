@@ -39,6 +39,13 @@ draft by default; the owner can preview it without publishing.
 - Revisiting a covered lesson keeps it covered and shows the recorded coverage
   summary rather than asking the learner to complete it again.
 
+## Lesson 1 authoring acceptance
+
+- Explore toggles an original front/back reference figure, checks the four defining features of anatomical position and explicitly tests subject-left versus screen-left.
+- Apply walks through five directional comparisons covering limb attachment, midline, front/back and body-surface relationships, then transfers the reference into the starting squat stance.
+- Check includes named feedback for viewer-left, proximal/higher, anterior/travelling-forward and superficial/visible misconceptions, with retry or glossary guidance.
+- The learner-facing wording, visuals and activities are original and all Lesson 1 content remains draft-only until the owner approves publication.
+
 ## Validation
 
 ```bash

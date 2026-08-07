@@ -178,10 +178,15 @@ cross-domain callback loop; access to protected routes requires both Neon Auth
 and an application profile with an allowed account status.
 
 Implementation step 3 is complete. The versioned content package and Neon seed
-cover the five lessons, 31 learning objects, 24 questions, 25 glossary terms,
-seven named misconception paths and source metadata for every authored target.
+cover the five lessons, 31 learning objects, 26 questions, 25 glossary terms,
+nine named misconception paths and source metadata for every authored target.
 All content remains draft and the authoritative live check reports zero
 published lessons.
+
+Current milestone: Lesson 1, Anatomical position and directional terms, is now
+fully authored as the content-quality template. Its reference-position lab,
+five-pair directional comparison builder, squat transfer and expanded checks
+remain draft-only pending owner approval.
 
 Implementation step 4 is complete. The live Neon-backed lesson route now uses a
 shared responsive shell with the approved laptop rail, mobile progress treatment,
