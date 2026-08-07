@@ -12,9 +12,9 @@ npm run dev
 ```
 
 Required server variables are documented in `web/.env.example`. A working
-Neon database, Neon Auth Google configuration and an owner profile linked to
-the Google Auth user are required for the signed-in journey. Content remains
-draft by default; the owner can preview it without publishing.
+Neon database, Neon Auth email delivery configuration and an owner profile
+matching the invited email are required for the signed-in journey. Content
+remains draft by default; the owner can preview it without publishing.
 
 ## Demonstration route
 
@@ -76,7 +76,8 @@ If Wrangler reports that a `workers.dev` subdomain is not registered, open
 register an available subdomain once, then rerun `npm run deploy`.
 
 Set `DATABASE_URL`, `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` as Worker
-secrets, configure the Google callback for the Worker hostname, run the tracked
-Drizzle migrations once against the single Neon project, and verify the
-authenticated owner and separate invited learner journeys. Do not use a
+secrets, configure Neon Auth email delivery and the magic-link callback for the
+Worker hostname, run the tracked Drizzle migrations once against the single
+Neon project, and verify the authenticated owner and separate invited learner
+journeys. Do not use a
 temporary deployment, enable a paid plan, publish drafts, or add R2/KV/D1.

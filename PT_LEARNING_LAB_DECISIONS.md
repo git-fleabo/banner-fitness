@@ -99,10 +99,11 @@ production/authenticated smoke checks are release work; the frozen build contrac
 - Use Next.js App Router with TypeScript.
 - Use CSS custom properties and CSS Modules for the Human Movement Studio system.
 - Use Neon Postgres through server-only application code and Drizzle migrations.
-- Use Neon Auth Google OAuth behind a small application adapter for the first
-  vertical slice; Managed Better Auth is currently beta, so replacement must
-  remain possible. Do not restore email magic links until their cross-domain
-  session handoff has been verified in the deployed application architecture.
+- Use Neon Auth passwordless email links behind a small application adapter;
+  email entry is the learner-facing flow and possession of the inbox completes
+  authentication. Managed Better Auth is currently beta, so replacement must
+  remain possible. Keep the application callback on the deployed hostname to
+  avoid cross-domain session loops.
 - Never grant application access from an Auth sign-up alone; only
   owner-created invitation profiles can pass the server authorization gate.
 - Keep database credentials out of browser code and enforce role, status and
@@ -172,10 +173,9 @@ The mobile and laptop wireframes now cover the shared lesson rhythm, primary int
 The owner approved the core wireframe hierarchy and authorised implementation.
 Foundation steps 1 and 2 are complete. The typed Next.js application, Human
 Movement Studio tokens, validated prototype metadata, live Neon/Drizzle schema,
-Google authentication route, profile authorization boundary and test harnesses
-now live in `web/`. Email magic-link sign-in remains disabled after its
-cross-domain callback loop; access to protected routes requires both Neon Auth
-and an application profile with an allowed account status.
+passwordless email authentication route, profile authorization boundary and test
+harnesses now live in `web/`. Access to protected routes requires both Neon
+Auth and an application profile with an allowed account status.
 
 Implementation step 3 is complete. The versioned content package and Neon seed
 cover the five lessons, 31 learning objects, 26 questions, 25 glossary terms,
