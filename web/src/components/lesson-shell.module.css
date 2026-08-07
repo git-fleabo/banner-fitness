@@ -5,6 +5,7 @@
 .brand strong, .brand small { display: block; }
 .brand small { margin-top: .1rem; color: var(--mist); font-size: .72rem; }
 .headerContext { display: flex; align-items: center; gap: .8rem; color: var(--mist); font-size: .78rem; }
+.headerContext a { min-height: 2.75rem; display: inline-flex; align-items: center; color: white; text-decoration: underline; text-underline-offset: .2em; }
 .draftBadge { padding: .45rem .65rem; border: 1px solid rgba(255,255,255,.32); border-radius: 999px; }
 .workspace { display: grid; grid-template-columns: minmax(15.5rem, 18rem) minmax(0, 1fr); min-height: calc(100vh - 4.75rem); }
 .rail { padding: 2rem 1.25rem; border-right: 1px solid var(--line); background: var(--sand-light); }

@@ -43,6 +43,7 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
           <span><strong>PT Learning Lab</strong><small>Human Movement Studio</small></span>
         </Link>
         <div className={styles.headerContext}>
+          <Link href="/reference">Reference</Link>
           <span>Lesson {lesson.order} of 5</span>
           {ownerPreview && <span className={styles.draftBadge}>Owner · {titleCase(lesson.status)} v{lesson.versionNumber}</span>}
         </div>

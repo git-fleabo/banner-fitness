@@ -11,6 +11,8 @@ import {
 } from "@/lib/content/contracts";
 import {
   curriculumTopics,
+  glossaryTerms,
+  glossaryVersions,
   learningObjects,
   learningObjectVersions,
   learningObjectVersionQuestions,
@@ -22,6 +24,7 @@ import {
   questionVersions,
   reviewDecisions,
   reviewQueue,
+  sourceRecords,
   sourceLinks,
 } from "@/lib/db/schema";
 import { parseLessonResumeState, type LessonResumeState } from "./progress";
@@ -205,6 +208,42 @@ export async function getLessonBySlug(slug: string, role: "owner" | "learner"): 
       })),
     })),
   };
+}
+
+export type GlossaryReferenceTerm = {
+  slug: string;
+  term: string;
+  definition: string;
+  status: LearningLessonSummary["status"];
+  versionNumber: number;
+  sourceTitle: string | null;
+  sourceLocation: string | null;
+};
+
+export async function listGlossaryTerms(role: "owner" | "learner"): Promise<GlossaryReferenceTerm[]> {
+  const db = getDb();
+  const query = db
+    .select({
+      slug: glossaryTerms.slug,
+      term: glossaryTerms.term,
+      definition: glossaryVersions.definition,
+      status: glossaryVersions.status,
+      versionNumber: glossaryVersions.versionNumber,
+      sourceTitle: sourceRecords.title,
+      sourceLocation: sourceRecords.location,
+    })
+    .from(glossaryTerms)
+    .innerJoin(glossaryVersions, eq(glossaryVersions.glossaryTermId, glossaryTerms.id))
+    .leftJoin(sourceLinks, eq(sourceLinks.glossaryVersionId, glossaryVersions.id))
+    .leftJoin(sourceRecords, eq(sourceRecords.id, sourceLinks.sourceRecordId))
+    .orderBy(asc(glossaryTerms.term), desc(glossaryVersions.versionNumber));
+
+  const rows = role === "learner"
+    ? await query.where(eq(glossaryVersions.status, "published"))
+    : await query;
+  const latestBySlug = new Map<string, (typeof rows)[number]>();
+  for (const row of rows) if (!latestBySlug.has(row.slug)) latestBySlug.set(row.slug, row);
+  return [...latestBySlug.values()];
 }
 
 export type LearningReviewItem = {
