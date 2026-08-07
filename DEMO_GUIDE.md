@@ -46,6 +46,13 @@ remains draft by default; the owner can preview it without publishing.
 - Check includes named feedback for viewer-left, proximal/higher, anterior/travelling-forward and superficial/visible misconceptions, with retry or glossary guidance.
 - The learner-facing wording, visuals and activities are original and all Lesson 1 content remains draft-only until the owner approves publication.
 
+## Lesson 2 authoring acceptance
+
+- Explore lets the learner inspect sagittal, frontal and transverse planes with their body divisions, perpendicular axes and representative movement examples.
+- Apply sorts bodyweight squat, lateral raise and standing torso rotation by predominant plane, with retry feedback and an explicit “predominant, not only” close.
+- Check covers plane-versus-axis reversal, sagittal-versus-forward language and the misconception that an exercise belongs absolutely to one plane.
+- Lesson 2 remains draft-only until the owner approves publication.
+
 ## Validation
 
 ```bash

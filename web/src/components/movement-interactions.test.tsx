@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { PlaneAxisExplorer, SquatJointSequence } from "./movement-interactions";
+import { PlaneAxisExplorer, PlaneAxisSorter, SquatJointSequence } from "./movement-interactions";
 
 afterEach(cleanup);
 
@@ -64,5 +64,24 @@ describe("SquatJointSequence", () => {
     await user.click(within(lab).getByRole("button", { name: "Check action" }));
     expect(within(lab).getByText("Correct")).toBeInTheDocument();
     expect(within(lab).getByText(/During the descent, the knee moves into flexion/)).toBeInTheDocument();
+  });
+});
+
+describe("PlaneAxisSorter", () => {
+  it("classifies all three movements and explains predominant rather than exclusive plane", async () => {
+    const user = userEvent.setup();
+    render(<PlaneAxisSorter />);
+    const sorter = screen.getByTestId("plane-axis-sorter");
+
+    for (const [movement, plane] of [["Bodyweight squat", "Sagittal"], ["Lateral raise", "Frontal"], ["Standing torso rotation", "Transverse"]] as const) {
+      expect(within(sorter).getByText(movement)).toBeInTheDocument();
+      await user.click(within(sorter).getByRole("button", { name: plane }));
+      await user.click(within(sorter).getByRole("button", { name: "Check predominant plane" }));
+      expect(within(sorter).getByText("That matches the movement")).toBeInTheDocument();
+      await user.click(within(sorter).getByRole("button", { name: /Next movement|Finish sorter/ }));
+    }
+
+    expect(within(sorter).getByText(/predominant plane/)).toBeInTheDocument();
+    expect(within(sorter).getByText(/smaller components in other planes/)).toBeInTheDocument();
   });
 });

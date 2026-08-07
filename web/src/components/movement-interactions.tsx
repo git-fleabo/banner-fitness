@@ -75,6 +75,32 @@ export function PlaneAxisExplorer() {
   );
 }
 
+const planeSorterCards = [
+  { name: "Bodyweight squat", answer: "sagittal" as Plane, clue: "The principal hip and knee flexion-extension pattern occurs through the sagittal plane." },
+  { name: "Lateral raise", answer: "frontal" as Plane, clue: "The arms move away from the body's midline through the frontal plane." },
+  { name: "Standing torso rotation", answer: "transverse" as Plane, clue: "The trunk rotates around a vertical axis through the transverse plane." },
+];
+
+export function PlaneAxisSorter() {
+  const [index, setIndex] = useState(0);
+  const [answer, setAnswer] = useState<Plane | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [complete, setComplete] = useState(false);
+  const card = planeSorterCards[index];
+  const correct = answer === card.answer;
+
+  function next() {
+    if (index === planeSorterCards.length - 1) setComplete(true);
+    else setIndex((current) => current + 1);
+    setAnswer(null);
+    setSubmitted(false);
+  }
+
+  if (complete) return <section className={styles.checkPanel} data-testid="plane-axis-sorter" aria-labelledby="plane-sorter-complete-heading"><p className={styles.kicker}>Sorter complete</p><h3 id="plane-sorter-complete-heading">Use “predominantly”, not “only”.</h3><p>These movements have a predominant plane for the pattern being discussed. Real movement can include smaller components in other planes, so the label is useful shorthand rather than a claim that the body is perfectly restricted.</p><button className={styles.submit} type="button" onClick={() => { setIndex(0); setAnswer(null); setSubmitted(false); setComplete(false); }}>Practise the sorter again</button></section>;
+
+  return <section className={styles.checkPanel} data-testid="plane-axis-sorter" aria-labelledby="plane-sorter-heading"><p className={styles.kicker}>Apply the relationship · {index + 1} of {planeSorterCards.length}</p><h3 id="plane-sorter-heading">Which plane is predominant for this movement?</h3><p><strong>{card.name}</strong></p><p>{card.clue}</p><div className={styles.answerGrid}>{(Object.keys(planes) as Plane[]).map((item) => <button key={item} type="button" aria-pressed={answer === item} disabled={submitted} onClick={() => setAnswer(item)}>{planes[item].label}</button>)}</div>{!submitted ? <button className={styles.submit} type="button" disabled={!answer} onClick={() => setSubmitted(true)}>Check predominant plane</button> : <div className={`${styles.feedback} ${correct ? styles.correct : styles.partly}`} role="status" aria-live="polite"><strong>{correct ? "That matches the movement" : "Use the movement clue"}</strong><p>{correct ? `The ${card.name.toLowerCase()} is predominantly ${planes[card.answer].label.toLowerCase()} because ${card.clue.toLowerCase()}` : `The selected plane is not the best match for this pattern. ${card.clue}`}</p>{correct ? <button type="button" onClick={next}>{index === planeSorterCards.length - 1 ? "Finish sorter" : "Next movement"}</button> : <button type="button" onClick={() => { setAnswer(null); setSubmitted(false); }}>Retry movement</button>}</div>}</section>;
+}
+
 type Stage = "standing" | "descent" | "return";
 type Joint = "hip" | "knee" | "ankle";
 type JointAnswer = "flexion" | "extension" | "dorsiflexion" | "towards-neutral" | "muscle";

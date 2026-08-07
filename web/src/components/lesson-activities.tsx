@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { PlaneAxisExplorer, SquatJointSequence } from "@/components/movement-interactions";
+import { PlaneAxisExplorer, PlaneAxisSorter, SquatJointSequence } from "@/components/movement-interactions";
 
 import styles from "./lesson-activities.module.css";
 
@@ -111,6 +111,7 @@ export function DirectionalComparisonBuilder() {
 
 export function LessonActivity(props: Props) {
   if (props.lessonSlug === "planes-and-axes" && props.step === "explore") return <PlaneAxisExplorer />;
+  if (props.lessonSlug === "planes-and-axes" && props.step === "apply") return <PlaneAxisSorter />;
   if (props.lessonSlug === "joint-actions" && props.step === "explore") return <SquatJointSequence />;
   if (props.lessonSlug === "anatomical-position" && props.step === "explore") return <AnatomicalPositionLab />;
   if (props.lessonSlug === "anatomical-position" && props.step === "apply") return <DirectionalComparisonBuilder />;

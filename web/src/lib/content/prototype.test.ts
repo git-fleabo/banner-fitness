@@ -30,10 +30,10 @@ describe("versioned prototype seed", () => {
     expect(prototypeContentSeed.lessons).toHaveLength(5);
     expect(objects.filter((item) => item.type === "explore")).toHaveLength(5);
     expect(objects.filter((item) => item.type === "apply")).toHaveLength(5);
-    expect(lessonChecks).toHaveLength(14);
+    expect(lessonChecks).toHaveLength(16);
     expect(mixedCore).toHaveLength(6);
     expect(mixedVariations).toHaveLength(6);
-    expect(prototypeContentSeed.misconceptions).toHaveLength(9);
+    expect(prototypeContentSeed.misconceptions).toHaveLength(11);
     expect(prototypeContentSeed.glossary).toHaveLength(25);
     expect(objects.some((item) => item.content.outsideMasteryPromise)).toBe(true);
   });
