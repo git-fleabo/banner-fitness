@@ -99,11 +99,10 @@ production/authenticated smoke checks are release work; the frozen build contrac
 - Use Next.js App Router with TypeScript.
 - Use CSS custom properties and CSS Modules for the Human Movement Studio system.
 - Use Neon Postgres through server-only application code and Drizzle migrations.
-- Use Neon Auth passwordless email links behind a small application adapter;
-  email entry is the learner-facing flow and possession of the inbox completes
-  authentication. Managed Better Auth is currently beta, so replacement must
-  remain possible. Keep the application callback on the deployed hostname to
-  avoid cross-domain session loops.
+- Use Neon Auth passwordless email verification codes behind a small application
+  adapter; email entry is the learner-facing flow and possession of the inbox
+  completes authentication. Managed Better Auth is currently beta, so
+  replacement must remain possible.
 - Never grant application access from an Auth sign-up alone; only
   owner-created invitation profiles can pass the server authorization gate.
 - Keep database credentials out of browser code and enforce role, status and

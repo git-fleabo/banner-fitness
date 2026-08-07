@@ -76,8 +76,7 @@ If Wrangler reports that a `workers.dev` subdomain is not registered, open
 register an available subdomain once, then rerun `npm run deploy`.
 
 Set `DATABASE_URL`, `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` as Worker
-secrets, configure Neon Auth email delivery and the magic-link callback for the
-Worker hostname, run the tracked Drizzle migrations once against the single
-Neon project, and verify the authenticated owner and separate invited learner
-journeys. Do not use a
+secrets, configure Neon Auth email delivery, run the tracked Drizzle migrations
+once against the single Neon project, and verify the email-code owner and
+separate invited learner journeys. Do not use a
 temporary deployment, enable a paid plan, publish drafts, or add R2/KV/D1.

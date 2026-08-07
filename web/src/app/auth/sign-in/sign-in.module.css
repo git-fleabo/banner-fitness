@@ -8,6 +8,7 @@
 .form label { color: var(--deep-teal); font-size: .88rem; font-weight: 800; }
 .form input { min-height: 3rem; padding: .7rem .85rem; border: 1px solid var(--line); border-radius: .65rem; color: var(--ink); background: var(--cream); font: inherit; }
 .form button { min-height: 3rem; margin-top: .4rem; padding: .7rem 1rem; border: 0; border-radius: .65rem; color: white; background: var(--deep-teal); font: inherit; font-weight: 800; cursor: pointer; }
+.form .secondaryButton { color: var(--deep-teal); background: transparent; border: 1px solid var(--line); }
 .form button:disabled { cursor: wait; opacity: .7; }
 .error { color: var(--clay); font-size: .88rem; }
 .success { color: var(--deep-teal); font-size: .88rem; line-height: 1.5; }
