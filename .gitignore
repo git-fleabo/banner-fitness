@@ -20,6 +20,10 @@
 .DS_Store
 .idea/
 .vscode/
+.obsidian/
+
+# Scratch space for page images extracted from the licensed course PDFs.
+/tmp/
 
 # Application artefacts (for the later build).
 node_modules/
