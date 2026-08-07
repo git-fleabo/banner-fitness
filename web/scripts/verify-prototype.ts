@@ -25,7 +25,7 @@ async function main() {
     source_links: z.number(),
   }).parse(rows[0]);
 
-  if (result.draft_lessons !== 5 || result.published_lessons !== 0 || result.draft_objects !== 31 || result.draft_questions !== 24 || result.draft_glossary !== 25 || result.source_links < 85) {
+  if (result.draft_lessons !== 5 || result.published_lessons !== 0 || result.draft_objects !== 31 || result.draft_questions !== 32 || result.draft_glossary !== 25 || result.source_links < 85) {
     throw new Error(`Unexpected prototype inventory: ${JSON.stringify(result)}`);
   }
 
