@@ -11,6 +11,18 @@ type SignInState = "idle" | "sending" | "code" | "verifying" | "error";
 
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 
+async function sendSignInCode(email: string) {
+  const response = await fetch("/api/auth/email-otp/send-verification-otp", {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json" },
+    credentials: "same-origin",
+    cache: "no-store",
+    body: JSON.stringify({ email, type: "sign-in" }),
+  });
+  const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
+  if (!response.ok || !data?.success) throw new Error(data?.message ?? "The verification code could not be sent");
+}
+
 function withTimeout<T>(request: Promise<T>) {
   let timeout: ReturnType<typeof setTimeout>;
   const timeoutRequest = new Promise<never>((_, reject) => {
@@ -31,8 +43,7 @@ export function SignInForm() {
     setState("sending");
 
     try {
-      const { data, error } = await withTimeout(authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" }));
-      if (error || !data?.success) throw new Error("The verification code could not be sent");
+      await withTimeout(sendSignInCode(email));
       setState("code");
     } catch {
       setState("error");
