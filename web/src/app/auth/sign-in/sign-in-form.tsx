@@ -3,8 +3,6 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { authClient } from "@/lib/auth/client";
-
 import styles from "./sign-in.module.css";
 
 type SignInState = "idle" | "sending" | "code" | "verifying" | "error";
@@ -21,6 +19,18 @@ async function sendSignInCode(email: string) {
   });
   const data = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
   if (!response.ok || !data?.success) throw new Error(data?.message ?? "The verification code could not be sent");
+}
+
+async function verifySignInCode(email: string, otp: string) {
+  const response = await fetch("/api/auth/sign-in/email-otp", {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json" },
+    credentials: "same-origin",
+    cache: "no-store",
+    body: JSON.stringify({ email, otp }),
+  });
+  const data = await response.json().catch(() => null) as { message?: string } | null;
+  if (!response.ok) throw new Error(data?.message ?? "The verification code could not be accepted");
 }
 
 function withTimeout<T>(request: Promise<T>) {
@@ -55,8 +65,7 @@ export function SignInForm() {
     setState("verifying");
 
     try {
-      const { error } = await withTimeout(authClient.signIn.emailOtp({ email, otp }));
-      if (error) throw new Error("The verification code could not be accepted");
+      await withTimeout(verifySignInCode(email, otp));
       router.push("/learn");
     } catch {
       setState("error");

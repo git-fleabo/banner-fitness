@@ -2,11 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { fetchMock, signInWithEmailOtp, routerPush } = vi.hoisted(() => ({ fetchMock: vi.fn(), signInWithEmailOtp: vi.fn(), routerPush: vi.fn() }));
+const { fetchMock, routerPush } = vi.hoisted(() => ({ fetchMock: vi.fn(), routerPush: vi.fn() }));
 
-vi.mock("@/lib/auth/client", () => ({
-  authClient: { signIn: { emailOtp: signInWithEmailOtp } },
-}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: routerPush }) }));
 
 import { SignInForm } from "./sign-in-form";
@@ -14,7 +11,6 @@ import { SignInForm } from "./sign-in-form";
 describe("SignInForm", () => {
   beforeEach(() => {
     fetchMock.mockReset();
-    signInWithEmailOtp.mockReset();
     routerPush.mockReset();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -48,5 +44,26 @@ describe("SignInForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Email me a verification code" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("could not complete email sign-in");
+  });
+
+  it("verifies the code through the same-origin auth proxy", async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ token: "session-token" }) });
+
+    render(<SignInForm />);
+    await userEvent.type(screen.getByLabelText("Email address"), "learner@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Email me a verification code" }));
+    await userEvent.type(await screen.findByLabelText("Verification code"), "123456");
+    await userEvent.click(screen.getByRole("button", { name: "Verify code" }));
+
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/auth/sign-in/email-otp", {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      credentials: "same-origin",
+      cache: "no-store",
+      body: JSON.stringify({ email: "learner@example.com", otp: "123456" }),
+    });
+    expect(routerPush).toHaveBeenCalledWith("/learn");
   });
 });
