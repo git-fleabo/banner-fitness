@@ -49,4 +49,12 @@ describe("versioned prototype seed", () => {
     }
     for (const term of prototypeContentSeed.glossary) expect(term.sourceKey).toBeTruthy();
   });
+
+  it("gives each lesson a teaching model and worked example", () => {
+    for (const lesson of prototypeContentSeed.lessons) {
+      const explanation = lesson.objects.find((object) => object.type === "explain");
+      expect(explanation?.content.keyIdeas?.length).toBeGreaterThanOrEqual(3);
+      expect(explanation?.content.workedExample).toMatchObject({ question: expect.any(String), answer: expect.any(String), evidence: expect.any(String) });
+    }
+  });
 });

@@ -91,6 +91,23 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
             </div>
             <p className={styles.bodyCopy}>{current.content.body}</p>
 
+            {current.content.keyIdeas && (
+              <section className={styles.keyIdeas} aria-labelledby="key-ideas-heading">
+                <p className={styles.eyebrow}>Keep these distinctions</p>
+                <h3 id="key-ideas-heading">The useful model</h3>
+                <ul>{current.content.keyIdeas.map((idea) => <li key={idea}>{idea}</li>)}</ul>
+              </section>
+            )}
+
+            {current.content.workedExample && (
+              <aside className={styles.workedExample} aria-labelledby="worked-example-heading">
+                <p className={styles.eyebrow}>Worked example</p>
+                <h3 id="worked-example-heading">{current.content.workedExample.question}</h3>
+                <p><strong>Answer:</strong> {current.content.workedExample.answer}</p>
+                <p><strong>Evidence:</strong> {current.content.workedExample.evidence}</p>
+              </aside>
+            )}
+
             {customInteraction}
             {evidenceActivity}
 

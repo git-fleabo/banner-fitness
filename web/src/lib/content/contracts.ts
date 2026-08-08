@@ -42,6 +42,12 @@ export const learningObjectContentSchema = z.object({
   kind: z.enum(["hook", "explain", "explore", "apply", "check", "close", "reference"]),
   body: z.string().min(1),
   supportingOutcomes: z.array(z.string().min(1)).optional(),
+  keyIdeas: z.array(z.string().min(1)).min(1).optional(),
+  workedExample: z.object({
+    question: z.string().min(1),
+    answer: z.string().min(1),
+    evidence: z.string().min(1),
+  }).optional(),
   interaction: z.object({
     name: z.string().min(1),
     instructions: z.string().min(1),
