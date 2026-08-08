@@ -1,0 +1,39 @@
+.shell { min-height: 100vh; color: var(--ink); background: var(--cream); }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1.2rem, 4vw, 3.5rem); color: white; background: var(--deep-teal); }
+.header a { color: white; }
+.header strong, .header small { display: block; }
+.header small { margin-top: .15rem; color: var(--mist); font-size: .75rem; }
+.header > span { color: var(--sand); font-size: .8rem; font-weight: 800; }
+.main { width: min(100% - 2.2rem, 76rem); margin: 0 auto; padding: 2rem 0 4rem; }
+.notice { padding: clamp(1.4rem, 4vw, 2.5rem); border: 1px solid var(--clay); border-radius: 1rem; background: white; box-shadow: var(--shadow-small); }
+.eyebrow { color: var(--clay); font-size: .72rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.notice h1 { max-width: 28ch; margin-top: .4rem; color: var(--deep-teal); font-size: clamp(1.65rem, 4vw, 2.8rem); line-height: 1.1; }
+.notice > p:last-child { max-width: 65ch; margin-top: 1rem; color: var(--muted); line-height: 1.6; }
+.lessonNav { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--sand-light); }
+.lessonNav ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem; margin-top: .8rem; padding: 0; list-style: none; }
+.lessonNav a { display: flex; align-items: center; gap: .55rem; min-height: 2.8rem; color: var(--deep-teal); font-size: .82rem; font-weight: 800; }
+.lessonNav a span { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; color: white; background: var(--deep-teal); font-size: .7rem; }
+.lessons { display: grid; gap: 2rem; margin-top: 2rem; }
+.lesson { scroll-margin-top: 1rem; overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: white; box-shadow: var(--shadow-small); }
+.lessonHeader { display: flex; align-items: start; justify-content: space-between; gap: 1rem; padding: clamp(1.25rem, 3vw, 2rem); color: white; background: var(--deep-teal); }
+.lessonHeader h2 { margin-top: .35rem; font-size: clamp(1.4rem, 3vw, 2.1rem); line-height: 1.15; }
+.lessonHeader .eyebrow { color: var(--sand); }
+.lessonHeader > span { flex: 0 0 auto; padding: .4rem .6rem; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; color: var(--mist); font-size: .72rem; }
+.outcome { margin: 0; padding: 1rem clamp(1.25rem, 3vw, 2rem); color: var(--muted); background: var(--sand-light); line-height: 1.55; }
+.outcome strong { color: var(--deep-teal); }
+.step { padding: clamp(1.2rem, 3vw, 1.75rem); border-top: 1px solid var(--line); }
+.stepHeading h3 { margin-top: .3rem; color: var(--deep-teal); font-size: 1.25rem; }
+.step > p { max-width: 70ch; margin-top: .8rem; color: var(--muted); line-height: 1.7; }
+.keyIdeas, .example, .interaction, .questions { max-width: 70ch; margin-top: 1rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--sand-light); }
+.keyIdeas strong, .example > strong { color: var(--deep-teal); }
+.keyIdeas ul, .questions ol { display: grid; gap: .45rem; margin-top: .6rem; padding-left: 1.2rem; color: var(--muted); line-height: 1.5; }
+.example { border-left: 4px solid var(--clay); background: white; }
+.example h4 { margin-top: .4rem; color: var(--deep-teal); font-size: 1rem; }
+.example p { margin-top: .55rem; color: var(--muted); line-height: 1.5; }
+.interaction summary, .questions summary { cursor: pointer; color: var(--deep-teal); font-weight: 800; }
+.interaction p { margin-top: .7rem; color: var(--muted); line-height: 1.55; }
+.interaction small { display: block; margin-top: .7rem; color: var(--clay); font-weight: 800; }
+.questions ol > li { padding-left: .2rem; }
+.questions ol > li > p { color: var(--ink); font-weight: 700; }
+.questions ul { margin-top: .3rem; padding-left: 1.2rem; color: var(--muted); }
+@media (max-width: 620px) { .header, .lessonHeader { display: block; } .header > span, .lessonHeader > span { display: inline-block; margin-top: .8rem; } }

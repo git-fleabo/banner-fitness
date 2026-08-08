@@ -6,6 +6,7 @@ const serverEnvSchema = z.object({
   DATABASE_URL: z.url().startsWith("postgresql://"),
   NEON_AUTH_BASE_URL: z.url(),
   NEON_AUTH_COOKIE_SECRET: z.string().min(32),
+  LEARNER_PREVIEW_TOKEN: z.string().min(20).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
