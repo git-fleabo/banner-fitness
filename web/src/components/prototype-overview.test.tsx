@@ -14,4 +14,13 @@ describe("PrototypeOverview", () => {
     expect(screen.getAllByText(/Draft/)).toHaveLength(5);
     expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute("href", "#main-content");
   });
+
+  it("starts the next unfinished lesson after coverage is recorded", () => {
+    const progressLessons = lessons.map((lesson, index) => ({
+      ...lesson,
+      coverageState: index === 0 ? "covered" as const : "not_started" as const,
+    }));
+    render(<PrototypeOverview lessons={progressLessons} ownerPreview={false} />);
+    expect(screen.getAllByRole("link", { name: /Start the next lesson/ }).some((link) => link.getAttribute("href") === "/learn/planes-and-axes")).toBe(true);
+  });
 });

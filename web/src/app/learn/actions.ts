@@ -20,7 +20,7 @@ import {
   questionVersions,
   reviewQueue,
 } from "@/lib/db/schema";
-import { parseLessonResumeState } from "@/lib/content/progress";
+import { hasRecordedEvidence, parseLessonResumeState } from "@/lib/content/progress";
 
 const attemptInputSchema = z.object({
   lessonSlug: z.string().regex(/^[a-z0-9-]+$/),
@@ -178,6 +178,13 @@ export async function completeLesson(input: unknown) {
     .limit(1);
 
   if (!target || (account.role === "learner" && target.status !== "published")) throw new Error("This lesson is not available to this account.");
+  const [existingProgress] = await db.select({ resumeState: lessonProgress.resumeState, coverageState: lessonProgress.coverageState })
+    .from(lessonProgress)
+    .where(and(eq(lessonProgress.learnerId, account.authUserId), eq(lessonProgress.lessonId, target.lessonId)))
+    .limit(1);
+  if (existingProgress?.coverageState !== "covered" && !hasRecordedEvidence(parseLessonResumeState(existingProgress?.resumeState))) {
+    throw new Error("Complete the evidence check before marking this lesson covered.");
+  }
   const completedAt = new Date();
   await db.insert(lessonProgress).values({
     learnerId: account.authUserId,

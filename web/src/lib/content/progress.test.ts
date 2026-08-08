@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { lessonResumeStateSchema, parseLessonResumeState } from "./progress";
+import { hasRecordedEvidence, lessonResumeStateSchema, parseLessonResumeState } from "./progress";
 
 describe("lesson progress resume state", () => {
+  it("only treats a submitted check as recorded learning evidence", () => {
+    expect(hasRecordedEvidence({ stepStableKey: "check", submitted: true, evidenceRecorded: true })).toBe(true);
+    expect(hasRecordedEvidence({ stepStableKey: "check", submitted: true })).toBe(false);
+    expect(hasRecordedEvidence(null)).toBe(false);
+  });
+
   it("accepts a step-only position before practice evidence exists", () => {
     expect(parseLessonResumeState({ stepStableKey: "planes-explore" })).toEqual({ stepStableKey: "planes-explore" });
   });

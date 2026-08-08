@@ -15,6 +15,10 @@ export const lessonResumeStateSchema = z.object({
 
 export type LessonResumeState = z.infer<typeof lessonResumeStateSchema>;
 
+export function hasRecordedEvidence(resumeState: LessonResumeState | null | undefined) {
+  return resumeState?.submitted === true && resumeState.evidenceRecorded === true;
+}
+
 export function parseLessonResumeState(value: unknown): LessonResumeState | null {
   const candidate = typeof value === "object" && value !== null && "complete" in value && !("stepStableKey" in value)
     ? { ...value, stepStableKey: "close" }

@@ -11,8 +11,15 @@ function formatStatus(status: LearningLessonSummary["status"]) {
 
 export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: { lessons: LearningLessonSummary[]; revisionCount?: number; ownerPreview: boolean }) {
   const firstLesson = lessons[0];
-  const continueLesson = lessons.find((lesson) => lesson.coverageState === "in_progress") ?? firstLesson;
+  const nextUnstartedLesson = lessons.find((lesson) => lesson.coverageState === "not_started");
+  const continueLesson = lessons.find((lesson) => lesson.coverageState === "in_progress") ?? nextUnstartedLesson ?? firstLesson;
   const coveredCount = lessons.filter((lesson) => lesson.coverageState === "covered").length;
+  const isRevisit = lessons.every((lesson) => lesson.coverageState === "covered");
+  const continueLabel = continueLesson.coverageState === "in_progress"
+    ? "Resume where you left off"
+    : isRevisit
+      ? "Revisit the recommended path"
+      : "Start the next lesson";
 
   if (!firstLesson) {
     return (
@@ -67,7 +74,7 @@ export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: 
 
           <section className={styles.actionGrid} aria-label="Your next actions">
             <Link className={styles.continueCard} href={`/learn/${continueLesson.slug}${continueLesson.coverageState === "in_progress" ? `?step=${continueLesson.resumeStep ?? "check"}` : ""}`}>
-              <span className={styles.eyebrow}>Continue learning</span><strong>{continueLesson.title}</strong><span>{continueLesson.coverageState === "in_progress" ? "Resume where you left off" : "Start the recommended path"} →</span>
+              <span className={styles.eyebrow}>{continueLesson.coverageState === "in_progress" ? "Continue learning" : "Next up"}</span><strong>{continueLesson.title}</strong><span>{continueLabel} →</span>
             </Link>
             <Link className={styles.revisionCard} href="/review"><span className={styles.eyebrow}>Today’s revision</span><strong>{revisionCount ? `${revisionCount} useful ${revisionCount === 1 ? "revisit" : "revisits"}` : "Build your first revision"}</strong><span>{revisionCount ? "See why each one was recommended" : "Practice adds explainable recommendations"} →</span></Link>
           </section>

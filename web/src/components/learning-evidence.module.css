@@ -9,6 +9,9 @@
 .choices button, .confidence button { min-height: 3rem; padding: .65rem .8rem; border: 1px solid var(--deep-teal); border-radius: .65rem; color: var(--deep-teal); background: white; font: inherit; font-weight: 800; }
 .choices button[aria-pressed="true"], .confidence button[aria-pressed="true"] { color: white; background: var(--deep-teal); }
 .submit, .feedback button, .summary button { min-height: 2.9rem; margin-top: 1rem; padding: .65rem 1rem; border: 0; border-radius: .65rem; color: white; background: var(--deep-teal); font: inherit; font-weight: 800; }
+.nextAction { display: inline-flex; min-height: 2.9rem; align-items: center; margin-top: 1rem; margin-right: .6rem; padding: .65rem 1rem; border-radius: .65rem; color: white; background: var(--deep-teal); font-weight: 800; }
+.error { padding: .75rem .9rem; border-left: 4px solid var(--clay); color: var(--ink) !important; background: #f8dfd8; }
+.error a { font-weight: 800; text-decoration: underline; text-underline-offset: .15em; }
 .submit:disabled { opacity: .5; }
 .feedback { margin-top: 1rem; padding: 1rem; border-left: 4px solid; border-radius: .55rem; background: white; }
 .feedback p { margin-top: .4rem; line-height: 1.5; }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { completeLesson, recordPracticeAttempt } from "@/app/learn/actions";
@@ -26,6 +27,7 @@ export function QuestionPractice({ lessonSlug, questions, resumeState }: { lesso
         <p className={styles.kicker}>Check complete</p>
         <h3 id="check-summary-heading">This attempt added practice evidence</h3>
         <p>Coverage and practice are recorded separately from durable security. Revisit varied question forms over time before treating the outcome as secure.</p>
+        <Link className={styles.nextAction} href={`/learn/${lessonSlug}?step=close`}>Continue to lesson reflection →</Link>
         <button type="button" onClick={() => { setIndex(0); setSelected(null); setResult(null); setFinished(false); }}>Practise again</button>
       </section>
     );
@@ -74,10 +76,18 @@ export function QuestionPractice({ lessonSlug, questions, resumeState }: { lesso
 export function LessonClose({ lessonSlug, completed = false, confidence: savedConfidence = null }: { lessonSlug: string; completed?: boolean; confidence?: number | null }) {
   const [confidence, setConfidence] = useState<number | undefined>();
   const [result, setResult] = useState<CompletionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function finish() {
-    startTransition(async () => setResult(await completeLesson({ lessonSlug, confidence })));
+    setError(null);
+    startTransition(async () => {
+      try {
+        setResult(await completeLesson({ lessonSlug, confidence }));
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "We could not record coverage yet.");
+      }
+    });
   }
 
   if (result || completed) {
@@ -88,6 +98,7 @@ export function LessonClose({ lessonSlug, completed = false, confidence: savedCo
         <h3 id="lesson-complete-heading">Coverage recorded—not yet secure</h3>
         <p>You completed this lesson and can revisit it at any time. Security requires correct retrieval on more than one occasion and in more than one question form.</p>
         {recordedConfidence && <p>Your optional confidence: {recordedConfidence} of 5.</p>}
+        <Link className={styles.nextAction} href="/learn">Return to your learning path →</Link>
       </section>
     );
   }
@@ -97,6 +108,7 @@ export function LessonClose({ lessonSlug, completed = false, confidence: savedCo
       <p className={styles.kicker}>Optional reflection</p>
       <h3 id="finish-lesson-heading">How confident do you feel right now?</h3>
       <p>Confidence helps you choose what to revisit; it is not scored evidence.</p>
+      {error && <p className={styles.error} role="alert">{error} <Link href={`/learn/${lessonSlug}?step=check`}>Return to the evidence check.</Link></p>}
       <div className={styles.confidence} aria-label="Optional confidence from 1 to 5">
         {[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" aria-pressed={confidence === value} onClick={() => setConfidence(value)}>{value}</button>)}
       </div>
