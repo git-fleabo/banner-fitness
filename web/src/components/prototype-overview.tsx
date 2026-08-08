@@ -15,11 +15,6 @@ export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: 
   const continueLesson = lessons.find((lesson) => lesson.coverageState === "in_progress") ?? nextUnstartedLesson ?? firstLesson;
   const coveredCount = lessons.filter((lesson) => lesson.coverageState === "covered").length;
   const isRevisit = lessons.every((lesson) => lesson.coverageState === "covered");
-  const continueLabel = continueLesson.coverageState === "in_progress"
-    ? "Resume where you left off"
-    : isRevisit
-      ? "Revisit the recommended path"
-      : "Start the next lesson";
 
   if (!firstLesson) {
     return (
@@ -30,6 +25,12 @@ export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: 
       </main>
     );
   }
+
+  const continueLabel = continueLesson.coverageState === "in_progress"
+    ? "Resume where you left off"
+    : isRevisit
+      ? "Revisit the recommended path"
+      : "Start the next lesson";
 
   return (
     <div className={styles.appShell} id="top">

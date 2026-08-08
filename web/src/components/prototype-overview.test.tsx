@@ -7,6 +7,12 @@ import { prototypeLessons } from "@/lib/content/prototype";
 const lessons = prototypeLessons.map((lesson) => ({ ...lesson, versionNumber: 1 }));
 
 describe("PrototypeOverview", () => {
+  it("renders a safe empty state before any lesson is published", () => {
+    render(<PrototypeOverview lessons={[]} ownerPreview={false} />);
+    expect(screen.getByRole("heading", { level: 1, name: "No published lessons yet" })).toBeInTheDocument();
+    expect(screen.getByText(/still being reviewed/)).toBeInTheDocument();
+  });
+
   it("renders the approved prototype path and learner outcome", () => {
     render(<PrototypeOverview lessons={lessons} ownerPreview />);
     expect(screen.getByRole("heading", { level: 1, name: "Anatomical position and directional terms" })).toBeInTheDocument();
