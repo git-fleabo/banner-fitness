@@ -13,8 +13,19 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-function readableAuthError(error: unknown) {
-  const message = error instanceof Error ? error.message : "We could not complete email sign-in.";
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "We could not complete email sign-in.";
+}
+
+function readableSendError(error: unknown) {
+  const message = errorMessage(error);
+  if (/not found|not invited|unknown user|no account/i.test(message)) return "We could not send a code to that email. Check that you are using the invited learner address and try again.";
+  if (/timed out/i.test(message)) return "The request to send a code timed out. Check your connection and try again.";
+  return message;
+}
+
+function readableVerifyError(error: unknown) {
+  const message = errorMessage(error);
   if (/expired/i.test(message)) return "That code has expired. Request a new code and use the latest email.";
   if (/invalid|incorrect|not found/i.test(message)) return "That code was not accepted. Check the latest email or request a new code.";
   if (/timed out/i.test(message)) return "The authentication request timed out. Check your connection and try again.";
@@ -71,7 +82,7 @@ export function SignInForm() {
       setState("code");
     } catch (error) {
       setState("error");
-      setErrorMessage(readableAuthError(error));
+      setErrorMessage(readableSendError(error));
     }
   }
 
@@ -85,7 +96,7 @@ export function SignInForm() {
       setState("code");
     } catch (error) {
       setState("code");
-      setErrorMessage(readableAuthError(error));
+      setErrorMessage(readableSendError(error));
     }
   }
 
@@ -99,7 +110,7 @@ export function SignInForm() {
       router.push("/learn");
     } catch (error) {
       setState("code");
-      setErrorMessage(readableAuthError(error));
+      setErrorMessage(readableVerifyError(error));
     }
   }
 

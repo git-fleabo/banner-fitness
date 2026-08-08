@@ -46,6 +46,17 @@ describe("SignInForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Email provider unavailable");
   });
 
+  it("does not describe a send failure as a rejected OTP", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ code: "USER_NOT_FOUND", message: "User not found" }) });
+
+    render(<SignInForm />);
+    await userEvent.type(screen.getByLabelText("Email address"), "learner@example.com");
+    await userEvent.click(screen.getByRole("button", { name: "Email me a verification code" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not send a code");
+    expect(screen.queryByText(/code was not accepted/)).not.toBeInTheDocument();
+  });
+
   it("verifies the code through the same-origin auth proxy", async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) })
