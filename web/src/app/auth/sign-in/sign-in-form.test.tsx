@@ -43,7 +43,7 @@ describe("SignInForm", () => {
     await userEvent.type(screen.getByLabelText("Email address"), "learner@example.com");
     await userEvent.click(screen.getByRole("button", { name: "Email me a verification code" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("could not complete email sign-in");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Email provider unavailable");
   });
 
   it("verifies the code through the same-origin auth proxy", async () => {
@@ -65,5 +65,24 @@ describe("SignInForm", () => {
       body: JSON.stringify({ email: "learner@example.com", otp: "123456" }),
     });
     expect(routerPush).toHaveBeenCalledWith("/learn");
+  });
+
+  it("keeps the code screen open and offers a fresh code after an expired OTP", async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ code: "OTP_EXPIRED", message: "OTP expired" }) });
+
+    render(<SignInForm />);
+    await userEvent.type(screen.getByLabelText("Email address"), " Learner@Example.com ");
+    await userEvent.click(screen.getByRole("button", { name: "Email me a verification code" }));
+    await userEvent.type(await screen.findByLabelText("Verification code"), "123456");
+    await userEvent.click(screen.getByRole("button", { name: "Verify code" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("expired");
+    expect(screen.getByLabelText("Verification code")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send a new code" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/auth/sign-in/email-otp", expect.objectContaining({
+      body: JSON.stringify({ email: "learner@example.com", otp: "123456" }),
+    }));
   });
 });
