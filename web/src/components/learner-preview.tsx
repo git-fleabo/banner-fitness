@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { LessonPageData, LearningLessonSummary } from "@/lib/content/repository";
+import { revisionAidFor } from "@/lib/content/revision-aids";
 
 import styles from "./learner-preview.module.css";
 
@@ -18,12 +19,12 @@ export function LearnerPreview({ lessons, pages }: { lessons: LearningLessonSumm
       <main className={styles.main}>
         <section className={styles.notice} aria-label="Preview notice">
           <p className={styles.eyebrow}>Preview mode</p>
-          <h1>Review the learner experience before authentication is repaired</h1>
-          <p>This temporary view exposes draft lesson content without creating a session or recording learner progress. It is for content review only.</p>
+          <h1>A revision library, not another course.</h1>
+          <p>This temporary view exposes draft revision aids without creating a session or recording learner progress. It tests the companion experience: choose a weak area, use a short aid, retrieve the idea and decide what to revisit.</p>
         </section>
 
-        <nav className={styles.lessonNav} aria-label="Lessons in this preview">
-          <p className={styles.eyebrow}>Module 1 · Anatomy and movement</p>
+        <nav className={styles.lessonNav} aria-label="Revision aids in this preview">
+          <p className={styles.eyebrow}>Browse revision aids · Anatomy and movement</p>
           <ol>{lessons.map((lesson) => <li key={lesson.slug}><a href={`#${lesson.slug}`}><span>{lesson.order}</span>{lesson.title}</a></li>)}</ol>
         </nav>
 
@@ -31,10 +32,15 @@ export function LearnerPreview({ lessons, pages }: { lessons: LearningLessonSumm
           {pages.map((lesson) => (
             <article className={styles.lesson} id={lesson.slug} key={lesson.slug}>
               <header className={styles.lessonHeader}>
-                <div><p className={styles.eyebrow}>Lesson {lesson.order} · {lesson.durationMinutes} minutes</p><h2>{lesson.title}</h2></div>
-                <span>Draft v{lesson.versionNumber}</span>
+                <div><p className={styles.eyebrow}>Revision aid {lesson.order} · {lesson.durationMinutes} minutes</p><h2>{lesson.title}</h2></div>
+                <span>Draft aid v{lesson.versionNumber}</span>
               </header>
-              <p className={styles.outcome}><strong>By the end, you can…</strong> {lesson.outcome}</p>
+              <p className={styles.outcome}><strong>Why this is useful</strong> {lesson.outcome}</p>
+              <div className={styles.aidSummary}>
+                <div><p className={styles.eyebrow}>Quick takeaway</p><strong>{revisionAidFor(lesson.slug).shortDescription}</strong></div>
+                <div><p className={styles.eyebrow}>Memory cue</p><strong>{revisionAidFor(lesson.slug).memoryCue}</strong></div>
+                <div><p className={styles.eyebrow}>Watch for</p><ul>{revisionAidFor(lesson.slug).commonTraps.slice(0, 2).map((trap) => <li key={trap}>{trap}</li>)}</ul></div>
+              </div>
               {lesson.objects.filter((object) => object.type !== "structured_text").map((object) => (
                 <section className={styles.step} key={object.stableKey}>
                   <div className={styles.stepHeading}><p className={styles.eyebrow}>{titleCase(object.type)}</p><h3>{object.title}</h3></div>

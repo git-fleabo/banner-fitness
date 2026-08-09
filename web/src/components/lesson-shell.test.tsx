@@ -30,8 +30,8 @@ describe("LessonShell", () => {
   it("renders the shared rhythm with an accessible current step", () => {
     render(<LessonShell lesson={lesson} requestedStep="explore" ownerPreview />);
     expect(screen.getByRole("heading", { name: seed.outcome })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Explore.*Plane-and-axis explorer/ })).toHaveAttribute("aria-current", "step");
-    expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("Step 3 of 6"))).toBe(true);
+    expect(screen.getByRole("link", { name: /See it.*Plane-and-axis explorer/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getAllByRole("status").some((status) => status.textContent?.includes("Revision aid card 3 of 6"))).toBe(true);
     expect(screen.getByText("Owner · Draft v1")).toBeInTheDocument();
   });
 
@@ -39,6 +39,7 @@ describe("LessonShell", () => {
     render(<LessonShell lesson={lesson} requestedStep="explore" ownerPreview />);
     expect(screen.getByText("Open structured-text alternative")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sagittal" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("link", { name: "Apply →" })).toHaveAttribute("href", expect.stringContaining("planes-apply"));
+    expect(screen.getByRole("link", { name: "Use it →" })).toHaveAttribute("href", expect.stringContaining("planes-apply"));
+    expect(screen.getByText("Plane through; axis around. They meet at a right angle.")).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { LessonClose, QuestionPractice } from "@/components/learning-evidence";
 import { LessonActivity } from "@/components/lesson-activities";
 import { LessonPositionTracker } from "@/components/lesson-position-tracker";
 import type { LessonPageData, LessonResumeState } from "@/lib/content/repository";
+import { revisionAidFor } from "@/lib/content/revision-aids";
 
 import styles from "./lesson-shell.module.css";
 
@@ -14,7 +15,12 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1).replaceAll("_", " ");
 }
 
+function aidStepLabel(value: string) {
+  return { hook: "Quick idea", explain: "Explain it", explore: "See it", apply: "Use it", check: "Check yourself", close: "Choose a revisit" }[value] ?? titleCase(value);
+}
+
 export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }: { lesson: LessonPageData; requestedStep?: string; resumeState?: LessonResumeState | null; ownerPreview: boolean }) {
+  const revisionAid = revisionAidFor(lesson.slug);
   const steps = lesson.objects.filter((object) => visibleStepTypes.has(object.type));
   const activeStep = requestedStep ?? resumeState?.stepStableKey;
   const currentIndex = Math.max(0, steps.findIndex((object) => object.stableKey === activeStep || object.type === activeStep));
@@ -35,29 +41,29 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
     <div className={styles.shell} id="top">
       <LessonPositionTracker lessonSlug={lesson.slug} stepStableKey={current.stableKey} />
       <SkipLink />
-      <LiveStatus>Step {currentIndex + 1} of {steps.length}: {current.title}</LiveStatus>
+      <LiveStatus>Revision aid card {currentIndex + 1} of {steps.length}: {current.title}</LiveStatus>
 
       <header className={styles.header}>
         <Link className={styles.brand} href="/learn" aria-label="PT Learning Lab home">
           <span className={styles.brandMark} aria-hidden="true">PL</span>
-          <span><strong>PT Learning Lab</strong><small>Human Movement Studio</small></span>
+          <span><strong>PT Learning Lab</strong><small>Revision companion</small></span>
         </Link>
         <div className={styles.headerContext}>
           <Link href="/reference">Reference</Link>
-          <span>Lesson {lesson.order} of 5</span>
+          <span>Revision aid · {lesson.durationMinutes} min</span>
           {ownerPreview && <span className={styles.draftBadge}>Owner · {titleCase(lesson.status)} v{lesson.versionNumber}</span>}
         </div>
       </header>
 
       <div className={styles.mobileProgress}>
-        <div><span>{titleCase(current.type)}</span><strong>{currentIndex + 1} of {steps.length}</strong></div>
+        <div><span>{aidStepLabel(current.type)}</span><strong>{currentIndex + 1} of {steps.length}</strong></div>
         <progress value={currentIndex + 1} max={steps.length}><VisuallyHidden>{currentIndex + 1} of {steps.length}</VisuallyHidden></progress>
       </div>
 
       <div className={styles.workspace}>
         <aside className={styles.rail} aria-labelledby="lesson-steps-heading">
-          <Link className={styles.backLink} href="/learn">← Learning path</Link>
-          <p className={styles.eyebrow}>Lesson {lesson.order}</p>
+          <Link className={styles.backLink} href="/learn">← Revision library</Link>
+          <p className={styles.eyebrow}>Topic collection</p>
           <h2 id="lesson-steps-heading">{lesson.title}</h2>
           <ol>
             {steps.map((step, index) => {
@@ -65,35 +71,41 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
               return (
                 <li key={step.stableKey}>
                   <Link className={isCurrent ? styles.currentStep : undefined} href={`/learn/${lesson.slug}?step=${step.stableKey}`} aria-current={isCurrent ? "step" : undefined}>
-                    <span>{index + 1}</span><span><strong>{titleCase(step.type)}</strong><small>{step.title}</small></span>
+                    <span>{index + 1}</span><span><strong>{aidStepLabel(step.type)}</strong><small>{step.title}</small></span>
                   </Link>
                 </li>
               );
             })}
           </ol>
-          <p className={styles.progressNote}>Lesson position is separate from demonstrated learning security.</p>
+          <p className={styles.progressNote}>These cards support revision. Coverage and durable security remain separate.</p>
         </aside>
 
         <main className={styles.main} id="main-content" tabIndex={-1}>
           <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-            <Link href="/learn">Anatomy and movement</Link><span aria-hidden="true">/</span><span>{titleCase(current.type)}</span>
+            <Link href="/learn">Revision library</Link><span aria-hidden="true">/</span><span>{revisionAid.label}</span>
           </nav>
 
           <section className={styles.outcome} aria-labelledby="lesson-outcome-heading">
-            <p className={styles.eyebrow}>By the end, you can…</p>
+            <p className={styles.eyebrow}>Why this is useful</p>
             <h1 id="lesson-outcome-heading">{lesson.outcome}</h1>
+          </section>
+
+          <section className={styles.aidSummary} aria-label="Revision aid summary">
+            <div><p className={styles.eyebrow}>Quick takeaway</p><strong>{revisionAid.shortDescription}</strong></div>
+            <div><p className={styles.eyebrow}>Memory cue</p><strong>{revisionAid.memoryCue}</strong></div>
+            <div><p className={styles.eyebrow}>Watch for</p><ul>{revisionAid.commonTraps.slice(0, 2).map((trap) => <li key={trap}>{trap}</li>)}</ul></div>
           </section>
 
           <article className={styles.learningCard} aria-labelledby="step-heading">
             <div className={styles.cardHeading}>
-              <div><p className={styles.eyebrow}>{titleCase(current.type)}</p><h2 id="step-heading">{current.title}</h2></div>
-              <span>{lesson.durationMinutes} min lesson</span>
+              <div><p className={styles.eyebrow}>{aidStepLabel(current.type)}</p><h2 id="step-heading">{current.title}</h2></div>
+              <span>{lesson.durationMinutes} min aid</span>
             </div>
             <p className={styles.bodyCopy}>{current.content.body}</p>
 
             {current.content.keyIdeas && (
               <section className={styles.keyIdeas} aria-labelledby="key-ideas-heading">
-                <p className={styles.eyebrow}>Keep these distinctions</p>
+                <p className={styles.eyebrow}>Remember this</p>
                 <h3 id="key-ideas-heading">The useful model</h3>
                 <ul>{current.content.keyIdeas.map((idea) => <li key={idea}>{idea}</li>)}</ul>
               </section>
@@ -138,14 +150,14 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
             )}
 
             <nav className={styles.stepActions} aria-label="Lesson steps">
-              {previous ? <Link className={styles.secondaryAction} href={`/learn/${lesson.slug}?step=${previous.stableKey}`}>← {titleCase(previous.type)}</Link> : <span />}
-              {next ? <Link className={styles.primaryAction} href={`/learn/${lesson.slug}?step=${next.stableKey}`}>{titleCase(next.type)} →</Link> : <Link className={styles.primaryAction} href="/learn">Return to learning path</Link>}
+              {previous ? <Link className={styles.secondaryAction} href={`/learn/${lesson.slug}?step=${previous.stableKey}`}>← {aidStepLabel(previous.type)}</Link> : <span />}
+              {next ? <Link className={styles.primaryAction} href={`/learn/${lesson.slug}?step=${next.stableKey}`}>{aidStepLabel(next.type)} →</Link> : <Link className={styles.primaryAction} href="/learn">Return to revision library</Link>}
             </nav>
           </article>
 
           <aside className={styles.mapping} aria-label="Content status and mapping">
-            <div><span>Qualification mapping</span><strong>{lesson.mapping}</strong></div>
-            <div><span>Content version</span><strong>v{lesson.versionNumber} · {titleCase(lesson.status)}</strong></div>
+            <div><span>Reference mapping</span><strong>{lesson.mapping}</strong></div>
+            <div><span>Draft status</span><strong>v{lesson.versionNumber} · {titleCase(lesson.status)}</strong></div>
           </aside>
         </main>
       </div>
