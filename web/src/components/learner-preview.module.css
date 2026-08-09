@@ -27,6 +27,11 @@
 .aidSummary > div:nth-child(3) { border-left: 4px solid var(--clay); }
 .aidSummary strong { display: block; margin-top: .35rem; color: var(--deep-teal); font-size: .84rem; line-height: 1.45; }
 .aidSummary ul { display: grid; gap: .3rem; margin-top: .35rem; padding-left: 1rem; color: var(--muted); font-size: .75rem; line-height: 1.4; }
+.recallSummary { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; padding: 0 clamp(1.25rem, 3vw, 2rem) 1rem; }
+.recallSummary > div { padding: .85rem; border-radius: .7rem; color: white; background: var(--deep-teal); }
+.recallSummary > div + div { color: var(--ink); background: var(--sage-light); }
+.recallSummary > div + div .eyebrow { color: var(--deep-teal); }
+.recallSummary strong { display: block; margin-top: .35rem; font-size: .8rem; line-height: 1.45; }
 .step { padding: clamp(1.2rem, 3vw, 1.75rem); border-top: 1px solid var(--line); }
 .stepHeading h3 { margin-top: .3rem; color: var(--deep-teal); font-size: 1.25rem; }
 .step > p { max-width: 70ch; margin-top: .8rem; color: var(--muted); line-height: 1.7; }
@@ -42,5 +47,5 @@
 .questions ol > li { padding-left: .2rem; }
 .questions ol > li > p { color: var(--ink); font-weight: 700; }
 .questions ul { margin-top: .3rem; padding-left: 1.2rem; color: var(--muted); }
-@media (max-width: 800px) { .aidSummary { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .aidSummary, .recallSummary { grid-template-columns: 1fr; } }
 @media (max-width: 620px) { .header, .lessonHeader { display: block; } .header > span, .lessonHeader > span { display: inline-block; margin-top: .8rem; } }

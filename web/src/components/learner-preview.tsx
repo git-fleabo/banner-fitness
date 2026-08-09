@@ -41,6 +41,10 @@ export function LearnerPreview({ lessons, pages }: { lessons: LearningLessonSumm
                 <div><p className={styles.eyebrow}>Memory cue</p><strong>{revisionAidFor(lesson.slug).memoryCue}</strong></div>
                 <div><p className={styles.eyebrow}>Watch for</p><ul>{revisionAidFor(lesson.slug).commonTraps.slice(0, 2).map((trap) => <li key={trap}>{trap}</li>)}</ul></div>
               </div>
+              <div className={styles.recallSummary}>
+                <div><p className={styles.eyebrow}>Try before reading</p><strong>{revisionAidFor(lesson.slug).quickCheckPrompt}</strong></div>
+                <div><p className={styles.eyebrow}>Revisit when…</p><strong>{revisionAidFor(lesson.slug).revisitSignal}</strong></div>
+              </div>
               {lesson.objects.filter((object) => object.type !== "structured_text").map((object) => (
                 <section className={styles.step} key={object.stableKey}>
                   <div className={styles.stepHeading}><p className={styles.eyebrow}>{titleCase(object.type)}</p><h3>{object.title}</h3></div>

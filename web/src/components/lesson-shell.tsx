@@ -96,6 +96,11 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
             <div><p className={styles.eyebrow}>Watch for</p><ul>{revisionAid.commonTraps.slice(0, 2).map((trap) => <li key={trap}>{trap}</li>)}</ul></div>
           </section>
 
+          <section className={styles.recallPanel} aria-label="Before and after revision prompts">
+            <div><p className={styles.eyebrow}>Try before reading</p><strong>{revisionAid.quickCheckPrompt}</strong></div>
+            <div><p className={styles.eyebrow}>Revisit when…</p><strong>{revisionAid.revisitSignal}</strong></div>
+          </section>
+
           <article className={styles.learningCard} aria-labelledby="step-heading">
             <div className={styles.cardHeading}>
               <div><p className={styles.eyebrow}>{aidStepLabel(current.type)}</p><h2 id="step-heading">{current.title}</h2></div>

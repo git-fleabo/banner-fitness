@@ -41,5 +41,6 @@ describe("LessonShell", () => {
     expect(screen.getByRole("button", { name: "Sagittal" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: "Use it →" })).toHaveAttribute("href", expect.stringContaining("planes-apply"));
     expect(screen.getByText("Plane through; axis around. They meet at a right angle.")).toBeInTheDocument();
+    expect(screen.getByText(/For a squat, state the predominant plane/)).toBeInTheDocument();
   });
 });
