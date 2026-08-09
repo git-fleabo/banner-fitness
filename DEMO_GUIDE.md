@@ -30,6 +30,14 @@ remains draft by default; the owner can preview it without publishing.
 6. Open `/owner/review`, preview a draft, inspect mapping/source warnings, and
    confirm that learner accounts cannot see unapproved drafts.
 
+## Weak-area discovery acceptance
+
+- Learn shows due revisits, confidence and meaningful coverage state beside each aid.
+- Search finds concepts, memory cues and common traps without a hosted search service.
+- Filters expose due revisits, low confidence, not started, in progress and covered areas.
+- A queued item opens a targeted changed check where an authored variation exists, then clears only after a correct response.
+- A lesson closed with confidence 1–2 creates a low-confidence revisit; confidence remains a recommendation signal, not a mastery score.
+
 ## Learner-loop acceptance
 
 - Opening any lesson records a step-only position before practice evidence exists.

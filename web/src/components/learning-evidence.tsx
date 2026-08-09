@@ -12,21 +12,27 @@ type Question = LessonPageData["objects"][number]["questions"][number];
 type AttemptResult = Awaited<ReturnType<typeof recordPracticeAttempt>>;
 type CompletionResult = Awaited<ReturnType<typeof completeLesson>>;
 
-export function QuestionPractice({ lessonSlug, questions, resumeState }: { lessonSlug: string; questions: Question[]; resumeState?: LessonResumeState | null }) {
-  const resumedIndex = Math.max(0, questions.findIndex((question) => question.stableKey === resumeState?.questionStableKey));
+export function QuestionPractice({ lessonSlug, questions, resumeState, revisionQuestionStableKey, revisionId }: { lessonSlug: string; questions: Question[]; resumeState?: LessonResumeState | null; revisionQuestionStableKey?: string; revisionId?: string }) {
+  const targetedQuestion = revisionId
+    ? questions.find((question) => question.response.variationOf === revisionQuestionStableKey)
+      ?? (revisionQuestionStableKey ? questions.find((question) => question.stableKey !== revisionQuestionStableKey) : questions[questions.length - 1])
+    : undefined;
+  const activeQuestions = targetedQuestion ? [targetedQuestion] : questions;
+  const targeted = Boolean(revisionId);
+  const resumedIndex = Math.max(0, activeQuestions.findIndex((question) => question.stableKey === resumeState?.questionStableKey));
   const [index, setIndex] = useState(resumedIndex);
   const [selected, setSelected] = useState<string | null>(resumeState?.selected?.[0] ?? null);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [finished, setFinished] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const question = questions[index];
+  const question = activeQuestions[index];
 
   if (!question || finished) {
     return (
       <section className={styles.summary} aria-labelledby="check-summary-heading">
-        <p className={styles.kicker}>Check complete</p>
-        <h3 id="check-summary-heading">This attempt added practice evidence</h3>
-        <p>Coverage and practice are recorded separately from durable security. Revisit varied question forms over time before treating the outcome as secure.</p>
+        <p className={styles.kicker}>{targeted ? "Targeted revisit complete" : "Check complete"}</p>
+        <h3 id="check-summary-heading">{targeted ? "This weak area has been revisited" : "This attempt added practice evidence"}</h3>
+        <p>{targeted ? "The queued revision was checked with a changed question where available. Your original attempt remains visible in your learning record." : "Coverage and practice are recorded separately from durable security. Revisit varied question forms over time before treating the outcome as secure."}</p>
         <Link className={styles.nextAction} href={`/learn/${lessonSlug}?step=close`}>Continue to lesson reflection →</Link>
         <button type="button" onClick={() => { setIndex(0); setSelected(null); setResult(null); setFinished(false); }}>Practise again</button>
       </section>
@@ -36,13 +42,14 @@ export function QuestionPractice({ lessonSlug, questions, resumeState }: { lesso
   function submit() {
     if (!selected) return;
     startTransition(async () => {
-      const nextResult = await recordPracticeAttempt({ lessonSlug, questionStableKey: question.stableKey, selected: [selected] });
+      const input = { lessonSlug, questionStableKey: question.stableKey, selected: [selected], ...(revisionId ? { reviewId: revisionId } : {}) };
+      const nextResult = await recordPracticeAttempt(input);
       setResult(nextResult);
     });
   }
 
   function next() {
-    if (index >= questions.length - 1) setFinished(true);
+    if (index >= activeQuestions.length - 1) setFinished(true);
     else setIndex((value) => value + 1);
     setSelected(null);
     setResult(null);
@@ -50,7 +57,7 @@ export function QuestionPractice({ lessonSlug, questions, resumeState }: { lesso
 
   return (
     <section className={styles.practice} aria-labelledby="practice-question-heading">
-      <div className={styles.practiceHeader}><p className={styles.kicker}>Question {index + 1} of {questions.length}</p><span>Evidence-recording check</span></div>
+      <div className={styles.practiceHeader}><p className={styles.kicker}>{targeted ? "Targeted revisit" : `Question ${index + 1} of ${activeQuestions.length}`}</p><span>{targeted ? "Changed retrieval check" : "Evidence-recording check"}</span></div>
       <h3 id="practice-question-heading">{question.prompt}</h3>
       {resumeState?.submitted && resumeState.questionStableKey === question.stableKey && !result && (
         <p className={styles.resumeNotice} role="status">Resumed with your previous selection. That answer was submitted and recorded as practice evidence; check it again when you are ready to retry.</p>
@@ -66,7 +73,8 @@ export function QuestionPractice({ lessonSlug, questions, resumeState }: { lesso
           <strong>{result.feedbackCategory === "correct" ? "Correct" : result.feedbackCategory === "partly_correct" ? "Partly correct" : "Needs another look"}</strong>
           <p>{result.result}</p>
           {result.revision && <div className={styles.revision}><b>Added to revision</b><p>{result.revision.explanation}</p><small>Due {new Date(result.revision.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. You can change this in the review queue.</small></div>}
-          {result.feedbackCategory === "correct" ? <button type="button" onClick={next}>{index === questions.length - 1 ? "Finish check" : "Next question"}</button> : <button type="button" onClick={() => { setSelected(null); setResult(null); }}>Retry question</button>}
+          {result.feedbackCategory === "correct" && result.revisionCompleted && <div className={styles.revisionComplete} role="status"><b>Targeted revisit completed</b><p>This recommendation is cleared. Keep the concept open for another varied retrieval later.</p></div>}
+          {result.feedbackCategory === "correct" ? <button type="button" onClick={next}>{index === activeQuestions.length - 1 ? "Finish check" : "Next question"}</button> : <button type="button" onClick={() => { setSelected(null); setResult(null); }}>Retry question</button>}
         </div>
       )}
     </section>

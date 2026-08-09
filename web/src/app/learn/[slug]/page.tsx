@@ -23,5 +23,7 @@ export default async function LessonPage({ params, searchParams }: {
   if (!lesson) notFound();
 
   const requestedStep = typeof query.step === "string" ? query.step : undefined;
-  return <LessonShell lesson={lesson} requestedStep={requestedStep} resumeState={resumeState} ownerPreview={access.account.role === "owner"} />;
+  const revisionQuestionStableKey = typeof query.revisionQuestion === "string" ? query.revisionQuestion : undefined;
+  const revisionId = typeof query.revisionId === "string" ? query.revisionId : undefined;
+  return <LessonShell lesson={lesson} requestedStep={requestedStep} resumeState={resumeState} revisionQuestionStableKey={revisionQuestionStableKey} revisionId={revisionId} ownerPreview={access.account.role === "owner"} />;
 }

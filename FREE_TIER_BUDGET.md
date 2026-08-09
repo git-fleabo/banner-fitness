@@ -14,9 +14,11 @@ Reviewed 7 August 2026 for the private owner prototype and a very small invited 
 ## Expected acceptance-journey usage
 
 One owner demonstration is approximately 25–45 page requests, 2–4 reads per
-lesson route, 1 write when a meaningful position changes, 1 write per submitted
-check, 1 completion write and 1 revision completion/reschedule write. There is
-no polling, telemetry stream, background job, notification or media processing.
+lesson route, 1 dashboard read for the current weak-area signals, 1 write when
+a meaningful position changes, 1 write per submitted check, 1 completion write
+and 1 revision completion/reschedule write. Library search and filters are
+client-side over the five-item dataset and do not query Neon. There is no
+polling, telemetry stream, background job, notification or media processing.
 Five lessons are authored in the repository and imported idempotently; large
 unchanged lesson structures are not copied on every learner action.
 

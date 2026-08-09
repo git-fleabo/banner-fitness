@@ -14,9 +14,14 @@ publication as separate server-authorised transitions.
 
 Progress stores meaningful lesson position, submitted attempts, coverage and
 optional confidence. Browser-only selection, hover and animation state is not
-persisted. Incorrect, partly-correct or misconception responses create one
-explainable revision recommendation. Revision is calculated on normal requests
-and uses varied authored question versions; no scheduler is required.
+persisted. The Learn home derives weak-area signals from that progress plus
+queued review records, then provides client-side search and filters over the
+small content dataset. Incorrect, partly-correct or misconception responses
+create one explainable revision recommendation; low confidence at lesson close
+also creates a low-confidence revisit. A targeted revisit uses an authored
+variation where available or a different check in the same aid, and a correct
+targeted response completes that queue item. Revision is calculated on normal
+requests and no scheduler is required.
 
 Visuals are original lightweight CSS/SVG-like schematic figures and structured
 text is available for every important relationship. They are teaching

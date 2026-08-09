@@ -248,3 +248,15 @@ overwriting submitted evidence. OpenNext, Wrangler and static asset caching
 configuration are committed. The Cloudflare build passes after removing the
 redundant Node-only auth proxy; route-level server authorization remains the
 protected-content boundary.
+
+Implementation step 10 / Milestone 6 is complete. The Learn home now derives
+weak-area signals from existing progress and queued review records: due
+revisits, low confidence, meaningful coverage state and queued counts. The
+revision library has local search across topic copy, memory cues and common
+traps plus filters for due, low-confidence, not-started, in-progress and
+covered areas. The review queue explains the recommendation, opens a targeted
+changed check where an authored variation exists, and clears the queue item
+only after a correct targeted response. Confidence 1–2 at lesson close creates
+a low-confidence revisit without adding telemetry or scheduled work. No schema,
+hosted search service or publication state changed; all five topics remain
+draft-only.

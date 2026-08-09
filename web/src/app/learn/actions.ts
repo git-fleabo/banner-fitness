@@ -26,6 +26,7 @@ const attemptInputSchema = z.object({
   lessonSlug: z.string().regex(/^[a-z0-9-]+$/),
   questionStableKey: z.string().min(1),
   selected: z.array(z.string().min(1)).min(1),
+  reviewId: z.string().uuid().optional(),
 });
 
 const completionInputSchema = z.object({
@@ -71,6 +72,15 @@ export async function recordPracticeAttempt(input: unknown) {
 
   if (!target || (account.role === "learner" && target.lessonStatus !== "published")) {
     throw new Error("This question is not available to this account.");
+  }
+
+  if (values.reviewId) {
+    const [review] = await db
+      .select({ id: reviewQueue.id, status: reviewQueue.status })
+      .from(reviewQueue)
+      .where(and(eq(reviewQueue.id, values.reviewId), eq(reviewQueue.learnerId, account.authUserId)))
+      .limit(1);
+    if (!review || review.status !== "queued") throw new Error("This targeted revision is no longer queued.");
   }
 
   const scoring = questionScoringSchema.parse(target.scoring);
@@ -128,15 +138,26 @@ export async function recordPracticeAttempt(input: unknown) {
   });
 
   let revision;
-  if (!isCorrect) {
-    const reason = feedbackCategory === "misconception" ? "misconception" : feedbackCategory === "partly_correct" ? "partly_correct" : "incorrect";
+  let revisionCompleted = false;
+  const reason = feedbackCategory === "misconception" ? "misconception" : feedbackCategory === "partly_correct" ? "partly_correct" : "incorrect";
+  const evidence = { attemptId: attempt.id, feedbackCategory, misconceptionCode: feedback.misconceptionCode ?? null };
+
+  if (isCorrect && values.reviewId) {
+    const [completedReview] = await db
+      .update(reviewQueue)
+      .set({ status: "completed", completedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(reviewQueue.id, values.reviewId), eq(reviewQueue.learnerId, account.authUserId), eq(reviewQueue.status, "queued")))
+      .returning({ id: reviewQueue.id });
+    revisionCompleted = Boolean(completedReview);
+  } else if (!isCorrect) {
     const dueAt = new Date(Date.now() + (feedbackCategory === "misconception" ? 1 : 2) * 86_400_000);
-    const [existing] = await db.select({ id: reviewQueue.id }).from(reviewQueue).where(and(
-      eq(reviewQueue.learnerId, account.authUserId),
-      eq(reviewQueue.questionVersionId, target.questionVersionId),
-      eq(reviewQueue.status, "queued"),
-    )).limit(1);
-    const evidence = { attemptId: attempt.id, feedbackCategory, misconceptionCode: feedback.misconceptionCode ?? null };
+    const [existing] = values.reviewId
+      ? await db.select({ id: reviewQueue.id }).from(reviewQueue).where(and(eq(reviewQueue.id, values.reviewId), eq(reviewQueue.learnerId, account.authUserId), eq(reviewQueue.status, "queued"))).limit(1)
+      : await db.select({ id: reviewQueue.id }).from(reviewQueue).where(and(
+        eq(reviewQueue.learnerId, account.authUserId),
+        eq(reviewQueue.questionVersionId, target.questionVersionId),
+        eq(reviewQueue.status, "queued"),
+      )).limit(1);
 
     if (existing) {
       await db.update(reviewQueue).set({ reason, evidence, dueAt, updatedAt: new Date() }).where(eq(reviewQueue.id, existing.id));
@@ -156,11 +177,13 @@ export async function recordPracticeAttempt(input: unknown) {
 
   revalidatePath("/learn");
   revalidatePath(`/learn/${values.lessonSlug}`);
+  revalidatePath("/review");
   return {
     feedbackCategory,
     result: isCorrect ? feedback.correct : isPartlyCorrect ? feedback.partlyCorrect ?? feedback.incorrect : feedback.incorrect,
     nextAction: feedback.nextAction,
     revision,
+    revisionCompleted,
     attemptedAt: attempt.attemptedAt.toISOString(),
   };
 }
@@ -206,8 +229,31 @@ export async function completeLesson(input: unknown) {
     },
   });
 
+  if ((values.confidence ?? 5) <= 2) {
+    const dueAt = new Date(Date.now() + 86_400_000);
+    const [existingReview] = await db.select({ id: reviewQueue.id }).from(reviewQueue).where(and(
+      eq(reviewQueue.learnerId, account.authUserId),
+      eq(reviewQueue.lessonId, target.lessonId),
+      eq(reviewQueue.reason, "low_confidence"),
+      eq(reviewQueue.status, "queued"),
+    )).limit(1);
+    if (existingReview) {
+      await db.update(reviewQueue).set({ dueAt, evidence: { confidence: values.confidence }, updatedAt: new Date() }).where(eq(reviewQueue.id, existingReview.id));
+    } else {
+      await db.insert(reviewQueue).values({
+        learnerId: account.authUserId,
+        lessonId: target.lessonId,
+        lessonVersionId: target.lessonVersionId,
+        reason: "low_confidence",
+        evidence: { confidence: values.confidence },
+        dueAt,
+      });
+    }
+  }
+
   revalidatePath("/learn");
   revalidatePath(`/learn/${values.lessonSlug}`);
+  revalidatePath("/review");
   return { completedAt: completedAt.toISOString(), confidence: values.confidence ?? null, securityState: "Not yet secure" as const };
 }
 

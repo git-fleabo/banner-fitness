@@ -2,16 +2,11 @@ import Link from "next/link";
 
 import type { LearningLessonSummary } from "@/lib/content/repository";
 import { revisionAidFor } from "@/lib/content/revision-aids";
+import { WeakAreaFinder } from "@/components/weak-area-finder";
 
 import styles from "./prototype-overview.module.css";
 
-function stateLabel(lesson: LearningLessonSummary) {
-  if (lesson.coverageState === "covered") return "Practised · revisit later";
-  if (lesson.coverageState === "in_progress") return "Continue your review";
-  return lesson.status === "draft" ? "Draft aid" : "Ready to explore";
-}
-
-export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: { lessons: LearningLessonSummary[]; revisionCount?: number; ownerPreview: boolean }) {
+export function PrototypeOverview({ lessons, revisionCount = 0, dueRevisionCount = 0, ownerPreview }: { lessons: LearningLessonSummary[]; revisionCount?: number; dueRevisionCount?: number; ownerPreview: boolean }) {
   if (lessons.length === 0) {
     return (
       <main className={styles.emptyState} id="main-content">
@@ -24,7 +19,6 @@ export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: 
 
   const featuredLesson = lessons.find((lesson) => lesson.slug === "planes-and-axes") ?? lessons[0];
   const featuredAid = revisionAidFor(featuredLesson.slug);
-  const coveredCount = lessons.filter((lesson) => lesson.coverageState === "covered").length;
 
   return (
     <div className={styles.appShell} id="top">
@@ -66,8 +60,8 @@ export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: 
             <span>{featuredLesson.coverageState === "in_progress" ? "Continue this aid" : "Open a focused aid"} →</span>
           </Link>
           <Link className={styles.secondaryCard} href="/review">
-            <span className={styles.eyebrow}>Your review queue</span>
-            <strong>{revisionCount ? `${revisionCount} useful ${revisionCount === 1 ? "revisit" : "revisits"}` : "Build your first revisit"}</strong>
+            <span className={styles.eyebrow}>Today’s revision</span>
+            <strong>{dueRevisionCount ? `${dueRevisionCount} due ${dueRevisionCount === 1 ? "revisit" : "revisits"}` : revisionCount ? `${revisionCount} scheduled ${revisionCount === 1 ? "revisit" : "revisits"}` : "Build your first targeted revisit"}</strong>
             <span>{revisionCount ? "See why these came back" : "Practice creates explainable revisits"} →</span>
           </Link>
         </section>
@@ -81,22 +75,7 @@ export function PrototypeOverview({ lessons, revisionCount = 0, ownerPreview }: 
           </div>
         </section>
 
-        <section className={styles.library} id="revision-aids" aria-labelledby="library-heading">
-          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Browse by weak area</p><h2 id="library-heading">Revision aids by topic</h2></div><span>{coveredCount} of {lessons.length} practised</span></div>
-          <div className={styles.libraryGrid}>
-            {lessons.map((lesson) => {
-              const aid = revisionAidFor(lesson.slug);
-              return <article className={styles.aidCard} key={lesson.slug}>
-                <div className={styles.aidCardTop}><span>{lesson.order.toString().padStart(2, "0")}</span><small>{lesson.durationMinutes} min · {stateLabel(lesson)}</small></div>
-                <p className={styles.eyebrow}>{aid.label}</p>
-                <h3>{lesson.title}</h3>
-                <p>{aid.shortDescription}</p>
-                <div className={styles.aidTypes}>{aid.aidTypes.map((type) => <span key={type}>{type}</span>)}</div>
-                <Link href={`/learn/${lesson.slug}`}>Open revision aid →</Link>
-              </article>;
-            })}
-          </div>
-        </section>
+        <WeakAreaFinder lessons={lessons} />
 
         <section className={styles.method} aria-labelledby="method-heading">
           <div><p className={styles.eyebrow}>The learning loop</p><h2 id="method-heading">Small aids, repeated retrieval.</h2></div>

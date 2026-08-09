@@ -42,6 +42,10 @@ export type LearningLessonSummary = {
   versionNumber: number;
   coverageState?: "not_started" | "in_progress" | "covered";
   resumeStep?: string;
+  confidence?: number | null;
+  queuedReviewCount?: number;
+  dueReviewCount?: number;
+  lastPracticedAt?: Date | null;
 };
 
 export type LessonPageData = LearningLessonSummary & {
@@ -78,6 +82,10 @@ export async function listLessonSummaries(role: "owner" | "learner", learnerId: 
       versionNumber: lessonVersions.versionNumber,
       coverageState: lessonProgress.coverageState,
       resumeState: lessonProgress.resumeState,
+      confidence: sql<number | null>`case when (${lessonProgress.resumeState} ->> 'confidence') ~ '^[1-5]$' then ((${lessonProgress.resumeState} ->> 'confidence')::int) else null end`,
+      queuedReviewCount: sql<number>`(select count(*)::int from ${reviewQueue} rq where rq.learner_id = ${learnerId} and rq.lesson_id = ${lessons.id} and rq.status = 'queued')`,
+      dueReviewCount: sql<number>`(select count(*)::int from ${reviewQueue} rq where rq.learner_id = ${learnerId} and rq.lesson_id = ${lessons.id} and rq.status = 'queued' and rq.due_at <= now())`,
+      lastPracticedAt: lessonProgress.updatedAt,
     })
     .from(lessons)
     .innerJoin(curriculumTopics, eq(lessons.curriculumTopicId, curriculumTopics.id))
@@ -105,6 +113,10 @@ export async function listLessonSummaries(role: "owner" | "learner", learnerId: 
     versionNumber: row.versionNumber,
     coverageState: row.coverageState ?? "not_started",
     resumeStep: parseLessonResumeState(row.resumeState)?.stepStableKey,
+    confidence: row.confidence ?? null,
+    queuedReviewCount: row.queuedReviewCount ?? 0,
+    dueReviewCount: row.dueReviewCount ?? 0,
+    lastPracticedAt: row.lastPracticedAt ?? null,
   }));
 }
 
@@ -250,19 +262,23 @@ export type LearningReviewItem = {
   id: string;
   lessonSlug: string;
   lessonTitle: string;
+  questionStableKey: string | null;
   questionPrompt: string | null;
   reason: "incorrect" | "partly_correct" | "misconception" | "low_confidence" | "manual";
   dueAt: Date;
   evidence: unknown;
+  isDue: boolean;
+  daysUntilDue: number;
 };
 
 export async function listReviewItems(learnerId: string): Promise<LearningReviewItem[]> {
   const db = getDb();
-  return db
+  const rows = await db
     .select({
       id: reviewQueue.id,
       lessonSlug: lessons.slug,
       lessonTitle: lessonVersions.title,
+      questionStableKey: questions.stableKey,
       questionPrompt: questionVersions.prompt,
       reason: reviewQueue.reason,
       dueAt: reviewQueue.dueAt,
@@ -272,8 +288,15 @@ export async function listReviewItems(learnerId: string): Promise<LearningReview
     .innerJoin(lessons, eq(reviewQueue.lessonId, lessons.id))
     .innerJoin(lessonVersions, eq(reviewQueue.lessonVersionId, lessonVersions.id))
     .leftJoin(questionVersions, eq(reviewQueue.questionVersionId, questionVersions.id))
+    .leftJoin(questions, eq(questionVersions.questionId, questions.id))
     .where(and(eq(reviewQueue.learnerId, learnerId), eq(reviewQueue.status, "queued")))
     .orderBy(asc(reviewQueue.dueAt));
+  const now = Date.now();
+  return rows.map((row) => ({
+    ...row,
+    isDue: row.dueAt.getTime() <= now,
+    daysUntilDue: Math.max(0, Math.ceil((row.dueAt.getTime() - now) / 86_400_000)),
+  }));
 }
 
 export type OwnerReviewLesson = {

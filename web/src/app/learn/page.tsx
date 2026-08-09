@@ -44,5 +44,5 @@ export default async function LearnPage() {
     return <LoadFailure />;
   }
 
-  return <PrototypeOverview lessons={lessons} revisionCount={reviewItems.length} ownerPreview={access.account.role === "owner"} />;
+  return <PrototypeOverview lessons={lessons} revisionCount={reviewItems.length} dueRevisionCount={reviewItems.filter((item) => item.isDue).length} ownerPreview={access.account.role === "owner"} />;
 }

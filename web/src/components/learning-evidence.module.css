@@ -20,6 +20,8 @@
 .misconception, .incorrect { border-color: var(--clay); background: #f8dfd8; }
 .revision { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid currentColor; }
 .revision small { display: block; margin-top: .35rem; }
+.revisionComplete { margin-top: .8rem; padding: .8rem; border-left: 4px solid var(--sage); background: var(--sage-light); }
+.revisionComplete p { margin-top: .3rem; color: var(--muted); }
 .confidence { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 .confidence button { width: 3rem; padding: .5rem; }
 @media (forced-colors: active) { .choices button[aria-pressed="true"], .confidence button[aria-pressed="true"] { outline: 3px solid Highlight; } }

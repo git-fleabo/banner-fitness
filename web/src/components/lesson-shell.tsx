@@ -19,7 +19,7 @@ function aidStepLabel(value: string) {
   return { hook: "Quick idea", explain: "Explain it", explore: "See it", apply: "Use it", check: "Check yourself", close: "Choose a revisit" }[value] ?? titleCase(value);
 }
 
-export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }: { lesson: LessonPageData; requestedStep?: string; resumeState?: LessonResumeState | null; ownerPreview: boolean }) {
+export function LessonShell({ lesson, requestedStep, resumeState, revisionQuestionStableKey, revisionId, ownerPreview }: { lesson: LessonPageData; requestedStep?: string; resumeState?: LessonResumeState | null; revisionQuestionStableKey?: string; revisionId?: string; ownerPreview: boolean }) {
   const revisionAid = revisionAidFor(lesson.slug);
   const steps = lesson.objects.filter((object) => visibleStepTypes.has(object.type));
   const activeStep = requestedStep ?? resumeState?.stepStableKey;
@@ -32,7 +32,7 @@ export function LessonShell({ lesson, requestedStep, resumeState, ownerPreview }
     ? <LessonActivity lessonSlug={lesson.slug} step={current.type as "hook" | "explain" | "explore" | "apply"} />
     : null;
   const evidenceActivity = current.type === "check" && current.questions.length > 0
-    ? <QuestionPractice lessonSlug={lesson.slug} questions={current.questions} resumeState={resumeState} />
+    ? <QuestionPractice lessonSlug={lesson.slug} questions={current.questions} resumeState={resumeState} revisionQuestionStableKey={revisionQuestionStableKey} revisionId={revisionId} />
     : current.type === "close"
       ? <LessonClose lessonSlug={lesson.slug} completed={resumeState?.complete} confidence={resumeState?.confidence} />
       : null;
