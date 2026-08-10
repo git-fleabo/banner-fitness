@@ -30,6 +30,7 @@ const clientInputSchema = z.object({
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
+const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
 
 const programmeInputSchema = z.object({
   clientName: z.string().trim().min(1).max(160),
@@ -154,6 +155,25 @@ export async function recordProgrammeOverrideAction(rawInput: z.input<typeof pro
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "quality_override", details: override });
   revalidatePath("/designer");
   return { programmeId: programme.id };
+}
+
+export async function transitionProgrammeAction(rawInput: z.input<typeof programmeTransitionSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = programmeTransitionSchema.parse(rawInput);
+  const db = getDb();
+  const [programme] = await db.select({ id: ptProgrammes.id, clientId: ptProgrammes.clientId, status: ptProgrammes.status }).from(ptProgrammes).where(and(eq(ptProgrammes.id, input.programmeId), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
+  if (!programme) throw new Error("Programme could not be found.");
+  if (programme.status === input.status) return { programmeId: programme.id, status: programme.status };
+  if (input.status === "assigned") {
+    const [assessment] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired }).from(ptAssessments).where(eq(ptAssessments.clientId, programme.clientId)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+    if (assessment?.clearanceRequired) throw new Error("Resolve the screening or clearance flag before assigning this programme.");
+  }
+  if ((input.status === "paused" || input.status === "archived") && !input.reason?.trim()) throw new Error("Record a reason when pausing or archiving a programme.");
+  const now = new Date();
+  await db.update(ptProgrammes).set({ status: input.status, startDate: input.status === "assigned" ? now.toISOString().slice(0, 10) : undefined, updatedAt: now }).where(eq(ptProgrammes.id, programme.id));
+  await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "status_changed", details: { from: programme.status, to: input.status, reason: input.reason ?? null, changedAt: now.toISOString() } });
+  revalidatePath("/designer");
+  return { programmeId: programme.id, status: input.status };
 }
 
 export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInputSchema>) {
