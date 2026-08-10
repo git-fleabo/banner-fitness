@@ -53,6 +53,7 @@ export default function DesignerPage() {
   const [showClient, setShowClient] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showClients, setShowClients] = useState(false);
+  const [showProgrammes, setShowProgrammes] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showSessionEditor, setShowSessionEditor] = useState(false);
   const [showClientPreview, setShowClientPreview] = useState(false);
@@ -108,7 +109,7 @@ export default function DesignerPage() {
         <div className="workspace-label">WORKSPACE <span>⌄</span></div>
         <nav className="designer-nav" aria-label="Main navigation">
           {["Overview", "Clients", "Programmes", "Exercise library"].map((item, index) => (
-            <button key={item} className={activeNav === item ? "active" : ""} onClick={() => { setActiveNav(item); setShowLibrary(item === "Exercise library"); setShowClients(item === "Clients"); }}>
+              <button key={item} className={activeNav === item ? "active" : ""} onClick={() => { setActiveNav(item); setShowLibrary(item === "Exercise library"); setShowClients(item === "Clients"); setShowProgrammes(item === "Programmes"); }}>
               <Icon>{["⌂", "♧", "▦", "◈"][index]}</Icon>{item}
               {item === "Clients" && <em>{overview ? overview.counts.clients : "—"}</em>}
             </button>
@@ -123,7 +124,7 @@ export default function DesignerPage() {
       <section className="designer-content">
         <header className="designer-header"><div className="mobile-brand">ORIGIN / PT STUDIO</div><div className="header-search">⌕ <span>Search clients, programmes...</span><kbd>⌘ K</kbd></div><div className="header-actions"><button className="icon-button">?</button><button className="icon-button">♢</button><div className="mini-avatar">NO</div></div></header>
 
-        {showLibrary ? <ExerciseLibrary onClose={() => { setShowLibrary(false); setActiveNav("Overview"); }} /> : showClients ? <ClientList onClose={() => { setShowClients(false); setActiveNav("Overview"); }} onNew={() => setShowOnboarding(true)} onOpen={(id, name) => { setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowClients(false); setActiveNav("Overview"); setShowClient(true); }} /> : <>
+        {showLibrary ? <ExerciseLibrary onClose={() => { setShowLibrary(false); setActiveNav("Overview"); }} /> : showProgrammes ? <ProgrammeList programmes={overview?.programmes ?? []} clients={overview?.clients ?? []} onClose={() => { setShowProgrammes(false); setActiveNav("Overview"); }} onOpen={(id, name) => { setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowProgrammes(false); setActiveNav("Overview"); setShowClient(true); }} /> : showClients ? <ClientList onClose={() => { setShowClients(false); setActiveNav("Overview"); }} onNew={() => setShowOnboarding(true)} onOpen={(id, name) => { setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowClients(false); setActiveNav("Overview"); setShowClient(true); }} /> : <>
           <div className="page-heading"><div><p className="eyebrow">MONDAY, 10 AUGUST 2026</p><h1>Good morning, Noaman <span>✦</span></h1><p className="subheading">Here&apos;s what needs your attention today.</p></div><button className="primary-button" onClick={() => setShowOnboarding(true)}>+ New client</button></div>
 
           <div className="stat-grid">
@@ -167,11 +168,38 @@ function CaseStudySeedPanel({notify}:{notify:(message:string)=>void}) { const [l
 
 function CaseStudyDraftButton({clientId,hasExisting,onSaved,notify}:{clientId:string;hasExisting:boolean;onSaved:()=>void;notify:(message:string)=>void}) { const [loading,setLoading] = useState(false); const [error,setError] = useState(""); async function generate() { setLoading(true); setError(""); try { const response = await fetch("/api/designer/case-study-draft", { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ clientId }) }); const result = await response.json() as { programmeLabel?: string; error?: string }; if (!response.ok) throw new Error(result.error || "Case-study draft could not be generated"); notify(`${result.programmeLabel || "Case-study draft"} created for PT review`); onSaved(); } catch (generateError) { setError(generateError instanceof Error ? generateError.message : "Case-study draft could not be generated"); } finally { setLoading(false); } } return <div className="case-study-draft-panel"><div><p className="eyebrow">RULE-BASED TEST DRAFT</p><strong>{hasExisting ? "Generate revised case-study version" : "Generate case-study programme"}</strong><small>Creates an editable draft using the client profile, experience, goals, equipment and screening flags. No AI is used.</small></div><button className="primary-button" onClick={generate} disabled={loading}>{loading ? "Generating…" : hasExisting ? "Generate new version →" : "Generate draft →"}</button>{error && <p role="alert">{error}</p>}</div>; }
 
+function ProgrammeList({programmes,clients,onClose,onOpen}:{programmes:OverviewData["programmes"];clients:OverviewData["clients"];onClose:()=>void;onOpen:(id:string,name:string)=>void}) { const clientNames = new Map(clients.map((client) => [client.id, `${client.firstName} ${client.lastName}`])); return <div className="client-list-view"><div className="page-heading"><div><p className="eyebrow">PROGRAMME MANAGEMENT</p><h1>Programmes</h1><p className="subheading">Review drafts, versions, phases and client assignments in one place.</p></div><button className="secondary-button" onClick={onClose}>← Dashboard</button></div><section className="panel client-list-panel"><div className="panel-heading"><div><p className="eyebrow">SAVED PROGRAMMES</p><h2>{programmes.length} programme{programmes.length === 1 ? "" : "s"}</h2></div><span className="panel-muted">Owner-scoped records</span></div>{programmes.length ? <div className="client-table">{programmes.map((programme) => <button key={programme.id} className="client-table-row" onClick={() => onOpen(programme.clientId, clientNames.get(programme.clientId) ?? "Client")}><span className="avatar avatar-mint">{(clientNames.get(programme.clientId) ?? "C").split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><span><strong>{clientNames.get(programme.clientId) ?? "Unknown client"}</strong><small>{programme.name} · Version {programme.version} · Week {programme.currentWeek} of {programme.durationWeeks}</small></span><span className="status-pill">{programme.status}</span><span className="row-arrow">→</span></button>)}</div> : <div className="empty-client-state"><div className="empty-icon">▦</div><h3>No programmes saved yet</h3><p>Save a draft from a client workspace to see it here.</p></div>}</section></div>; }
+
 function ClientList({onClose,onNew,onOpen}:{onClose:()=>void;onNew:()=>void;onOpen:(id:string,name:string)=>void}) { const [items,setItems] = useState<OverviewData["clients"]>([]); const [loading,setLoading] = useState(true); useEffect(() => { fetch("/api/designer/overview", { credentials: "same-origin", cache: "no-store" }).then(response => response.json() as Promise<OverviewData>).then(data => setItems(data.clients)).finally(() => setLoading(false)); }, []); return <div className="client-list-view"><div className="page-heading"><div><p className="eyebrow">CLIENT MANAGEMENT</p><h1>Clients</h1><p className="subheading">Owner-scoped profiles, screening status and programme access.</p></div><div className="page-heading-actions"><button className="secondary-button" onClick={onClose}>← Dashboard</button><button className="primary-button" onClick={onNew}>+ New client</button></div></div><section className="panel client-list-panel"><div className="panel-heading"><div><p className="eyebrow">YOUR CLIENTS</p><h2>{items.length} active profiles</h2></div><button className="text-button">Sort: Recently updated ▾</button></div>{loading ? <p className="library-empty">Loading owner-scoped clients…</p> : items.length === 0 ? <div className="empty-client-state"><div className="empty-icon">♧</div><h3>No clients yet</h3><p>Create the first profile to capture screening, goals, preferences and equipment.</p><button className="primary-button" onClick={onNew}>Create a client →</button></div> : <div className="client-table">{items.map(item => <button key={item.id} className="client-table-row" onClick={() => onOpen(item.id, `${item.firstName} ${item.lastName}`)}><span className="avatar">{item.firstName.slice(0,1)}{item.lastName.slice(0,1)}</span><span><strong>{item.firstName} {item.lastName}</strong><small>Updated {new Date(item.updatedAt).toLocaleDateString("en-GB")}</small></span><span className="status-pill">Active</span><span className="row-arrow">→</span></button>)}</div>}</section></div>; }
 
 function ClientWorkspace({name,goal,days,setGoal,setDays,screening,setScreening,expanded,setExpanded,onClose,onEditSessions,notify,week,programme,location,detail,loading,error,caseStudyDraft}:{name:string;goal:string;days:number;setGoal:(v:string)=>void;setDays:(v:number)=>void;screening:boolean;setScreening:(v:boolean)=>void;expanded:string|null;setExpanded:(v:string|null)=>void;onClose:()=>void;onEditSessions:()=>void;notify:(v:string)=>void;week:Exercise[];programme:ClientDetail["programme"];location:ClientDetail["location"]|undefined;detail:ClientDetail|null;loading:boolean;error:string;caseStudyDraft?:{clientId:string;hasExisting:boolean;onSaved:()=>void}}) {
   const [saving, setSaving] = useState(false);
   const [showWorkoutLog, setShowWorkoutLog] = useState(false);
+  useEffect(() => {
+    const tabs = Array.from(document.querySelectorAll<HTMLElement>(".workspace-tabs span"));
+    const targets: Record<string, string> = { Assessment: ".warning-card", Programme: ".plan-column", History: ".programme-history-panel" };
+    const handlers = tabs.map((tab) => {
+      const handler = () => {
+        tabs.forEach((item) => item.classList.toggle("active", item === tab));
+        const target = document.querySelector<HTMLElement>(targets[tab.textContent?.trim() ?? ""]);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        else notify(`${tab.textContent?.trim() ?? "Tab"} details are not available yet`);
+      };
+      tab.addEventListener("click", handler);
+      return { tab, handler };
+    });
+    return () => handlers.forEach(({ tab, handler }) => tab.removeEventListener("click", handler));
+  }, [notify, programme]);
+  useEffect(() => {
+    const copyRationale = (event: MouseEvent) => {
+      const button = (event.target as HTMLElement | null)?.closest("button");
+      if (button?.textContent?.trim() !== "Copy rationale") return;
+      const rationale = programme?.rationale ?? "";
+      if (rationale && navigator.clipboard) navigator.clipboard.writeText(rationale).then(() => notify("Rationale copied to clipboard")).catch(() => notify("Rationale ready to copy from the notes"));
+    };
+    document.addEventListener("click", copyRationale);
+    return () => document.removeEventListener("click", copyRationale);
+  }, [notify, programme?.rationale]);
   if (loading) return <div className="workspace-overlay"><div className="workspace-drawer workspace-loading"><header className="workspace-header"><div><p className="eyebrow">CLIENT WORKSPACE</p><h1>{name}</h1><p className="panel-muted">Loading client record…</p></div><button className="close-button" onClick={onClose}>×</button></header><div className="workspace-loading-card"><div className="loading-orbit">O</div><h2>Loading client workspace</h2><p>Retrieving assessment, programme history and saved sessions.</p></div></div></div>;
   if (error) return <div className="workspace-overlay"><div className="workspace-drawer workspace-loading"><header className="workspace-header"><div><p className="eyebrow">CLIENT WORKSPACE</p><h1>{name}</h1><p className="panel-muted">Client details could not be loaded</p></div><button className="close-button" onClick={onClose}>×</button></header><div className="workspace-loading-card"><h2>Unable to load this client</h2><p>{error}</p><button className="primary-button" onClick={() => window.location.reload()}>Retry</button></div></div></div>;
   async function saveDraft() {
