@@ -18,6 +18,12 @@ export type ScreeningFlag = {
   action: "clearance" | "assessment" | "scope";
 };
 
+export const screeningReviewMarker = "[SCREENING REVIEW RECORDED]";
+
+export function hasRecordedScreeningReview(notes: string | null | undefined) {
+  return notes?.includes(screeningReviewMarker) ?? false;
+}
+
 export function getScreeningFlags(answers: ScreeningAnswers): ScreeningFlag[] {
   const flags: ScreeningFlag[] = [];
   if (answers.chestPain || answers.cardiovascularHistory || answers.diagnosedDisease) {

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
 import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
-import { getScreeningFlags } from "@/lib/pt-programming";
+import { getScreeningFlags, screeningReviewMarker } from "@/lib/pt-programming";
 import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
 
 const clientInputSchema = z.object({
@@ -34,6 +34,7 @@ const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "p
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
+const screeningReviewSchema = z.object({ clientId: z.string().uuid(), outcome: z.enum(["pt_review_completed", "professional_clearance_obtained"]), reason: z.string().trim().min(10).max(1000) });
 const weekPlanSchema = z.object({ focus: z.string().trim().min(1).max(120), volumeTarget: z.string().trim().min(1).max(80), intensityTarget: z.string().trim().min(1).max(80) });
 
 type WeekPlan = z.infer<typeof weekPlanSchema>;
@@ -272,6 +273,38 @@ export async function transitionProgrammeAction(rawInput: z.input<typeof program
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "status_changed", details: { from: programme.status, to: input.status, reason: input.reason ?? null, changedAt: now.toISOString() } });
   revalidatePath("/designer");
   return { programmeId: programme.id, status: input.status };
+}
+
+export async function resolveScreeningAction(rawInput: z.input<typeof screeningReviewSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = screeningReviewSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Client could not be found.");
+  const [assessment] = await db.select({ id: ptAssessments.id, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+  if (!assessment) throw new Error("Record an assessment before resolving screening.");
+  const reviewDate = new Date().toISOString().slice(0, 10);
+  const outcomeLabel = input.outcome === "professional_clearance_obtained" ? "Appropriate professional clearance obtained" : "PT screening review completed";
+  const note = `${screeningReviewMarker} ${outcomeLabel} on ${reviewDate}. ${input.reason}`;
+  const previousNotes = assessment.ptNotes?.trim();
+  await db.update(ptAssessments).set({ clearanceRequired: false, reviewDate, ptNotes: previousNotes ? `${previousNotes}\n\n${note}` : note, updatedAt: new Date() }).where(eq(ptAssessments.id, assessment.id));
+  const [programme] = await db.select({ id: ptProgrammes.id }).from(ptProgrammes).where(and(eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).orderBy(desc(ptProgrammes.updatedAt)).limit(1);
+  if (programme) await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "screening_reviewed", details: { outcome: input.outcome, reason: input.reason, reviewDate } });
+  revalidatePath("/designer");
+  return { clientId: client.id, outcome: input.outcome };
+}
+
+const exerciseCreateSchema = z.object({ name: z.string().trim().min(2).max(120), pattern: z.string().trim().min(2).max(80), target: z.array(z.string().trim().min(1)).min(1).max(10), equipment: z.array(z.string().trim().min(1)).max(10), difficulty: z.enum(["beginner", "intermediate", "advanced"]), complexity: z.enum(["low", "moderate", "high"]), compound: z.boolean(), unilateral: z.boolean() });
+
+export async function createExerciseAction(rawInput: z.input<typeof exerciseCreateSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = exerciseCreateSchema.parse(rawInput);
+  const db = getDb();
+  const slugBase = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "custom-exercise";
+  const [exercise] = await db.insert(ptExercises).values({ ownerProfileId: owner.authUserId, slug: `${slugBase}-${Date.now().toString(36)}`, name: input.name, movementPattern: input.pattern, primaryMuscles: input.target, equipment: input.equipment, difficulty: input.difficulty, technicalComplexity: input.complexity, suitability: ["strength", "hypertrophy", "general fitness"], compound: input.compound, unilateral: input.unilateral, tags: ["custom"], regressions: [], progressions: [], alternatives: [], coachingCues: [], commonErrors: [], cautionTags: [] }).returning({ id: ptExercises.id, name: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, equipment: ptExercises.equipment, difficulty: ptExercises.difficulty, complexity: ptExercises.technicalComplexity, suitability: ptExercises.suitability, compound: ptExercises.compound, unilateral: ptExercises.unilateral, regressions: ptExercises.regressions, progressions: ptExercises.progressions, alternatives: ptExercises.alternatives, coachingCues: ptExercises.coachingCues, commonErrors: ptExercises.commonErrors, cautionTags: ptExercises.cautionTags });
+  if (!exercise) throw new Error("Exercise could not be created.");
+  revalidatePath("/designer");
+  return { exercise };
 }
 
 export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInputSchema>) {
