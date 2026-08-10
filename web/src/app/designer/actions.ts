@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
+ import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -32,6 +32,7 @@ const clientInputSchema = z.object({
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), technique: z.string().trim().max(80).optional(), notes: z.string().trim().max(500).optional(), groupKey: z.string().trim().max(80).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
 const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
+const deleteClientSchema = z.object({ clientId: z.string().uuid(), confirmation: z.literal("DELETE CLIENT") });
 const clientPreferencesSchema = z.object({ clientId: z.string().uuid(), likedExercises: z.array(z.string().trim().min(1)).max(30), dislikedExercises: z.array(z.string().trim().min(1)).max(30), preferredStyle: z.string().trim().max(120).optional(), preferredStructure: z.string().trim().max(120).optional(), preferredEquipment: z.array(z.string().trim().min(1)).max(30), cardioModalities: z.array(z.string().trim().min(1)).max(20), varietyPreference: z.string().trim().max(80).optional(), confidenceNotes: z.string().trim().max(2000).optional() });
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
@@ -254,6 +255,17 @@ export async function updateClientProfileAction(rawInput: z.input<typeof clientP
   const db = getDb();
   const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
   if (!client) throw new Error("Client profile could not be updated.");
+  revalidatePath("/designer");
+  return { clientId: client.id };
+}
+
+export async function deleteClientAction(rawInput: z.input<typeof deleteClientSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = deleteClientSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Client could not be found.");
+  await db.delete(ptClients).where(and(eq(ptClients.id, client.id), eq(ptClients.ownerProfileId, owner.authUserId)));
   revalidatePath("/designer");
   return { clientId: client.id };
 }
