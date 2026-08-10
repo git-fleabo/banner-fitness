@@ -97,6 +97,10 @@ export default function DesignerPage() {
     window.setTimeout(() => setToast(""), 2400);
   };
 
+  const refreshOverview = () => {
+    void fetch("/api/designer/overview", { credentials: "same-origin", cache: "no-store" }).then(async (response) => { if (response.ok) setOverview(await response.json() as OverviewData); }).catch(() => undefined);
+  };
+
   useEffect(() => {
     if (!showClient || !clientId) return;
     const controller = new AbortController();
@@ -164,7 +168,7 @@ export default function DesignerPage() {
       {showClientPreview && clientDetail?.programme && <ClientPortalPreview clientName={client} programme={clientDetail.programme} onClose={() => setShowClientPreview(false)} />}
       {showCalendar && <ProgrammeCalendar schedule={overview?.schedule ?? []} onClose={() => setShowCalendar(false)} />}
       {showSessionEditor && <SessionEditorModal clientName={client} goal={goal} days={days} week={clientDetail?.programme?.sessions[0]?.exercises ?? []} savedSessions={clientDetail?.programme?.sessions} onClose={() => setShowSessionEditor(false)} onSaved={() => { setClientDetail(null); setDetailRefresh((current) => current + 1); }} notify={notify} />}
-      {showOnboarding && <ClientOnboarding onClose={() => setShowOnboarding(false)} onCreated={(name, riskCount, createdClientId) => { setClientId(createdClientId); setClient(name); setScreening(riskCount > 0); setShowOnboarding(false); setShowClient(true); notify(riskCount ? `Client created with ${riskCount} screening flag${riskCount === 1 ? "" : "s"}` : "Client created and ready to programme"); }} />}
+      {showOnboarding && <ClientOnboarding onClose={() => setShowOnboarding(false)} onCreated={(name, riskCount, createdClientId) => { refreshOverview(); setClientId(createdClientId); setClient(name); setScreening(riskCount > 0); setShowOnboarding(false); setShowClient(true); notify(riskCount ? `Client created with ${riskCount} screening flag${riskCount === 1 ? "" : "s"}` : "Client created and ready to programme"); }} />}
       {showSettings && <DesignerSettings onClose={() => setShowSettings(false)} onSaved={(settings) => { setQualitySettings(settings); notify("Quality settings saved"); }} />}
       <button className="mobile-menu-launcher" onClick={() => setMobileMenuOpen(true)} aria-label="Open navigation">☰</button>
       {mobileMenuOpen && <MobileNav onClose={() => setMobileMenuOpen(false)} onLibrary={() => { setMobileMenuOpen(false); setShowLibrary(true); setActiveNav("Exercise library"); }} onClients={() => { setMobileMenuOpen(false); setShowClients(true); setActiveNav("Clients"); }} onProgrammes={() => { setMobileMenuOpen(false); setShowProgrammes(true); setActiveNav("Programmes"); }} onSettings={() => { setMobileMenuOpen(false); setShowSettings(true); }} onOverview={() => { setMobileMenuOpen(false); setShowClients(false); setShowLibrary(false); setShowProgrammes(false); setActiveNav("Overview"); }} />}

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
 import { ptAssessments, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
-import { getScreeningFlags, screeningReviewMarker } from "@/lib/pt-programming";
+import { getScreeningFlags, hasRecordedScreeningReview, screeningReviewMarker } from "@/lib/pt-programming";
 import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
 import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings } from "@/lib/pt-quality";
 
@@ -370,9 +370,10 @@ export async function transitionProgrammeAction(rawInput: z.input<typeof program
   const [programme] = await db.select({ id: ptProgrammes.id, clientId: ptProgrammes.clientId, status: ptProgrammes.status }).from(ptProgrammes).where(and(eq(ptProgrammes.id, input.programmeId), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
   if (!programme) throw new Error("Programme could not be found.");
   if (programme.status === input.status) return { programmeId: programme.id, status: programme.status };
-  if (input.status === "assigned") {
-    const [assessment] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired }).from(ptAssessments).where(eq(ptAssessments.clientId, programme.clientId)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
-    if (assessment?.clearanceRequired) throw new Error("Resolve the screening or clearance flag before assigning this programme.");
+  if (input.status === "assigned" || input.status === "active") {
+    const [assessment] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, programme.clientId)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+    const unresolvedRiskFlags = Array.isArray(assessment?.riskFlags) && assessment.riskFlags.length > 0 && !hasRecordedScreeningReview(assessment?.ptNotes);
+    if (assessment?.clearanceRequired || unresolvedRiskFlags) throw new Error("Resolve the screening or clearance flag before assigning this programme.");
   }
   if (input.status === "active") {
     const [existingActive] = await db.select({ id: ptProgrammes.id }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, programme.clientId), eq(ptProgrammes.status, "active"), ne(ptProgrammes.id, programme.id))).limit(1);
