@@ -28,6 +28,7 @@ const clientInputSchema = z.object({
 });
 
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional() });
+const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
 
 const programmeInputSchema = z.object({
   clientName: z.string().trim().min(1).max(160),
@@ -81,6 +82,19 @@ export async function createClientAction(rawInput: z.input<typeof clientInputSch
   await db.insert(ptLocations).values({ clientId: client.id, name: input.locationName, locationType: input.locationType, equipment: input.equipment });
   revalidatePath("/designer");
   return { clientId: client.id, riskFlags: flags };
+}
+
+export async function updateClientAction(rawInput: z.input<typeof clientUpdateSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = clientUpdateSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.update(ptClients).set({ sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: Array.from({ length: input.trainingDays }, (_, index) => index + 1), updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
+  if (!client) throw new Error("Client could not be updated.");
+  const [goal] = await db.select({ id: ptGoals.id }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).limit(1);
+  if (goal) await db.update(ptGoals).set({ goalType: input.goalType, updatedAt: new Date() }).where(eq(ptGoals.id, goal.id));
+  else await db.insert(ptGoals).values({ clientId: client.id, goalType: input.goalType, priority: "primary" });
+  revalidatePath("/designer");
+  return { clientId: client.id };
 }
 
 export async function saveProgrammeAction(rawInput: z.input<typeof programmeInputSchema>) {
