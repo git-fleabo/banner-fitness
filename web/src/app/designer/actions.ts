@@ -29,6 +29,7 @@ const clientInputSchema = z.object({
 
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
+const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
 
 const programmeInputSchema = z.object({
   clientName: z.string().trim().min(1).max(160),
@@ -106,7 +107,8 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   let [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, firstName), eq(ptClients.lastName, lastName))).limit(1);
   if (!client) [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName, lastName, sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: Array.from({ length: input.trainingDays }, (_, index) => index + 1) }).returning({ id: ptClients.id });
   if (!client) throw new Error("Client could not be resolved.");
-  const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: "Full-body foundation with RIR-based double progression", status: "draft", rationale: "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed." }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
+  const [previousProgramme] = await db.select({ version: ptProgrammes.version }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, client.id))).orderBy(desc(ptProgrammes.version)).limit(1);
+  const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale: "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed." }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
   if (!programme) throw new Error("Programme could not be saved.");
   const allExercises = await db.select({ id: ptExercises.id, name: ptExercises.name }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId))).orderBy(asc(ptExercises.name));
   const exerciseRows = input.exercises.map((exercise, index) => {
@@ -138,6 +140,20 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version } });
   revalidatePath("/designer");
   return { programmeId: programme.id, version: programme.version, exerciseCount: savedPrescriptionCount, weekCount: 8 };
+}
+
+export async function recordProgrammeOverrideAction(rawInput: z.input<typeof programmeOverrideSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = programmeOverrideSchema.parse(rawInput);
+  const db = getDb();
+  const [programme] = await db.select({ id: ptProgrammes.id, overrideReasons: ptProgrammes.overrideReasons }).from(ptProgrammes).where(and(eq(ptProgrammes.id, input.programmeId), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
+  if (!programme) throw new Error("Programme could not be found.");
+  const override = { warningCodes: input.warningCodes, reason: input.reason, recordedAt: new Date().toISOString() };
+  const previous = Array.isArray(programme.overrideReasons) ? programme.overrideReasons : [];
+  await db.update(ptProgrammes).set({ overrideReasons: [...previous, override], updatedAt: new Date() }).where(eq(ptProgrammes.id, programme.id));
+  await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "quality_override", details: override });
+  revalidatePath("/designer");
+  return { programmeId: programme.id };
 }
 
 export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInputSchema>) {
