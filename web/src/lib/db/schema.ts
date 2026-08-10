@@ -28,11 +28,178 @@ export const feedbackCategory = pgEnum("feedback_category", ["correct", "partly_
 export const reviewReason = pgEnum("review_reason", ["incorrect", "partly_correct", "misconception", "low_confidence", "manual"]);
 export const reviewQueueStatus = pgEnum("review_queue_status", ["queued", "scheduled", "completed", "dismissed"]);
 export const reviewTargetType = pgEnum("review_target_type", ["lesson_version", "learning_object_version", "question_version", "glossary_version"]);
+export const ptClientStatus = pgEnum("pt_client_status", ["active", "archived"]);
+export const ptProgrammeStatus = pgEnum("pt_programme_status", ["draft", "active", "paused", "completed", "archived"]);
+export const ptGoalPriority = pgEnum("pt_goal_priority", ["primary", "secondary"]);
+export const ptSessionType = pgEnum("pt_session_type", ["strength", "hypertrophy", "conditioning", "mobility", "mixed", "recovery"]);
+export const ptIntensityType = pgEnum("pt_intensity_type", ["rir", "rpe", "percent_1rm", "load", "pace", "heart_rate", "duration"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 };
+
+export const ptClients = pgTable("pt_clients", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerProfileId: text("owner_profile_id").notNull().references(() => profiles.authUserId, { onDelete: "cascade" }),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email"),
+  dateOfBirth: date("date_of_birth"),
+  sexOrGender: text("sex_or_gender"),
+  heightCm: integer("height_cm"),
+  weightKg: integer("weight_kg"),
+  bodyComposition: jsonb("body_composition").default({}).notNull(),
+  occupation: text("occupation"),
+  dailyActivity: text("daily_activity"),
+  sleepHours: text("sleep_hours"),
+  stressLevel: text("stress_level"),
+  sessionDurationMinutes: smallint("session_duration_minutes"),
+  preferredDays: jsonb("preferred_days").default([]).notNull(),
+  notes: text("notes"),
+  status: ptClientStatus("status").default("active").notNull(),
+  ...timestamps,
+}, (table) => [index("pt_clients_owner_status_idx").on(table.ownerProfileId, table.status)]);
+
+export const ptAssessments = pgTable("pt_assessments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  assessmentDate: date("assessment_date").notNull(),
+  reviewDate: date("review_date"),
+  responses: jsonb("responses").default({}).notNull(),
+  riskFlags: jsonb("risk_flags").default([]).notNull(),
+  clearanceRequired: boolean("clearance_required").default(false).notNull(),
+  ptNotes: text("pt_notes"),
+  ...timestamps,
+}, (table) => [index("pt_assessments_client_date_idx").on(table.clientId, table.assessmentDate)]);
+
+export const ptGoals = pgTable("pt_goals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  goalType: text("goal_type").notNull(),
+  priority: ptGoalPriority("priority").default("secondary").notNull(),
+  target: text("target"),
+  metric: text("metric"),
+  ...timestamps,
+}, (table) => [index("pt_goals_client_priority_idx").on(table.clientId, table.priority)]);
+
+export const ptPreferences = pgTable("pt_preferences", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  likedExercises: jsonb("liked_exercises").default([]).notNull(),
+  dislikedExercises: jsonb("disliked_exercises").default([]).notNull(),
+  preferredStyle: text("preferred_style"),
+  preferredStructure: text("preferred_structure"),
+  preferredEquipment: jsonb("preferred_equipment").default([]).notNull(),
+  cardioModalities: jsonb("cardio_modalities").default([]).notNull(),
+  varietyPreference: text("variety_preference"),
+  confidenceNotes: text("confidence_notes"),
+  ...timestamps,
+}, (table) => [uniqueIndex("pt_preferences_client_unique").on(table.clientId)]);
+
+export const ptLocations = pgTable("pt_locations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  locationType: text("location_type").notNull(),
+  equipment: jsonb("equipment").default([]).notNull(),
+  ...timestamps,
+}, (table) => [index("pt_locations_client_idx").on(table.clientId)]);
+
+export const ptExercises = pgTable("pt_exercises", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerProfileId: text("owner_profile_id").references(() => profiles.authUserId, { onDelete: "cascade" }),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  movementPattern: text("movement_pattern").notNull(),
+  primaryMuscles: jsonb("primary_muscles").default([]).notNull(),
+  secondaryMuscles: jsonb("secondary_muscles").default([]).notNull(),
+  equipment: jsonb("equipment").default([]).notNull(),
+  difficulty: text("difficulty").notNull(),
+  technicalComplexity: text("technical_complexity").notNull(),
+  suitability: jsonb("suitability").default([]).notNull(),
+  compound: boolean("compound").default(true).notNull(),
+  unilateral: boolean("unilateral").default(false).notNull(),
+  tags: jsonb("tags").default([]).notNull(),
+  regressions: jsonb("regressions").default([]).notNull(),
+  progressions: jsonb("progressions").default([]).notNull(),
+  alternatives: jsonb("alternatives").default([]).notNull(),
+  coachingCues: jsonb("coaching_cues").default([]).notNull(),
+  commonErrors: jsonb("common_errors").default([]).notNull(),
+  cautionTags: jsonb("caution_tags").default([]).notNull(),
+  ...timestamps,
+}, (table) => [index("pt_exercises_pattern_idx").on(table.movementPattern), index("pt_exercises_owner_idx").on(table.ownerProfileId)]);
+
+export const ptProgrammes = pgTable("pt_programmes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerProfileId: text("owner_profile_id").notNull().references(() => profiles.authUserId, { onDelete: "cascade" }),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  goalSummary: text("goal_summary").notNull(),
+  durationWeeks: smallint("duration_weeks").notNull(),
+  methodology: text("methodology").notNull(),
+  status: ptProgrammeStatus("status").default("draft").notNull(),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  currentWeek: smallint("current_week").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
+  rationale: text("rationale"),
+  overrideReasons: jsonb("override_reasons").default([]).notNull(),
+  ...timestamps,
+}, (table) => [index("pt_programmes_owner_status_idx").on(table.ownerProfileId, table.status), index("pt_programmes_client_idx").on(table.clientId)]);
+
+export const ptProgrammeWeeks = pgTable("pt_programme_weeks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  programmeId: uuid("programme_id").notNull().references(() => ptProgrammes.id, { onDelete: "cascade" }),
+  weekNumber: smallint("week_number").notNull(),
+  focus: text("focus").notNull(),
+  volumeTarget: text("volume_target"),
+  intensityTarget: text("intensity_target"),
+  ...timestamps,
+}, (table) => [uniqueIndex("pt_programme_weeks_number_unique").on(table.programmeId, table.weekNumber)]);
+
+export const ptSessions = pgTable("pt_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  programmeWeekId: uuid("programme_week_id").notNull().references(() => ptProgrammeWeeks.id, { onDelete: "cascade" }),
+  locationId: uuid("location_id").references(() => ptLocations.id, { onDelete: "set null" }),
+  dayOfWeek: smallint("day_of_week").notNull(),
+  name: text("name").notNull(),
+  sessionType: ptSessionType("session_type").notNull(),
+  durationMinutes: smallint("duration_minutes").notNull(),
+  warmupMinutes: smallint("warmup_minutes").default(5).notNull(),
+  cooldownMinutes: smallint("cooldown_minutes").default(0).notNull(),
+  notes: text("notes"),
+  sortOrder: smallint("sort_order").default(0).notNull(),
+  ...timestamps,
+}, (table) => [index("pt_sessions_week_day_idx").on(table.programmeWeekId, table.dayOfWeek)]);
+
+export const ptExercisePrescriptions = pgTable("pt_exercise_prescriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sessionId: uuid("session_id").notNull().references(() => ptSessions.id, { onDelete: "cascade" }),
+  exerciseId: uuid("exercise_id").notNull().references(() => ptExercises.id, { onDelete: "restrict" }),
+  orderIndex: smallint("order_index").notNull(),
+  sets: smallint("sets").notNull(),
+  repsMin: smallint("reps_min"),
+  repsMax: smallint("reps_max"),
+  intensityType: ptIntensityType("intensity_type").notNull(),
+  intensityValue: text("intensity_value").notNull(),
+  restSeconds: smallint("rest_seconds"),
+  tempo: text("tempo"),
+  progressionRule: text("progression_rule"),
+  groupKey: text("group_key"),
+  technique: text("technique"),
+  notes: text("notes"),
+  ...timestamps,
+}, (table) => [uniqueIndex("pt_prescriptions_session_order_unique").on(table.sessionId, table.orderIndex), index("pt_prescriptions_exercise_idx").on(table.exerciseId)]);
+
+export const ptProgrammeEvents = pgTable("pt_programme_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  programmeId: uuid("programme_id").notNull().references(() => ptProgrammes.id, { onDelete: "cascade" }),
+  actorProfileId: text("actor_profile_id").notNull().references(() => profiles.authUserId, { onDelete: "restrict" }),
+  action: text("action").notNull(),
+  details: jsonb("details").default({}).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("pt_programme_events_programme_time_idx").on(table.programmeId, table.createdAt)]);
 
 export const profiles = pgTable("profiles", {
   authUserId: text("auth_user_id").primaryKey(),
