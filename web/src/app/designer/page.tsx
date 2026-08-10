@@ -111,7 +111,7 @@ export default function DesignerPage() {
   return (
     <main className="designer-shell">
       <aside className="designer-sidebar">
-        <div className="brand-mark"><span>A</span><div><strong>ASCEND</strong><small>PT STUDIO</small></div></div>
+        <div className="brand-mark"><span>E</span><div><strong>ENGINE PT</strong><small>CONSTRUCTION</small></div></div>
         <div className="workspace-label">WORKSPACE <span>⌄</span></div>
         <nav className="designer-nav" aria-label="Main navigation">
           {["Overview", "Clients", "Programmes", "Exercise library"].map((item, index) => (
@@ -128,7 +128,7 @@ export default function DesignerPage() {
       </aside>
 
       <section className="designer-content">
-        <header className="designer-header"><div className="mobile-brand">ASCEND / PT STUDIO</div><div className="header-search">⌕ <span>Search clients, programmes...</span><kbd>⌘ K</kbd></div><div className="header-actions"><button className="icon-button">?</button><button className="icon-button">♢</button><div className="mini-avatar">NO</div></div></header>
+        <header className="designer-header"><div className="mobile-brand">ENGINE PT / CONSTRUCTION</div><div className="header-search">⌕ <span>Search clients, programmes...</span><kbd>⌘ K</kbd></div><div className="header-actions"><button className="icon-button">?</button><button className="icon-button">♢</button><div className="mini-avatar">NO</div></div></header>
 
         {showLibrary ? <ExerciseLibrary onClose={() => { setShowLibrary(false); setActiveNav("Overview"); }} /> : showProgrammes ? <ProgrammeList programmes={overview?.programmes ?? []} clients={overview?.clients ?? []} onClose={() => { setShowProgrammes(false); setActiveNav("Overview"); }} onOpen={(id, name) => { setProgrammeWeek(null); setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowProgrammes(false); setActiveNav("Overview"); setShowClient(true); }} /> : showClients ? <ClientList onClose={() => { setShowClients(false); setActiveNav("Overview"); }} onNew={() => setShowOnboarding(true)} onOpen={(id, name) => { setProgrammeWeek(null); setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowClients(false); setActiveNav("Overview"); setShowClient(true); }} /> : <>
           <div className="page-heading"><div><p className="eyebrow">MONDAY, 10 AUGUST 2026</p><h1>Good morning, Noaman <span>✦</span></h1><p className="subheading">Here&apos;s what needs your attention today.</p></div><button className="primary-button" onClick={() => setShowOnboarding(true)}>+ New client</button></div>

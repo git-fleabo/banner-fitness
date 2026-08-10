@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ascend PT Studio",
+  title: "Engine PT - Construction",
   description: "An explainable programme-design workspace for personal trainers.",
 };
 

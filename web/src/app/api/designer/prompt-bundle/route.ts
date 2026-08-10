@@ -29,7 +29,7 @@ function buildMarkdown(bundle: Record<string, unknown>, redacted: boolean) {
   const programmeHistory = bundle.programmeHistory as Array<Record<string, unknown>>;
   const results = bundle.recentWorkoutResults as Array<Record<string, unknown>>;
   const lines = [
-    "# Ascend PT review bundle",
+    "# Engine PT - Construction review bundle",
     "",
     "Use this as a review aid for a qualified Personal Trainer. Analyse the supplied facts, identify uncertainties and propose options for PT consideration. Do not diagnose, prescribe medical treatment or bypass screening, referral or professional-clearance requirements. The PT remains responsible for the final programme.",
     "",
