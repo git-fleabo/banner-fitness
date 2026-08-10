@@ -30,6 +30,7 @@ const clientInputSchema = z.object({
 
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), technique: z.string().trim().max(80).optional(), notes: z.string().trim().max(500).optional(), groupKey: z.string().trim().max(80).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
+const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
@@ -190,6 +191,16 @@ export async function updateClientAction(rawInput: z.input<typeof clientUpdateSc
   const [goal] = await db.select({ id: ptGoals.id }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).limit(1);
   if (goal) await db.update(ptGoals).set({ goalType: input.goalType, updatedAt: new Date() }).where(eq(ptGoals.id, goal.id));
   else await db.insert(ptGoals).values({ clientId: client.id, goalType: input.goalType, priority: "primary" });
+  revalidatePath("/designer");
+  return { clientId: client.id };
+}
+
+export async function updateClientProfileAction(rawInput: z.input<typeof clientProfileUpdateSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = clientProfileUpdateSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
+  if (!client) throw new Error("Client profile could not be updated.");
   revalidatePath("/designer");
   return { clientId: client.id };
 }
