@@ -221,6 +221,10 @@ export const ptWorkoutResults = pgTable("pt_workout_results", {
   painReported: boolean("pain_reported").default(false).notNull(),
   enjoyment: smallint("enjoyment"),
   durationMinutes: smallint("duration_minutes"),
+  volumeLoadKg: integer("volume_load_kg").default(0).notNull(),
+  repetitionLoad: integer("repetition_load").default(0).notNull(),
+  averageRpe: smallint("average_rpe"),
+  averageRir: smallint("average_rir"),
   notes: text("notes"),
   ...timestamps,
 }, (table) => [index("pt_workout_results_client_date_idx").on(table.clientId, table.scheduledDate), index("pt_workout_results_owner_status_idx").on(table.ownerProfileId, table.status)]);

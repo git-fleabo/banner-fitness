@@ -115,15 +115,22 @@ const workoutInputSchema = z.object({
   sets: z.array(z.object({ prescriptionId: z.string().uuid(), setNumber: z.number().int().min(1).max(20), reps: z.number().int().min(0).max(100).optional(), loadKg: z.number().int().min(0).max(1000).optional(), rpe: z.number().int().min(1).max(10).optional(), rir: z.number().int().min(0).max(10).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean() })).max(100).optional(),
 });
 
+function normalizePreferredDays(raw: unknown, trainingDays: number) {
+  const values = Array.isArray(raw) ? raw.filter((value): value is number => typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 7) : [];
+  const unique = Array.from(new Set(values)).sort((a, b) => a - b);
+  return (unique.length ? unique : Array.from({ length: trainingDays }, (_, index) => index + 1)).slice(0, 7);
+}
+
 async function requireDesignerAccess() {
   const access = await getAccountAccess();
   if (access.state !== "active" || access.account.role !== "owner") throw new Error("A signed-in PT owner account is required.");
   return access.account;
 }
 
-export async function createClientAction(rawInput: z.input<typeof clientInputSchema>) {
+export async function createClientAction(rawInput: z.input<typeof clientInputSchema> & { preferredDays?: number[] }) {
   const owner = await requireDesignerAccess();
   const input = clientInputSchema.parse(rawInput);
+  const preferredDays = normalizePreferredDays((rawInput as { preferredDays?: unknown }).preferredDays, input.trainingDays);
   const flags = getScreeningFlags(input.screening);
   const db = getDb();
   const [client] = await db.insert(ptClients).values({
@@ -134,7 +141,7 @@ export async function createClientAction(rawInput: z.input<typeof clientInputSch
     dateOfBirth: input.dateOfBirth || null,
     sexOrGender: input.sexOrGender || null,
     sessionDurationMinutes: input.sessionDurationMinutes,
-    preferredDays: Array.from({ length: input.trainingDays }, (_, index) => index + 1),
+    preferredDays,
     notes: input.ptNotes || null,
   }).returning({ id: ptClients.id });
   if (!client) throw new Error("Client could not be created.");
@@ -227,11 +234,12 @@ export async function generateCaseStudyDraftAction(rawInput: z.input<typeof case
   return { ...result, slug, programmeLabel: `${plan.goal} case-study draft` };
 }
 
-export async function updateClientAction(rawInput: z.input<typeof clientUpdateSchema>) {
+export async function updateClientAction(rawInput: z.input<typeof clientUpdateSchema> & { preferredDays?: number[] }) {
   const owner = await requireDesignerAccess();
   const input = clientUpdateSchema.parse(rawInput);
+  const preferredDays = normalizePreferredDays(rawInput.preferredDays, input.trainingDays);
   const db = getDb();
-  const [client] = await db.update(ptClients).set({ sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: Array.from({ length: input.trainingDays }, (_, index) => index + 1), updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
+  const [client] = await db.update(ptClients).set({ sessionDurationMinutes: input.sessionDurationMinutes, preferredDays, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
   if (!client) throw new Error("Client could not be updated.");
   const [goal] = await db.select({ id: ptGoals.id }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).limit(1);
   if (goal) await db.update(ptGoals).set({ goalType: input.goalType, updatedAt: new Date() }).where(eq(ptGoals.id, goal.id));
@@ -303,8 +311,8 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   const db = getDb();
   const [firstName, ...lastParts] = input.clientName.split(" ");
   const lastName = lastParts.join(" ") || "Client";
-  let [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, firstName), eq(ptClients.lastName, lastName))).limit(1);
-  if (!client) [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName, lastName, sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: Array.from({ length: input.trainingDays }, (_, index) => index + 1) }).returning({ id: ptClients.id });
+  let [client] = await db.select({ id: ptClients.id, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, firstName), eq(ptClients.lastName, lastName))).limit(1);
+  if (!client) [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName, lastName, sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: input.sessionDays ?? Array.from({ length: input.trainingDays }, (_, index) => index + 1) }).returning({ id: ptClients.id, preferredDays: ptClients.preferredDays });
   if (!client) throw new Error("Client could not be resolved.");
   const [previousProgramme] = await db.select({ version: ptProgrammes.version }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, client.id))).orderBy(desc(ptProgrammes.version)).limit(1);
   const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: input.methodology || "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale: input.rationale || "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed." }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
@@ -325,7 +333,7 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
     for (const [day, exercises] of Object.entries(byDay)) rowsByWeek[week][day] = toExerciseRows(exercises);
   }
   let savedPrescriptionCount = 0;
-  const sessionDays = input.sessionDays ?? [1, 3, 5];
+  const sessionDays = input.sessionDays ?? normalizePreferredDays(client.preferredDays, input.trainingDays);
   for (let weekNumber = 1; weekNumber <= 8; weekNumber += 1) {
     const weekPlan = input.weekPlans?.[weekNumber - 1];
     const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekPlan?.focus || (weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review"), volumeTarget: weekPlan?.volumeTarget || (weekNumber <= 2 ? "Moderate" : "Moderate-high"), intensityTarget: weekPlan?.intensityTarget || "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
@@ -449,14 +457,18 @@ export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInp
   if (!client) throw new Error("Save the client profile before logging a workout.");
   const [session] = await db.select({ id: ptSessions.id }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptProgrammeWeeks.id, ptSessions.programmeWeekId)).innerJoin(ptProgrammes, eq(ptProgrammes.id, ptProgrammeWeeks.programmeId)).where(and(eq(ptSessions.id, input.sessionId), eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
   if (!session) throw new Error("The selected session could not be found for this client.");
-  const [result] = await db.insert(ptWorkoutResults).values({ ownerProfileId: owner.authUserId, clientId: client.id, sessionId: session.id, scheduledDate: input.scheduledDate, completedAt: input.status === "completed" || input.status === "partial" ? new Date() : null, status: input.status, sessionRpe: input.sessionRpe ?? null, energy: input.energy ?? null, painReported: input.painReported, enjoyment: input.enjoyment ?? null, durationMinutes: input.durationMinutes ?? null, notes: input.notes || null }).returning({ id: ptWorkoutResults.id });
+  const prescriptions = await db.select({ id: ptExercisePrescriptions.id }).from(ptExercisePrescriptions).where(eq(ptExercisePrescriptions.sessionId, session.id));
+  const allowed = new Set(prescriptions.map((prescription) => prescription.id));
+  const setRows = input.sets?.filter((set) => allowed.has(set.prescriptionId)).map((set) => ({ workoutResultId: "", prescriptionId: set.prescriptionId, setNumber: set.setNumber, actualReps: set.reps ?? null, actualLoadKg: set.loadKg ?? null, actualRpe: set.rpe ?? null, actualRir: set.rir ?? null, techniqueAcceptable: set.techniqueAcceptable, painReported: set.painReported })) ?? [];
+  const repetitionLoad = setRows.reduce((total, set) => total + (set.actualReps ?? 0), 0);
+  const volumeLoadKg = setRows.reduce((total, set) => total + (set.actualReps ?? 0) * (set.actualLoadKg ?? 0), 0);
+  const rpeValues = setRows.flatMap((set) => set.actualRpe === null ? [] : [set.actualRpe]);
+  const rirValues = setRows.flatMap((set) => set.actualRir === null ? [] : [set.actualRir]);
+  const averageRpe = rpeValues.length ? Math.round(rpeValues.reduce((total, value) => total + value, 0) / rpeValues.length) : null;
+  const averageRir = rirValues.length ? Math.round(rirValues.reduce((total, value) => total + value, 0) / rirValues.length) : null;
+  const [result] = await db.insert(ptWorkoutResults).values({ ownerProfileId: owner.authUserId, clientId: client.id, sessionId: session.id, scheduledDate: input.scheduledDate, completedAt: input.status === "completed" || input.status === "partial" ? new Date() : null, status: input.status, sessionRpe: input.sessionRpe ?? null, energy: input.energy ?? null, painReported: input.painReported, enjoyment: input.enjoyment ?? null, durationMinutes: input.durationMinutes ?? null, volumeLoadKg, repetitionLoad, averageRpe, averageRir, notes: input.notes || null }).returning({ id: ptWorkoutResults.id });
   if (!result) throw new Error("Workout result could not be saved.");
-  if (input.sets?.length) {
-    const prescriptions = await db.select({ id: ptExercisePrescriptions.id }).from(ptExercisePrescriptions).where(eq(ptExercisePrescriptions.sessionId, session.id));
-    const allowed = new Set(prescriptions.map((prescription) => prescription.id));
-    const setRows = input.sets.filter((set) => allowed.has(set.prescriptionId)).map((set) => ({ workoutResultId: result.id, prescriptionId: set.prescriptionId, setNumber: set.setNumber, actualReps: set.reps ?? null, actualLoadKg: set.loadKg ?? null, actualRpe: set.rpe ?? null, actualRir: set.rir ?? null, techniqueAcceptable: set.techniqueAcceptable, painReported: set.painReported }));
-    if (setRows.length) await db.insert(ptWorkoutResultSets).values(setRows);
-  }
+  if (setRows.length) await db.insert(ptWorkoutResultSets).values(setRows.map((set) => ({ ...set, workoutResultId: result.id })));
   revalidatePath("/designer");
-  return { resultId: result.id };
+  return { resultId: result.id, metrics: { volumeLoadKg, repetitionLoad, averageRpe, averageRir } };
 }

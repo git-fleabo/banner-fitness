@@ -136,3 +136,43 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .assessment-edit-modal textarea { display:block; width:100%; min-height:78px; resize:vertical; border:1px solid var(--designer-line); border-radius:5px; padding:9px; margin-top:6px; font:11px inherit; color:var(--navy); }
 .settings-modal footer,.assessment-edit-modal footer { display:flex; justify-content:flex-end; gap:9px; margin-top:18px; }
 @media (max-width: 680px) { .workspace-support-stack { padding:0 15px 25px; }.workspace-support-grid,.settings-content { grid-template-columns:1fr; }.assessment-facts,.assessment-notes { grid-template-columns:1fr; }.pt-tools-panel { align-items:stretch; flex-direction:column; }.pt-tools-grid { justify-content:flex-start; }.settings-modal,.assessment-edit-modal { padding:18px; max-height:calc(100vh - 20px); } }
+
+.training-frequency-picker { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:7px; }
+.training-frequency-picker button,.weekday-picker button { border:1px solid #dfe4dd; border-radius:6px; background:#fff; color:#6e7c76; padding:9px 5px; font:700 10px inherit; cursor:pointer; }
+.training-frequency-picker button.selected,.weekday-picker button.selected { border-color:#6fa27a; background:#e7f2e7; color:#286850; }
+.weekday-picker { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+.weekday-picker button { min-width:42px; }
+.training-days-panel { background:#f8fbf7; border-color:#dce9dc; }
+.training-days-panel .panel-muted { font-size:10px; line-height:1.45; }
+.training-days-panel .inner-heading { margin-bottom:8px; }
+.training-days-panel .workspace-save-button { margin-top:12px; }
+.client-progress-floating { position:static; inset:auto; z-index:auto; display:inline-flex; border:1px solid #b7d3bd; border-radius:5px; background:#eaf5eb; color:#2f7054; padding:9px 10px; box-shadow:none; font:700 9px inherit; cursor:pointer; }
+.client-progress-floating:hover { background:#dcefe0; }
+.progress-modal { width:min(1000px,100%); max-height:calc(100vh - 40px); overflow:auto; background:#fff; border-radius:10px; box-shadow:0 12px 40px #17363338; padding:24px; }
+.progress-modal header { display:flex; justify-content:space-between; gap:14px; margin-bottom:18px; }
+.progress-modal h2 { color:var(--navy); font:500 23px Georgia; margin-top:7px; }
+.progress-modal header p:not(.eyebrow) { color:#86918d; font-size:11px; line-height:1.5; margin-top:7px; max-width:680px; }
+.progress-content { display:grid; gap:14px; }
+.progress-metric-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.progress-metric-grid>div,.progress-chart-card,.progress-table-card { border:1px solid #e5e8e2; border-radius:8px; padding:14px; background:#fbfcfa; }
+.progress-metric-grid span,.progress-metric-grid small { display:block; color:#7c8b84; font-size:9px; }
+.progress-metric-grid strong { display:block; color:var(--navy); font:500 22px Georgia; margin:7px 0 5px; }
+.progress-metric-grid small { line-height:1.35; }
+.progress-section-heading { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:10px; }
+.progress-section-heading h3 { color:var(--navy); font:600 15px Georgia; margin-top:4px; }
+.progress-section-heading>small { color:#87958f; font-size:9px; }
+.progress-chart { display:block; width:100%; height:190px; overflow:visible; }
+.progress-empty { color:#87958f; font-size:10px; padding:18px 0; }
+.progress-two-column { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.progress-table-wrap { overflow:auto; }
+.progress-table-wrap table { width:100%; border-collapse:collapse; color:#62736c; font-size:10px; }
+.progress-table-wrap th,.progress-table-wrap td { border-bottom:1px solid #edf0eb; padding:9px 6px; text-align:left; white-space:nowrap; }
+.progress-table-wrap thead th { color:#7d8b85; font-size:8px; letter-spacing:.08em; text-transform:uppercase; }
+.progress-table-wrap tbody th { color:var(--navy); font-weight:700; }
+.progress-table-wrap tbody th small { display:block; color:#8a9891; font-size:8px; font-weight:400; margin-top:3px; }
+.progress-footnote { color:#87958f; font-size:9px; line-height:1.45; }
+.progress-modal footer { display:flex; justify-content:flex-end; margin-top:16px; }
+@media (max-width: 680px) { .training-frequency-picker { gap:3px; }.training-frequency-picker button { padding:8px 2px; }.progress-metric-grid { grid-template-columns:repeat(2,1fr); }.progress-two-column { grid-template-columns:1fr; }.progress-modal { padding:18px; max-height:calc(100vh - 20px); } }
+
+/* The full weekday editor below owns schedule changes; hide the legacy 2/3/4 shortcut so it cannot suggest a restricted range. */
+.client-column .two-col > .inner-panel:first-child > label:nth-of-type(2) { display:none; }
