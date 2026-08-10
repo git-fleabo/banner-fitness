@@ -1,0 +1,32 @@
+import { and, asc, desc, eq } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
+
+import { getAccountAccess } from "@/lib/authorization/server";
+import { getDb } from "@/lib/db/client";
+import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptProgrammeWeeks, ptProgrammes, ptSessions } from "@/lib/db/schema";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  const access = await getAccountAccess();
+  if (access.state !== "active" || access.account.role !== "owner") return NextResponse.json({ error: "PT owner access required" }, { status: 403 });
+  const clientId = request.nextUrl.searchParams.get("clientId");
+  if (!clientId) return NextResponse.json({ error: "clientId is required" }, { status: 400 });
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, dateOfBirth: ptClients.dateOfBirth, sexOrGender: ptClients.sexOrGender, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, access.account.authUserId))).limit(1);
+  if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  const [assessment] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, reviewDate: ptAssessments.reviewDate, assessmentDate: ptAssessments.assessmentDate, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+  const [goal] = await db.select({ goalType: ptGoals.goalType, target: ptGoals.target, metric: ptGoals.metric }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).orderBy(desc(ptGoals.updatedAt)).limit(1);
+  const [location] = await db.select({ name: ptLocations.name, locationType: ptLocations.locationType, equipment: ptLocations.equipment }).from(ptLocations).where(eq(ptLocations.clientId, client.id)).orderBy(desc(ptLocations.updatedAt)).limit(1);
+  const [programme] = await db.select({ id: ptProgrammes.id, name: ptProgrammes.name, goalSummary: ptProgrammes.goalSummary, status: ptProgrammes.status, currentWeek: ptProgrammes.currentWeek, durationWeeks: ptProgrammes.durationWeeks, version: ptProgrammes.version, rationale: ptProgrammes.rationale }).from(ptProgrammes).where(and(eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, access.account.authUserId))).orderBy(desc(ptProgrammes.updatedAt)).limit(1);
+  if (!programme) return NextResponse.json({ client, assessment: assessment ?? null, goal: goal ?? null, location: location ?? null, programme: null });
+  const [week] = await db.select({ id: ptProgrammeWeeks.id, weekNumber: ptProgrammeWeeks.weekNumber, focus: ptProgrammeWeeks.focus }).from(ptProgrammeWeeks).where(and(eq(ptProgrammeWeeks.programmeId, programme.id), eq(ptProgrammeWeeks.weekNumber, programme.currentWeek))).limit(1);
+  const sessions = week ? await db.select({ id: ptSessions.id, dayOfWeek: ptSessions.dayOfWeek, name: ptSessions.name, sessionType: ptSessions.sessionType, durationMinutes: ptSessions.durationMinutes, exerciseId: ptExercises.id, exerciseName: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, equipment: ptExercises.equipment, orderIndex: ptExercisePrescriptions.orderIndex, sets: ptExercisePrescriptions.sets, repsMin: ptExercisePrescriptions.repsMin, repsMax: ptExercisePrescriptions.repsMax, intensityValue: ptExercisePrescriptions.intensityValue, restSeconds: ptExercisePrescriptions.restSeconds, tempo: ptExercisePrescriptions.tempo, technique: ptExercisePrescriptions.technique, notes: ptExercisePrescriptions.notes }).from(ptSessions).leftJoin(ptExercisePrescriptions, eq(ptExercisePrescriptions.sessionId, ptSessions.id)).leftJoin(ptExercises, eq(ptExercises.id, ptExercisePrescriptions.exerciseId)).where(eq(ptSessions.programmeWeekId, week.id)).orderBy(asc(ptSessions.dayOfWeek), asc(ptExercisePrescriptions.orderIndex)) : [];
+  const sessionMap = new Map<string, { id: string; dayOfWeek: number; name: string; sessionType: string; durationMinutes: number; exercises: Array<{ name: string; pattern: string; prescription: string; target: string; equipment: string; method?: string; note?: string }> }>();
+  for (const row of sessions) {
+    const current = sessionMap.get(row.id) ?? { id: row.id, dayOfWeek: row.dayOfWeek, name: row.name, sessionType: row.sessionType, durationMinutes: row.durationMinutes, exercises: [] };
+    if (row.exerciseName && row.pattern && row.sets) current.exercises.push({ name: row.exerciseName, pattern: row.pattern, prescription: row.repsMin ? `${row.sets} × ${row.repsMin}${row.repsMax && row.repsMax !== row.repsMin ? `–${row.repsMax}` : ""}` : `${row.sets} sets`, target: Array.isArray(row.target) ? row.target.join(" · ") : "", equipment: Array.isArray(row.equipment) ? row.equipment.join(", ") : "", method: row.technique ?? undefined, note: row.notes ?? undefined });
+    sessionMap.set(row.id, current);
+  }
+  return NextResponse.json({ client, assessment: assessment ?? null, goal: goal ?? null, location: location ?? null, programme: { ...programme, week: week ?? null, sessions: Array.from(sessionMap.values()) } });
+}
