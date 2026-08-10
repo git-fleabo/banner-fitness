@@ -8,6 +8,7 @@ import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
 import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { getScreeningFlags } from "@/lib/pt-programming";
+import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
 
 const clientInputSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -29,6 +30,7 @@ const clientInputSchema = z.object({
 
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
+const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
 
@@ -85,6 +87,25 @@ export async function createClientAction(rawInput: z.input<typeof clientInputSch
   await db.insert(ptLocations).values({ clientId: client.id, name: input.locationName, locationType: input.locationType, equipment: input.equipment });
   revalidatePath("/designer");
   return { clientId: client.id, riskFlags: flags };
+}
+
+export async function seedCaseStudyAction(rawInput: z.input<typeof caseStudySchema>) {
+  const owner = await requireDesignerAccess();
+  const input = caseStudySchema.parse(rawInput);
+  const fixture = caseStudyFixtures[input.slug as CaseStudySlug];
+  const db = getDb();
+  const existing = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, fixture.name), eq(ptClients.lastName, "Case Study"))).limit(1);
+  if (existing[0]) return { clientId: existing[0].id, name: fixture.name, existing: true, riskFlags: getScreeningFlags(fixture.screening) };
+  const dateOfBirth = `${new Date().getFullYear() - fixture.age}-01-01`;
+  const [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName: fixture.name, lastName: "Case Study", dateOfBirth, sexOrGender: fixture.sex, heightCm: fixture.heightCm, weightKg: fixture.weightKg, occupation: "Module 7 case-study profile", dailyActivity: fixture.notes, sessionDurationMinutes: fixture.sessionDurationMinutes, preferredDays: Array.from({ length: fixture.trainingDays }, (_, index) => index + 1), notes: `[CASE STUDY FIXTURE: ${input.slug}] ${fixture.notes}` }).returning({ id: ptClients.id });
+  if (!client) throw new Error("Case-study client could not be created.");
+  const riskFlags = getScreeningFlags(fixture.screening);
+  await db.insert(ptAssessments).values({ clientId: client.id, assessmentDate: new Date().toISOString().slice(0, 10), responses: fixture.screening, riskFlags, clearanceRequired: riskFlags.some((flag) => flag.action === "clearance"), ptNotes: "Imported from Module 7 case-study source. Verify the PAR-Q responses and professional screening decision before assigning a programme." });
+  await db.insert(ptGoals).values({ clientId: client.id, goalType: fixture.goal, priority: "primary" });
+  await db.insert(ptPreferences).values({ clientId: client.id, preferredEquipment: fixture.equipment });
+  await db.insert(ptLocations).values({ clientId: client.id, name: fixture.location, locationType: fixture.locationType, equipment: fixture.equipment });
+  revalidatePath("/designer");
+  return { clientId: client.id, name: fixture.name, existing: false, riskFlags };
 }
 
 export async function updateClientAction(rawInput: z.input<typeof clientUpdateSchema>) {

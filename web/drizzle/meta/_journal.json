@@ -43,6 +43,13 @@
       "when": 1786370765159,
       "tag": "0005_oval_gauntlet",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786373000000,
+      "tag": "0006_expand_exercise_library",
+      "breakpoints": true
     }
   ]
 }
