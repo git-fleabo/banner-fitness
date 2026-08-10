@@ -39,6 +39,7 @@ export default function DesignerPage() {
   const [client, setClient] = useState("Maya Thompson");
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientDetail, setClientDetail] = useState<ClientDetail | null>(null);
+  const [detailRefresh, setDetailRefresh] = useState(0);
   const [showClient, setShowClient] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showClients, setShowClients] = useState(false);
@@ -71,7 +72,7 @@ export default function DesignerPage() {
   useEffect(() => {
     if (!showClient || !clientId) return;
     fetch(`/api/designer/client?clientId=${encodeURIComponent(clientId)}`, { credentials: "same-origin", cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<ClientDetail> : Promise.reject(new Error("Client details unavailable"))).then((data) => { setClientDetail(data); setClient(`${data.client.firstName} ${data.client.lastName}`); if (data.goal?.goalType) setGoal(data.goal.goalType); if (Array.isArray(data.client.preferredDays)) setDays(data.client.preferredDays.length); setScreening(Boolean(data.assessment?.clearanceRequired || (Array.isArray(data.assessment?.riskFlags) && data.assessment.riskFlags.length))); }).catch(() => notify("Client details could not be loaded"));
-  }, [clientId, showClient]);
+  }, [clientId, showClient, detailRefresh]);
 
   if (accessState === "checking") return <main className="designer-loading"><div className="loading-orbit">O</div><p>Checking your PT workspace…</p></main>;
 
@@ -117,7 +118,8 @@ export default function DesignerPage() {
       </section>
       {showClient && <ClientWorkspace name={client} goal={goal} days={days} setGoal={setGoal} setDays={setDays} screening={screening} setScreening={setScreening} expanded={expanded} setExpanded={setExpanded} onClose={() => setShowClient(false)} onEditSessions={() => setShowSessionEditor(true)} notify={notify} week={clientDetail?.programme?.sessions[0]?.exercises ?? []} programme={clientDetail?.programme ?? null} location={clientDetail?.location} detail={clientDetail} loading={!clientDetail} />}
       {showClient && clientId && <ClientSnapshotSaveButton clientId={clientId} goal={goal} days={days} duration={clientDetail?.programme?.sessions[0]?.durationMinutes ?? 45} notify={notify} />}
-      {showSessionEditor && <SessionEditorModal clientName={client} goal={goal} days={days} week={clientDetail?.programme?.sessions[0]?.exercises ?? []} savedSessions={clientDetail?.programme?.sessions} onClose={() => setShowSessionEditor(false)} notify={notify} />}
+      {showClient && clientId && clientDetail && !clientDetail.programme && <FirstProgrammeButton onClick={() => setShowSessionEditor(true)} />}
+      {showSessionEditor && <SessionEditorModal clientName={client} goal={goal} days={days} week={clientDetail?.programme?.sessions[0]?.exercises ?? []} savedSessions={clientDetail?.programme?.sessions} onClose={() => setShowSessionEditor(false)} onSaved={() => { setClientDetail(null); setDetailRefresh((current) => current + 1); }} notify={notify} />}
       {showOnboarding && <ClientOnboarding onClose={() => setShowOnboarding(false)} onCreated={(name, riskCount, createdClientId) => { setClientId(createdClientId); setClient(name); setScreening(riskCount > 0); setShowOnboarding(false); setShowClient(true); notify(riskCount ? `Client created with ${riskCount} screening flag${riskCount === 1 ? "" : "s"}` : "Client created and ready to programme"); }} />}
       <button className="mobile-menu-launcher" onClick={() => setMobileMenuOpen(true)} aria-label="Open navigation">☰</button>
       {mobileMenuOpen && <MobileNav onClose={() => setMobileMenuOpen(false)} onLibrary={() => { setMobileMenuOpen(false); setShowLibrary(true); setActiveNav("Exercise library"); }} onClients={() => { setMobileMenuOpen(false); setShowClients(true); setActiveNav("Clients"); }} onOverview={() => { setMobileMenuOpen(false); setShowClients(false); setShowLibrary(false); setActiveNav("Overview"); }} />}
@@ -155,6 +157,7 @@ function ClientWorkspace({name,goal,days,setGoal,setDays,screening,setScreening,
 }
 
 function ClientSnapshotSaveButton({clientId,goal,days,duration,notify}:{clientId:string;goal:string;days:number;duration:number;notify:(message:string)=>void}) { const [saving,setSaving] = useState(false); async function save() { setSaving(true); try { await updateClientAction({ clientId, goalType:goal, trainingDays:days, sessionDurationMinutes:duration }); notify("Client snapshot saved"); } catch (error) { notify(error instanceof Error ? error.message : "Client snapshot could not be saved"); } finally { setSaving(false); } } return <button className="workspace-save-button" onClick={save} disabled={saving}>{saving ? "Saving client…" : "Save client changes"}</button>; }
+function FirstProgrammeButton({onClick}:{onClick:()=>void}) { return <button className="first-programme-button" onClick={onClick}>Build first draft</button>; }
 
 function ClientOnboarding({onClose,onCreated}:{onClose:()=>void;onCreated:(name:string,riskCount:number,clientId:string)=>void}) {
   const [firstName, setFirstName] = useState("");
