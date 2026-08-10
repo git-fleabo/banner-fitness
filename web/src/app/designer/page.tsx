@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClientAction, logWorkoutResultAction, recordProgrammeOverrideAction, resolveScreeningAction, saveProgrammeAction, seedCaseStudyAction, transitionProgrammeAction, updateClientAction, updateClientProfileAction } from "./actions";
 import { MobileNav, SessionEditorModal } from "./designer-support";
 import { ExerciseLibrary } from "./exercise-library";
+import { PromptBuilderLauncher } from "./prompt-builder";
 import { hasRecordedScreeningReview } from "@/lib/pt-programming";
 
 type Exercise = {
@@ -155,6 +156,7 @@ export default function DesignerPage() {
       {showClient && clientDetail && <ProgrammeHistoryPanel history={clientDetail.programmeHistory} events={clientDetail.programme?.events ?? []} />}
       {showClient && clientDetail?.programme && <ProgrammeLifecycleControls programme={clientDetail.programme} onChanged={() => { setClientDetail(null); setDetailRefresh((current) => current + 1); }} notify={notify} />}
       {showClientPreview && clientDetail?.programme && <ClientPortalPreview clientName={client} programme={clientDetail.programme} onClose={() => setShowClientPreview(false)} />}
+      {showClient && clientId && <PromptBuilderLauncher clientId={clientId} notify={notify} />}
       {showCalendar && <ProgrammeCalendar schedule={overview?.schedule ?? []} onClose={() => setShowCalendar(false)} />}
       {showSessionEditor && <SessionEditorModal clientName={client} goal={goal} days={days} week={clientDetail?.programme?.sessions[0]?.exercises ?? []} savedSessions={clientDetail?.programme?.sessions} onClose={() => setShowSessionEditor(false)} onSaved={() => { setClientDetail(null); setDetailRefresh((current) => current + 1); }} notify={notify} />}
       {showOnboarding && <ClientOnboarding onClose={() => setShowOnboarding(false)} onCreated={(name, riskCount, createdClientId) => { setClientId(createdClientId); setClient(name); setScreening(riskCount > 0); setShowOnboarding(false); setShowClient(true); notify(riskCount ? `Client created with ${riskCount} screening flag${riskCount === 1 ? "" : "s"}` : "Client created and ready to programme"); }} />}
