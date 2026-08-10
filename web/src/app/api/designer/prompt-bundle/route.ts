@@ -52,6 +52,9 @@ function buildMarkdown(bundle: Record<string, unknown>, redacted: boolean) {
     `- Review date: ${display(screening.reviewDate)}`,
     `- Clearance required: ${display(screening.clearanceRequired)}`,
     `- Risk flags: ${display(screening.riskFlags)}`,
+    `- PAR-Q / screening responses: ${display(screening.responses)}`,
+    `- Injuries, pain or limitations: ${display(screening.injuryNotes)}`,
+    `- Contraindications, restrictions or clearance context: ${display(screening.contraindicationNotes)}`,
     `- PT assessment notes: ${display(screening.ptNotes)}`,
     "",
     "## Goals",
@@ -138,6 +141,7 @@ export async function GET(request: NextRequest) {
     programme && programmeData && (programmeData.weeks as Array<{ sessions: Array<{ exercises: Array<unknown> }> }>).flatMap((week) => week.sessions).length < (Array.isArray(client.preferredDays) ? client.preferredDays.length : 0) ? "Saved programme session count may be below the client's preferred weekly frequency." : "",
     programme && programmeData && (programmeData.weeks as Array<{ sessions: Array<{ exercises: Array<{ name: string; sets: number }> }> }>).flatMap((week) => week.sessions).flatMap((session) => session.exercises).reduce((sum, exercise) => sum + exercise.sets, 0) > 160 ? "Total programme volume may create a high recovery demand." : "",
   ].filter(Boolean);
-  const bundle = { client: { ...client, name: redacted ? "Redacted client" : `${client.firstName} ${client.lastName}`, firstName: redacted ? "Redacted" : client.firstName, lastName: redacted ? "client" : client.lastName }, screening: assessment ?? { clearanceRequired: false, riskFlags: [], responses: {}, ptNotes: null }, goals, preferences: preferences ?? {}, locations, currentProgramme: programmeData, programmeHistory, qualityChecks: { score: Math.max(0, 100 - warnings.length * 8), warnings }, recentWorkoutResults: results.map((result) => ({ ...result, sets: resultSetsByResult.get(result.id) ?? [] })), privacy: { redacted, excluded: redacted ? ["client name", "date of birth"] : [] } };
+  const screening = assessment ? { ...assessment, injuryNotes: assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? (assessment.responses as Record<string, unknown>).injuryNotes ?? null : null, contraindicationNotes: assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? (assessment.responses as Record<string, unknown>).contraindicationNotes ?? null : null } : { clearanceRequired: false, riskFlags: [], responses: {}, ptNotes: null, injuryNotes: null, contraindicationNotes: null };
+  const bundle = { client: { ...client, name: redacted ? "Redacted client" : `${client.firstName} ${client.lastName}`, firstName: redacted ? "Redacted" : client.firstName, lastName: redacted ? "client" : client.lastName }, screening, goals, preferences: preferences ?? {}, locations, currentProgramme: programmeData, programmeHistory, qualityChecks: { score: Math.max(0, 100 - warnings.length * 8), warnings }, recentWorkoutResults: results.map((result) => ({ ...result, sets: resultSetsByResult.get(result.id) ?? [] })), privacy: { redacted, excluded: redacted ? ["client name", "date of birth"] : [] } };
   return NextResponse.json({ markdown: buildMarkdown(bundle, redacted), json: bundle, meta: { redacted, programmeVersion: programme?.version ?? null, programmeCount: programmeHistory.length, workoutResultCount: results.length } });
 }

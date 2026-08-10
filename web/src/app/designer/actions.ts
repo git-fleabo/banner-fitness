@@ -1,14 +1,15 @@
 "use server";
 
-import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
-import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
+import { ptAssessments, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { getScreeningFlags, screeningReviewMarker } from "@/lib/pt-programming";
 import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
+import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings } from "@/lib/pt-quality";
 
 const clientInputSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -37,6 +38,8 @@ const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
 const screeningReviewSchema = z.object({ clientId: z.string().uuid(), outcome: z.enum(["pt_review_completed", "professional_clearance_obtained"]), reason: z.string().trim().min(10).max(1000) });
+const clientAssessmentUpdateSchema = z.object({ clientId: z.string().uuid(), injuryNotes: z.string().trim().max(4000).optional(), contraindicationNotes: z.string().trim().max(4000).optional(), clearanceRequired: z.boolean(), ptNotes: z.string().trim().max(4000).optional() });
+const qualitySettingsSchema = z.object({ checkScreening: z.boolean(), checkFrequency: z.boolean(), checkBalance: z.boolean(), checkVolume: z.boolean(), checkProgression: z.boolean(), checkDuration: z.boolean(), maxSetsPerSession: z.number().int().min(1).max(100), pressPullTolerance: z.number().int().min(0).max(10) });
 const weekPlanSchema = z.object({ focus: z.string().trim().min(1).max(120), volumeTarget: z.string().trim().min(1).max(80), intensityTarget: z.string().trim().min(1).max(80) });
 
 type WeekPlan = z.infer<typeof weekPlanSchema>;
@@ -261,6 +264,39 @@ export async function updateClientPreferencesAction(rawInput: z.input<typeof cli
   return { clientId: client.id };
 }
 
+export async function getDesignerSettingsAction() {
+  const owner = await requireDesignerAccess();
+  const db = getDb();
+  const [settings] = await db.select({ qualityRules: ptDesignerSettings.qualityRules }).from(ptDesignerSettings).where(eq(ptDesignerSettings.ownerProfileId, owner.authUserId)).limit(1);
+  return normalizeQualitySettings(settings?.qualityRules ?? defaultQualitySettings);
+}
+
+export async function updateDesignerSettingsAction(rawInput: z.input<typeof qualitySettingsSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = qualitySettingsSchema.parse(rawInput);
+  const rules: QualitySettings = normalizeQualitySettings(input);
+  const db = getDb();
+  const [existing] = await db.select({ ownerProfileId: ptDesignerSettings.ownerProfileId }).from(ptDesignerSettings).where(eq(ptDesignerSettings.ownerProfileId, owner.authUserId)).limit(1);
+  if (existing) await db.update(ptDesignerSettings).set({ qualityRules: rules, updatedAt: new Date() }).where(eq(ptDesignerSettings.ownerProfileId, owner.authUserId));
+  else await db.insert(ptDesignerSettings).values({ ownerProfileId: owner.authUserId, qualityRules: rules });
+  revalidatePath("/designer");
+  return rules;
+}
+
+export async function updateClientAssessmentAction(rawInput: z.input<typeof clientAssessmentUpdateSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = clientAssessmentUpdateSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Client could not be found.");
+  const [assessment] = await db.select({ id: ptAssessments.id, responses: ptAssessments.responses }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+  if (!assessment) throw new Error("Record an assessment before editing safety notes.");
+  const previousResponses = assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? assessment.responses as Record<string, unknown> : {};
+  await db.update(ptAssessments).set({ responses: { ...previousResponses, injuryNotes: input.injuryNotes || null, contraindicationNotes: input.contraindicationNotes || null }, clearanceRequired: input.clearanceRequired, ptNotes: input.ptNotes || null, updatedAt: new Date() }).where(eq(ptAssessments.id, assessment.id));
+  revalidatePath("/designer");
+  return { clientId: client.id };
+}
+
 export async function saveProgrammeAction(rawInput: z.input<typeof programmeInputSchema>) {
   const owner = await requireDesignerAccess();
   const input = programmeInputSchema.parse(rawInput);
@@ -337,6 +373,10 @@ export async function transitionProgrammeAction(rawInput: z.input<typeof program
   if (input.status === "assigned") {
     const [assessment] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired }).from(ptAssessments).where(eq(ptAssessments.clientId, programme.clientId)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
     if (assessment?.clearanceRequired) throw new Error("Resolve the screening or clearance flag before assigning this programme.");
+  }
+  if (input.status === "active") {
+    const [existingActive] = await db.select({ id: ptProgrammes.id }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, programme.clientId), eq(ptProgrammes.status, "active"), ne(ptProgrammes.id, programme.id))).limit(1);
+    if (existingActive) throw new Error("Only one programme can be active for a client. Pause or complete the current active programme first.");
   }
   if ((input.status === "paused" || input.status === "archived") && !input.reason?.trim()) throw new Error("Record a reason when pausing or archiving a programme.");
   const now = new Date();

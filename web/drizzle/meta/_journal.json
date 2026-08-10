@@ -64,6 +64,13 @@
       "when": 1786375000000,
       "tag": "0008_add_cross_trainer_exercise",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786376000000,
+      "tag": "0009_designer_settings_and_active_programme",
+      "breakpoints": true
     }
   ]
 }

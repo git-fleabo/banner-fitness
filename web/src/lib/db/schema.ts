@@ -74,6 +74,12 @@ export const ptAssessments = pgTable("pt_assessments", {
   ...timestamps,
 }, (table) => [index("pt_assessments_client_date_idx").on(table.clientId, table.assessmentDate)]);
 
+export const ptDesignerSettings = pgTable("pt_designer_settings", {
+  ownerProfileId: text("owner_profile_id").primaryKey().references(() => profiles.authUserId, { onDelete: "cascade" }),
+  qualityRules: jsonb("quality_rules").default({}).notNull(),
+  ...timestamps,
+});
+
 export const ptGoals = pgTable("pt_goals", {
   id: uuid("id").defaultRandom().primaryKey(),
   clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
