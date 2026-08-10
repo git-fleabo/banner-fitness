@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
-import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
+import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { getScreeningFlags } from "@/lib/pt-programming";
 
 const clientInputSchema = z.object({
@@ -33,6 +33,7 @@ const programmeInputSchema = z.object({
   trainingDays: z.number().int().min(1).max(7),
   sessionDurationMinutes: z.number().int().min(15).max(180),
   exercises: z.array(z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional() })).min(1).max(100),
+  sessionNames: z.record(z.string(), z.string().trim().min(1).max(120)).optional(),
 });
 
 const workoutInputSchema = z.object({
@@ -45,6 +46,7 @@ const workoutInputSchema = z.object({
   enjoyment: z.number().int().min(1).max(5).optional(),
   durationMinutes: z.number().int().min(1).max(240).optional(),
   notes: z.string().trim().max(2000).optional(),
+  sets: z.array(z.object({ reps: z.number().int().min(0).max(100).optional(), loadKg: z.number().int().min(0).max(1000).optional(), rpe: z.number().int().min(1).max(10).optional(), rir: z.number().int().min(0).max(10).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean() })).max(40).optional(),
 });
 
 async function requireDesignerAccess() {
@@ -99,7 +101,7 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
     const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review", volumeTarget: weekNumber <= 2 ? "Moderate" : "Moderate-high", intensityTarget: "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
     if (!week) throw new Error("Programme week could not be saved.");
     for (const dayOfWeek of [1, 3, 5]) {
-      const [session] = await db.insert(ptSessions).values({ programmeWeekId: week.id, dayOfWeek, name: dayOfWeek === 1 ? "Monday · Strength / Hypertrophy" : dayOfWeek === 3 ? "Wednesday · Full body" : "Friday · Conditioning", sessionType: dayOfWeek === 5 ? "conditioning" : "mixed", durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 }).returning({ id: ptSessions.id });
+      const [session] = await db.insert(ptSessions).values({ programmeWeekId: week.id, dayOfWeek, name: input.sessionNames?.[String(dayOfWeek)] || (dayOfWeek === 1 ? "Monday - Strength / Hypertrophy" : dayOfWeek === 3 ? "Wednesday - Full body" : "Friday - Conditioning"), sessionType: dayOfWeek === 5 ? "conditioning" : "mixed", durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 }).returning({ id: ptSessions.id });
       if (!session) throw new Error("Programme session could not be saved.");
       if (dayOfWeek === 1 && exerciseRows.length) {
         const rows = exerciseRows.map((row) => ({ ...row, sessionId: session.id }));
@@ -129,6 +131,11 @@ export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInp
   if (!session) throw new Error("The programme has no Monday session to log against.");
   const [result] = await db.insert(ptWorkoutResults).values({ ownerProfileId: owner.authUserId, clientId: client.id, sessionId: session.id, scheduledDate: input.scheduledDate, completedAt: input.status === "completed" || input.status === "partial" ? new Date() : null, status: input.status, sessionRpe: input.sessionRpe ?? null, energy: input.energy ?? null, painReported: input.painReported, enjoyment: input.enjoyment ?? null, durationMinutes: input.durationMinutes ?? null, notes: input.notes || null }).returning({ id: ptWorkoutResults.id });
   if (!result) throw new Error("Workout result could not be saved.");
+  if (input.sets?.length) {
+    const prescriptions = await db.select({ id: ptExercisePrescriptions.id }).from(ptExercisePrescriptions).where(eq(ptExercisePrescriptions.sessionId, session.id)).orderBy(asc(ptExercisePrescriptions.orderIndex));
+    const setRows = input.sets.flatMap((set, index) => { const prescription = prescriptions[Math.min(index, prescriptions.length - 1)]; return prescription ? [{ workoutResultId: result.id, prescriptionId: prescription.id, setNumber: 1, actualReps: set.reps ?? null, actualLoadKg: set.loadKg ?? null, actualRpe: set.rpe ?? null, actualRir: set.rir ?? null, techniqueAcceptable: set.techniqueAcceptable, painReported: set.painReported }] : []; });
+    if (setRows.length) await db.insert(ptWorkoutResultSets).values(setRows);
+  }
   revalidatePath("/designer");
   return { resultId: result.id };
 }
