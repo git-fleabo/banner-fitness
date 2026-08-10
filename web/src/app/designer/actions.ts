@@ -27,7 +27,7 @@ const clientInputSchema = z.object({
   ptNotes: z.string().trim().max(2000).optional(),
 });
 
-const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional() });
+const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
 
 const programmeInputSchema = z.object({
@@ -111,13 +111,13 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   const allExercises = await db.select({ id: ptExercises.id, name: ptExercises.name }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId))).orderBy(asc(ptExercises.name));
   const exerciseRows = input.exercises.map((exercise, index) => {
     const match = allExercises.find((candidate) => candidate.name.toLowerCase() === exercise.name.toLowerCase());
-    return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, progressionRule: "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
+    return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, progressionRule: exercise.progressionRule || "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
   }).filter((row): row is NonNullable<typeof row> => row !== null);
   const rowsByDay: Record<string, typeof exerciseRows> = {};
   for (const [day, exercises] of Object.entries(input.sessionExercises ?? {})) {
     rowsByDay[day] = exercises.map((exercise, index) => {
       const match = allExercises.find((candidate) => candidate.name.toLowerCase() === exercise.name.toLowerCase());
-      return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, progressionRule: "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
+      return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, progressionRule: exercise.progressionRule || "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
     }).filter((row): row is NonNullable<typeof row> => row !== null);
   }
   let savedPrescriptionCount = 0;
