@@ -13,7 +13,7 @@ import { PromptBuilderLauncher } from "./prompt-builder";
 import { ClientPreferencesLauncher } from "./client-preferences";
 import { ProgressionReviewLauncher } from "./progression-review";
 import { SubstitutionReviewLauncher } from "./substitution-review";
-import { ClientProgressLauncher } from "./client-progress";
+import { ClientProgressLauncher, ClientProgressPanel } from "./client-progress";
 import { hasRecordedScreeningReview } from "@/lib/pt-programming";
 import { buildQualityWarnings, defaultQualitySettings, type QualitySettings } from "@/lib/pt-quality";
 
@@ -305,6 +305,7 @@ function WorkspaceSupportPortal({clientId,name,goal,days,detail,programme,screen
     <div className="workspace-actions-row"><ClientSnapshotSaveButton clientId={clientId} goal={goal} days={days} preferredDays={initialPreferredDays} duration={programme?.sessions[0]?.durationMinutes ?? detail.client.sessionDurationMinutes ?? 45} notify={notify} />{!programme && <FirstProgrammeButton onClick={onEditSessions} />}</div>
     <PreferredDaysPanel clientId={clientId} initialDays={initialPreferredDays} goal={goal} duration={programme?.sessions[0]?.durationMinutes ?? detail.client.sessionDurationMinutes ?? 45} notify={notify} onSaved={onClientUpdated} />
     <section className="pt-tools-panel"><div><p className="eyebrow">PT TOOLS</p><h3>Review and adapt</h3><p>These tools stay inside the client workspace so they never cover the record.</p></div><div className="pt-tools-grid"><ClientProgressLauncher clientId={clientId} /><ClientPreferencesLauncher clientId={clientId} notify={notify} />{programme && <ProgressionReviewLauncher clientId={clientId} />} {programme && <SubstitutionReviewLauncher clientId={clientId} exercises={programme.sessions.flatMap((session) => session.exercises)} />}<PromptBuilderLauncher clientId={clientId} notify={notify} /></div></section>
+    <ClientProgressPanel clientId={clientId} />
     {showAssessment && <ClientAssessmentDialog clientId={clientId} assessment={detail.assessment} onClose={() => setShowAssessment(false)} onSaved={() => { setShowAssessment(false); onScreeningUpdated(); }} notify={notify} />}
   </div>, target);
 }
