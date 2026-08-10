@@ -33,6 +33,7 @@ export const ptProgrammeStatus = pgEnum("pt_programme_status", ["draft", "active
 export const ptGoalPriority = pgEnum("pt_goal_priority", ["primary", "secondary"]);
 export const ptSessionType = pgEnum("pt_session_type", ["strength", "hypertrophy", "conditioning", "mobility", "mixed", "recovery"]);
 export const ptIntensityType = pgEnum("pt_intensity_type", ["rir", "rpe", "percent_1rm", "load", "pace", "heart_rate", "duration"]);
+export const ptWorkoutStatus = pgEnum("pt_workout_status", ["completed", "partial", "missed", "skipped"]);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -200,6 +201,37 @@ export const ptProgrammeEvents = pgTable("pt_programme_events", {
   details: jsonb("details").default({}).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [index("pt_programme_events_programme_time_idx").on(table.programmeId, table.createdAt)]);
+
+export const ptWorkoutResults = pgTable("pt_workout_results", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerProfileId: text("owner_profile_id").notNull().references(() => profiles.authUserId, { onDelete: "cascade" }),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  sessionId: uuid("session_id").notNull().references(() => ptSessions.id, { onDelete: "cascade" }),
+  scheduledDate: date("scheduled_date").notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  status: ptWorkoutStatus("status").notNull(),
+  sessionRpe: smallint("session_rpe"),
+  energy: smallint("energy"),
+  painReported: boolean("pain_reported").default(false).notNull(),
+  enjoyment: smallint("enjoyment"),
+  durationMinutes: smallint("duration_minutes"),
+  notes: text("notes"),
+  ...timestamps,
+}, (table) => [index("pt_workout_results_client_date_idx").on(table.clientId, table.scheduledDate), index("pt_workout_results_owner_status_idx").on(table.ownerProfileId, table.status)]);
+
+export const ptWorkoutResultSets = pgTable("pt_workout_result_sets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workoutResultId: uuid("workout_result_id").notNull().references(() => ptWorkoutResults.id, { onDelete: "cascade" }),
+  prescriptionId: uuid("prescription_id").notNull().references(() => ptExercisePrescriptions.id, { onDelete: "restrict" }),
+  setNumber: smallint("set_number").notNull(),
+  actualReps: smallint("actual_reps"),
+  actualLoadKg: integer("actual_load_kg"),
+  actualRpe: smallint("actual_rpe"),
+  actualRir: smallint("actual_rir"),
+  techniqueAcceptable: boolean("technique_acceptable").default(true).notNull(),
+  painReported: boolean("pain_reported").default(false).notNull(),
+  ...timestamps,
+}, (table) => [uniqueIndex("pt_workout_result_sets_number_unique").on(table.workoutResultId, table.prescriptionId, table.setNumber)]);
 
 export const profiles = pgTable("profiles", {
   authUserId: text("auth_user_id").primaryKey(),
