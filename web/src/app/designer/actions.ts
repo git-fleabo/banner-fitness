@@ -34,6 +34,51 @@ const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "p
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
+const weekPlanSchema = z.object({ focus: z.string().trim().min(1).max(120), volumeTarget: z.string().trim().min(1).max(80), intensityTarget: z.string().trim().min(1).max(80) });
+
+type WeekPlan = z.infer<typeof weekPlanSchema>;
+const standardWeekPlans: Record<string, WeekPlan[]> = {
+  general: [
+    { focus: "Familiarisation / movement quality", volumeTarget: "Moderate", intensityTarget: "RIR 3" },
+    { focus: "Foundation / technique consistency", volumeTarget: "Moderate", intensityTarget: "RIR 2–3" },
+    { focus: "Accumulation / progressive overload", volumeTarget: "Moderate-high", intensityTarget: "RIR 2" },
+    { focus: "Accumulation / density progression", volumeTarget: "Moderate-high", intensityTarget: "RIR 2" },
+    { focus: "Build / load progression", volumeTarget: "Moderate-high", intensityTarget: "RIR 1–2" },
+    { focus: "Build / rep-range progression", volumeTarget: "Moderate-high", intensityTarget: "RIR 1–2" },
+    { focus: "Consolidation / fatigue management", volumeTarget: "Moderate", intensityTarget: "RIR 2–3" },
+    { focus: "Review / next-block readiness", volumeTarget: "Moderate", intensityTarget: "RIR 3" },
+  ],
+  power: [
+    { focus: "Technical familiarisation / landing quality", volumeTarget: "Low-moderate", intensityTarget: "RPE 6" },
+    { focus: "Strength foundation / crisp intent", volumeTarget: "Moderate", intensityTarget: "RIR 3" },
+    { focus: "Power accumulation / quality contacts", volumeTarget: "Moderate", intensityTarget: "RPE 6–7" },
+    { focus: "Power development / reduced fatigue", volumeTarget: "Moderate", intensityTarget: "RPE 7" },
+    { focus: "Intensification / force production", volumeTarget: "Moderate", intensityTarget: "RIR 2" },
+    { focus: "Realisation / high-quality efforts", volumeTarget: "Low-moderate", intensityTarget: "RPE 7–8" },
+    { focus: "Taper / athletics integration", volumeTarget: "Low", intensityTarget: "RPE 6" },
+    { focus: "Performance review / next block", volumeTarget: "Low-moderate", intensityTarget: "RPE 6" },
+  ],
+  strength: [
+    { focus: "Technique / baseline practice", volumeTarget: "Moderate", intensityTarget: "RIR 3" },
+    { focus: "Volume accumulation", volumeTarget: "Moderate-high", intensityTarget: "RIR 2–3" },
+    { focus: "Volume accumulation / lift practice", volumeTarget: "High", intensityTarget: "RIR 2" },
+    { focus: "Overload / supplementary volume", volumeTarget: "High", intensityTarget: "RIR 1–2" },
+    { focus: "Intensification / primary lifts", volumeTarget: "Moderate", intensityTarget: "RIR 1–2" },
+    { focus: "Intensification / heavy practice", volumeTarget: "Moderate", intensityTarget: "RIR 1" },
+    { focus: "Deload / fatigue reduction", volumeTarget: "Low", intensityTarget: "RIR 3–4" },
+    { focus: "Test readiness / review", volumeTarget: "Moderate", intensityTarget: "RIR 2" },
+  ],
+  conservative: [
+    { focus: "Familiarisation / symptom-free movement", volumeTarget: "Low-moderate", intensityTarget: "RIR 3–4" },
+    { focus: "Foundation / technique consistency", volumeTarget: "Moderate", intensityTarget: "RIR 3" },
+    { focus: "Gradual overload / recovery check", volumeTarget: "Moderate", intensityTarget: "RIR 2–3" },
+    { focus: "Gradual overload / confidence", volumeTarget: "Moderate", intensityTarget: "RIR 2–3" },
+    { focus: "Build / controlled progression", volumeTarget: "Moderate", intensityTarget: "RIR 2" },
+    { focus: "Build / repeatable effort", volumeTarget: "Moderate", intensityTarget: "RIR 2" },
+    { focus: "Consolidation / fatigue management", volumeTarget: "Low-moderate", intensityTarget: "RIR 3" },
+    { focus: "Review / clearance and next block", volumeTarget: "Low-moderate", intensityTarget: "RIR 3" },
+  ],
+};
 
 const programmeInputSchema = z.object({
   clientName: z.string().trim().min(1).max(160),
@@ -46,6 +91,7 @@ const programmeInputSchema = z.object({
   sessionDays: z.array(z.number().int().min(1).max(7)).min(1).max(7).optional(),
   methodology: z.string().trim().max(300).optional(),
   rationale: z.string().trim().max(2000).optional(),
+  weekPlans: z.array(weekPlanSchema).length(8).optional(),
 });
 
 const workoutInputSchema = z.object({
@@ -119,18 +165,18 @@ export async function generateCaseStudyDraftAction(rawInput: z.input<typeof case
   const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, notes: ptClients.notes, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
   if (!client) throw new Error("Case-study client could not be found.");
   const slug = client.notes?.match(/CASE STUDY FIXTURE: ([a-z]+)/i)?.[1]?.toLowerCase();
-  const plans: Record<string, { goal: string; days: number; duration: number; exercises: string[]; sessionExercises: Record<string, string[]>; sessionNames: Record<string, string>; sessionDays: number[]; methodology: string; rationale: string }> = {
-    ciara: { goal: "Fat loss and tone", days: 3, duration: 60, exercises: ["Leg Press", "DB Bench Press", "Seated Cable Row", "DB Romanian Deadlift", "Cable Lateral Raise", "Incline Treadmill Walk"], sessionExercises: { "1": ["Leg Press", "DB Bench Press", "Seated Cable Row", "DB Romanian Deadlift"], "3": ["Goblet Squat", "Machine Chest Press", "One-Arm Dumbbell Row", "Split Squat"], "5": ["Step-Up", "Push-Up", "Band Row", "Incline Treadmill Walk"] }, sessionNames: { "1": "Full Body Stability", "3": "Full Body Endurance", "5": "Full Body Conditioning" }, sessionDays: [1, 3, 5], methodology: "Full-body phased progression with aerobic intervals and RIR-based resistance training", rationale: "Three practical full-body sessions balance fat-loss support, muscle retention and confidence with weights. Low-impact conditioning is used instead of forcing a disliked running modality, with gradual progression across the eight-week draft." },
-    jessica: { goal: "Power gain", days: 3, duration: 75, exercises: ["Trap-Bar Deadlift", "Barbell Bench Press", "Dumbbell Shoulder Press", "Chest-Supported DB Row", "Broad Jump", "Cable Pallof Press"], sessionExercises: { "1": ["Trap-Bar Deadlift", "Barbell Bench Press", "Chest-Supported DB Row"], "3": ["Broad Jump", "Dumbbell Shoulder Press", "Split Squat", "Cable Pallof Press"], "5": ["Barbell Deadlift", "Incline Dumbbell Press", "One-Arm Dumbbell Row"] }, sessionNames: { "1": "Strength Foundation", "3": "Power and Athletic Transfer", "5": "Deadlift Strength" }, sessionDays: [1, 3, 5], methodology: "Concurrent strength-power programme alongside athletics training", rationale: "Power work is placed alongside strength development and athletic transfer, while the known ankle limitation requires conservative landing exposure, crisp repetitions and PT review before progression." },
-    kevin: { goal: "Strength gain", days: 5, duration: 60, exercises: ["Barbell Back Squat", "Barbell Deadlift", "Barbell Bench Press", "Seated Cable Row", "Barbell Overhead Press", "Split Squat"], sessionExercises: { "1": ["Barbell Back Squat", "Barbell Bench Press", "Seated Cable Row"], "2": ["Split Squat", "Dumbbell Bench Press", "Lat Pulldown"], "3": ["Barbell Deadlift", "Barbell Overhead Press", "One-Arm Dumbbell Row"], "4": ["Leg Press", "Machine Chest Press", "Cable Face Pull"], "5": ["Barbell Back Squat", "Barbell Bench Press", "Split Squat"] }, sessionNames: { "1": "Squat Strength", "2": "Upper / Lower Volume", "3": "Deadlift Strength", "4": "Technique and Recovery", "5": "Competition Lift Practice" }, sessionDays: [1, 2, 3, 4, 5], methodology: "Five-day strength split using primary-lift practice, supplementary volume and a lower-fatigue technique day", rationale: "Five sessions reflect the client’s established training age and strength goal. The main lifts receive repeated practice, while supplementary and technique days distribute fatigue rather than repeating maximal work every session." },
-    paul: { goal: "Muscle and strength gain", days: 2, duration: 60, exercises: ["Leg Press", "Machine Chest Press", "Seated Cable Row", "Barbell Hip Thrust", "Dead Bug", "Incline Treadmill Walk"], sessionExercises: { "1": ["Leg Press", "Machine Chest Press", "Seated Cable Row", "Dead Bug"], "3": ["Barbell Hip Thrust", "Machine Chest Press", "Band Row", "Incline Treadmill Walk"] }, sessionNames: { "1": "Full Body Foundation", "3": "Full Body Strength" }, sessionDays: [1, 3], methodology: "Two-day full-body strength foundation with conservative loading, trunk control and low-impact aerobic work", rationale: "Two full-body sessions fit the stated availability and support muscle and strength without unnecessary complexity. Back history and cardiovascular screening flags require PT review, conservative loading and appropriate clearance decisions before assignment." },
+  const plans: Record<string, { goal: string; days: number; duration: number; exercises: string[]; sessionExercises: Record<string, string[]>; sessionNames: Record<string, string>; sessionDays: number[]; methodology: string; rationale: string; weekPlans: WeekPlan[] }> = {
+    ciara: { goal: "Fat loss and tone", days: 3, duration: 60, exercises: ["Leg Press", "DB Bench Press", "Seated Cable Row", "DB Romanian Deadlift", "Cable Lateral Raise", "Incline Treadmill Walk"], sessionExercises: { "1": ["Leg Press", "DB Bench Press", "Seated Cable Row", "DB Romanian Deadlift"], "3": ["Goblet Squat", "Machine Chest Press", "One-Arm Dumbbell Row", "Split Squat"], "5": ["Step-Up", "Push-Up", "Band Row", "Incline Treadmill Walk"] }, sessionNames: { "1": "Full Body Stability", "3": "Full Body Endurance", "5": "Full Body Conditioning" }, sessionDays: [1, 3, 5], methodology: "Full-body phased progression with aerobic intervals and RIR-based resistance training", rationale: "Three practical full-body sessions balance fat-loss support, muscle retention and confidence with weights. Low-impact conditioning is used instead of forcing a disliked running modality, with gradual progression across the eight-week draft.", weekPlans: standardWeekPlans.general },
+    jessica: { goal: "Power gain", days: 3, duration: 75, exercises: ["Trap-Bar Deadlift", "Barbell Bench Press", "Dumbbell Shoulder Press", "Chest-Supported DB Row", "Broad Jump", "Cable Pallof Press"], sessionExercises: { "1": ["Trap-Bar Deadlift", "Barbell Bench Press", "Chest-Supported DB Row"], "3": ["Broad Jump", "Dumbbell Shoulder Press", "Split Squat", "Cable Pallof Press"], "5": ["Barbell Deadlift", "Incline Dumbbell Press", "One-Arm Dumbbell Row"] }, sessionNames: { "1": "Strength Foundation", "3": "Power and Athletic Transfer", "5": "Deadlift Strength" }, sessionDays: [1, 3, 5], methodology: "Concurrent strength-power programme alongside athletics training", rationale: "Power work is placed alongside strength development and athletic transfer, while the known ankle limitation requires conservative landing exposure, crisp repetitions and PT review before progression.", weekPlans: standardWeekPlans.power },
+    kevin: { goal: "Strength gain", days: 5, duration: 60, exercises: ["Barbell Back Squat", "Barbell Deadlift", "Barbell Bench Press", "Seated Cable Row", "Barbell Overhead Press", "Split Squat"], sessionExercises: { "1": ["Barbell Back Squat", "Barbell Bench Press", "Seated Cable Row"], "2": ["Split Squat", "Dumbbell Bench Press", "Lat Pulldown"], "3": ["Barbell Deadlift", "Barbell Overhead Press", "One-Arm Dumbbell Row"], "4": ["Leg Press", "Machine Chest Press", "Cable Face Pull"], "5": ["Barbell Back Squat", "Barbell Bench Press", "Split Squat"] }, sessionNames: { "1": "Squat Strength", "2": "Upper / Lower Volume", "3": "Deadlift Strength", "4": "Technique and Recovery", "5": "Competition Lift Practice" }, sessionDays: [1, 2, 3, 4, 5], methodology: "Five-day strength split using primary-lift practice, supplementary volume and a lower-fatigue technique day", rationale: "Five sessions reflect the client’s established training age and strength goal. The main lifts receive repeated practice, while supplementary and technique days distribute fatigue rather than repeating maximal work every session.", weekPlans: standardWeekPlans.strength },
+    paul: { goal: "Muscle and strength gain", days: 2, duration: 60, exercises: ["Leg Press", "Machine Chest Press", "Seated Cable Row", "Barbell Hip Thrust", "Dead Bug", "Incline Treadmill Walk"], sessionExercises: { "1": ["Leg Press", "Machine Chest Press", "Seated Cable Row", "Dead Bug"], "3": ["Barbell Hip Thrust", "Machine Chest Press", "Band Row", "Incline Treadmill Walk"] }, sessionNames: { "1": "Full Body Foundation", "3": "Full Body Strength" }, sessionDays: [1, 3], methodology: "Two-day full-body strength foundation with conservative loading, trunk control and low-impact aerobic work", rationale: "Two full-body sessions fit the stated availability and support muscle and strength without unnecessary complexity. Back history and cardiovascular screening flags require PT review, conservative loading and appropriate clearance decisions before assignment.", weekPlans: standardWeekPlans.conservative },
   };
   const plan = slug ? plans[slug] : undefined;
   if (!plan) throw new Error("This client is not one of the labelled Module 7 case-study fixtures.");
   const allExercises = await db.select({ name: ptExercises.name, movementPattern: ptExercises.movementPattern }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId)));
   const selected = plan.exercises.map((name) => { const match = allExercises.find((exercise) => exercise.name.toLowerCase() === name.toLowerCase()); if (!match) throw new Error(`Exercise missing from library: ${name}`); const isConditioning = /walk/i.test(name); const isPower = /jump/i.test(name); return { name: match.name, pattern: match.movementPattern, sets: isConditioning || isPower ? 2 : 3, repsMin: isConditioning ? 1 : isPower ? 3 : 8, repsMax: isConditioning ? 15 : isPower ? 5 : 12, intensityValue: isPower ? "RPE 6 · crisp reps" : "2 RIR", restSeconds: isPower || /deadlift|squat/i.test(name) ? 120 : 90, tempo: "", technique: isPower ? "Power / crisp reps" : isConditioning ? "Interval / aerobic" : undefined, notes: isConditioning ? "Progress duration and intensity gradually; use RPE if no heart-rate data." : undefined, groupKey: isConditioning ? "conditioning" : undefined, progressionRule: "Progress when the top of the range is achieved with acceptable technique, target effort and no pain; otherwise hold or regress." }; });
   const sessionExercises = Object.fromEntries(Object.entries(plan.sessionExercises).map(([day, names]) => [day, names.map((name) => selected.find((exercise) => exercise.name.toLowerCase() === name.toLowerCase())).filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise))]));
-  const result = await saveProgrammeAction({ clientName: `${client.firstName} ${client.lastName}`, goalSummary: plan.goal, trainingDays: plan.days, sessionDurationMinutes: plan.duration, exercises: selected, sessionExercises, sessionNames: plan.sessionNames, sessionDays: plan.sessionDays, methodology: plan.methodology, rationale: plan.rationale });
+  const result = await saveProgrammeAction({ clientName: `${client.firstName} ${client.lastName}`, goalSummary: plan.goal, trainingDays: plan.days, sessionDurationMinutes: plan.duration, exercises: selected, sessionExercises, sessionNames: plan.sessionNames, sessionDays: plan.sessionDays, methodology: plan.methodology, rationale: plan.rationale, weekPlans: plan.weekPlans });
   return { ...result, slug, programmeLabel: `${plan.goal} case-study draft` };
 }
 
@@ -174,7 +220,8 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   let savedPrescriptionCount = 0;
   const sessionDays = input.sessionDays ?? [1, 3, 5];
   for (let weekNumber = 1; weekNumber <= 8; weekNumber += 1) {
-    const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review", volumeTarget: weekNumber <= 2 ? "Moderate" : "Moderate-high", intensityTarget: "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
+    const weekPlan = input.weekPlans?.[weekNumber - 1];
+    const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekPlan?.focus || (weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review"), volumeTarget: weekPlan?.volumeTarget || (weekNumber <= 2 ? "Moderate" : "Moderate-high"), intensityTarget: weekPlan?.intensityTarget || "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
     if (!week) throw new Error("Programme week could not be saved.");
     for (const dayOfWeek of sessionDays) {
       const sessionName = input.sessionNames?.[String(dayOfWeek)] || `Day ${dayOfWeek} - Full body`;
