@@ -8,8 +8,8 @@ export type EditorExercise = { name: string; pattern: string; prescription: stri
 type SavedSession = { dayOfWeek: number; name: string; exercises: EditorExercise[] };
 type LibraryExercise = { name: string; pattern: string; target: string; equipment: string };
 
-export function MobileNav({ onClose, onOverview, onClients, onLibrary }: { onClose: () => void; onOverview: () => void; onClients: () => void; onLibrary: () => void }) {
-  return <div className="mobile-nav-backdrop" onClick={onClose}><nav className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}><div className="brand-mark"><span>E</span><div><strong>ENGINE PT</strong><small>CONSTRUCTION</small></div></div><button className="close-button" onClick={onClose}>×</button><button onClick={onOverview}>⌂ Overview</button><button onClick={onClients}>♧ Clients</button><button>▦ Programmes</button><button onClick={onLibrary}>◈ Exercise library</button><small className="mobile-nav-user">Noaman · Personal trainer</small></nav></div>;
+export function MobileNav({ onClose, onOverview, onClients, onProgrammes, onLibrary }: { onClose: () => void; onOverview: () => void; onClients: () => void; onProgrammes: () => void; onLibrary: () => void }) {
+  return <div className="mobile-nav-backdrop" onClick={onClose}><nav className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}><div className="brand-mark"><span>E</span><div><strong>ENGINE PT</strong><small>CONSTRUCTION</small></div></div><button className="close-button" onClick={onClose}>×</button><button onClick={onOverview}>⌂ Overview</button><button onClick={onClients}>♧ Clients</button><button onClick={onProgrammes}>▦ Programmes</button><button onClick={onLibrary}>◈ Exercise library</button><small className="mobile-nav-user">Noaman · Personal trainer</small></nav></div>;
 }
 
 export function SessionEditorModal({ clientName, goal, days, week, savedSessions, onClose, onSaved, notify }: { clientName: string; goal: string; days: number; week: EditorExercise[]; savedSessions?: SavedSession[]; onClose: () => void; onSaved?: () => void; notify: (message: string) => void }) {

@@ -31,6 +31,7 @@ const clientInputSchema = z.object({
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), technique: z.string().trim().max(80).optional(), notes: z.string().trim().max(500).optional(), groupKey: z.string().trim().max(80).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
 const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
+const clientPreferencesSchema = z.object({ clientId: z.string().uuid(), likedExercises: z.array(z.string().trim().min(1)).max(30), dislikedExercises: z.array(z.string().trim().min(1)).max(30), preferredStyle: z.string().trim().max(120).optional(), preferredStructure: z.string().trim().max(120).optional(), preferredEquipment: z.array(z.string().trim().min(1)).max(30), cardioModalities: z.array(z.string().trim().min(1)).max(20), varietyPreference: z.string().trim().max(80).optional(), confidenceNotes: z.string().trim().max(2000).optional() });
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
@@ -205,6 +206,20 @@ export async function updateClientProfileAction(rawInput: z.input<typeof clientP
   return { clientId: client.id };
 }
 
+export async function updateClientPreferencesAction(rawInput: z.input<typeof clientPreferencesSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = clientPreferencesSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Client could not be found.");
+  const values = { likedExercises: input.likedExercises, dislikedExercises: input.dislikedExercises, preferredStyle: input.preferredStyle || null, preferredStructure: input.preferredStructure || null, preferredEquipment: input.preferredEquipment, cardioModalities: input.cardioModalities, varietyPreference: input.varietyPreference || null, confidenceNotes: input.confidenceNotes || null, updatedAt: new Date() };
+  const [existing] = await db.select({ id: ptPreferences.id }).from(ptPreferences).where(eq(ptPreferences.clientId, client.id)).limit(1);
+  if (existing) await db.update(ptPreferences).set(values).where(eq(ptPreferences.id, existing.id));
+  else await db.insert(ptPreferences).values({ clientId: client.id, ...values });
+  revalidatePath("/designer");
+  return { clientId: client.id };
+}
+
 export async function saveProgrammeAction(rawInput: z.input<typeof programmeInputSchema>) {
   const owner = await requireDesignerAccess();
   const input = programmeInputSchema.parse(rawInput);
@@ -306,6 +321,7 @@ export async function resolveScreeningAction(rawInput: z.input<typeof screeningR
 }
 
 const exerciseCreateSchema = z.object({ name: z.string().trim().min(2).max(120), pattern: z.string().trim().min(2).max(80), target: z.array(z.string().trim().min(1)).min(1).max(10), equipment: z.array(z.string().trim().min(1)).max(10), difficulty: z.enum(["beginner", "intermediate", "advanced"]), complexity: z.enum(["low", "moderate", "high"]), compound: z.boolean(), unilateral: z.boolean() });
+const exerciseUpdateSchema = z.object({ exerciseId: z.string().uuid(), name: z.string().trim().min(2).max(120), pattern: z.string().trim().min(2).max(80), primaryMuscles: z.array(z.string().trim().min(1)).min(1).max(12), secondaryMuscles: z.array(z.string().trim().min(1)).max(12), equipment: z.array(z.string().trim().min(1)).max(12), difficulty: z.enum(["beginner", "intermediate", "advanced"]), complexity: z.enum(["low", "moderate", "high"]), suitability: z.array(z.string().trim().min(1)).max(12), tags: z.array(z.string().trim().min(1)).max(20), regressions: z.array(z.string().trim().min(1)).max(12), progressions: z.array(z.string().trim().min(1)).max(12), alternatives: z.array(z.string().trim().min(1)).max(12), coachingCues: z.array(z.string().trim().min(1)).max(12), commonErrors: z.array(z.string().trim().min(1)).max(12), cautionTags: z.array(z.string().trim().min(1)).max(12), compound: z.boolean(), unilateral: z.boolean() });
 
 export async function createExerciseAction(rawInput: z.input<typeof exerciseCreateSchema>) {
   const owner = await requireDesignerAccess();
@@ -314,6 +330,27 @@ export async function createExerciseAction(rawInput: z.input<typeof exerciseCrea
   const slugBase = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "custom-exercise";
   const [exercise] = await db.insert(ptExercises).values({ ownerProfileId: owner.authUserId, slug: `${slugBase}-${Date.now().toString(36)}`, name: input.name, movementPattern: input.pattern, primaryMuscles: input.target, equipment: input.equipment, difficulty: input.difficulty, technicalComplexity: input.complexity, suitability: ["strength", "hypertrophy", "general fitness"], compound: input.compound, unilateral: input.unilateral, tags: ["custom"], regressions: [], progressions: [], alternatives: [], coachingCues: [], commonErrors: [], cautionTags: [] }).returning({ id: ptExercises.id, name: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, equipment: ptExercises.equipment, difficulty: ptExercises.difficulty, complexity: ptExercises.technicalComplexity, suitability: ptExercises.suitability, compound: ptExercises.compound, unilateral: ptExercises.unilateral, regressions: ptExercises.regressions, progressions: ptExercises.progressions, alternatives: ptExercises.alternatives, coachingCues: ptExercises.coachingCues, commonErrors: ptExercises.commonErrors, cautionTags: ptExercises.cautionTags });
   if (!exercise) throw new Error("Exercise could not be created.");
+  revalidatePath("/designer");
+  return { exercise };
+}
+
+export async function updateExerciseAction(rawInput: z.input<typeof exerciseUpdateSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = exerciseUpdateSchema.parse(rawInput);
+  const db = getDb();
+  const [existing] = await db.select({ id: ptExercises.id, ownerProfileId: ptExercises.ownerProfileId, slug: ptExercises.slug }).from(ptExercises).where(eq(ptExercises.id, input.exerciseId)).limit(1);
+  if (!existing) throw new Error("Exercise could not be found.");
+  const values = { name: input.name, movementPattern: input.pattern, primaryMuscles: input.primaryMuscles, secondaryMuscles: input.secondaryMuscles, equipment: input.equipment, difficulty: input.difficulty, technicalComplexity: input.complexity, suitability: input.suitability, compound: input.compound, unilateral: input.unilateral, tags: input.tags, regressions: input.regressions, progressions: input.progressions, alternatives: input.alternatives, coachingCues: input.coachingCues, commonErrors: input.commonErrors, cautionTags: input.cautionTags, updatedAt: new Date() };
+  let exerciseId = existing.id;
+  if (existing.ownerProfileId === owner.authUserId) {
+    await db.update(ptExercises).set(values).where(and(eq(ptExercises.id, existing.id), eq(ptExercises.ownerProfileId, owner.authUserId)));
+  } else {
+    const [copy] = await db.insert(ptExercises).values({ ...values, ownerProfileId: owner.authUserId, slug: `${existing.slug}-custom-${Date.now().toString(36)}` }).returning({ id: ptExercises.id });
+    if (!copy) throw new Error("Custom exercise copy could not be created.");
+    exerciseId = copy.id;
+  }
+  const [exercise] = await db.select({ id: ptExercises.id, name: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, secondary: ptExercises.secondaryMuscles, equipment: ptExercises.equipment, difficulty: ptExercises.difficulty, complexity: ptExercises.technicalComplexity, suitability: ptExercises.suitability, compound: ptExercises.compound, unilateral: ptExercises.unilateral, tags: ptExercises.tags, regressions: ptExercises.regressions, progressions: ptExercises.progressions, alternatives: ptExercises.alternatives, coachingCues: ptExercises.coachingCues, commonErrors: ptExercises.commonErrors, cautionTags: ptExercises.cautionTags, ownerProfileId: ptExercises.ownerProfileId }).from(ptExercises).where(eq(ptExercises.id, exerciseId)).limit(1);
+  if (!exercise) throw new Error("Updated exercise could not be loaded.");
   revalidatePath("/designer");
   return { exercise };
 }

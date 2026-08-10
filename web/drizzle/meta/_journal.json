@@ -50,6 +50,13 @@
       "when": 1786373000000,
       "tag": "0006_expand_exercise_library",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786374000000,
+      "tag": "0007_expand_exercise_catalogue",
+      "breakpoints": true
     }
   ]
 }
