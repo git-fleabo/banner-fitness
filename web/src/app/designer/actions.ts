@@ -31,6 +31,7 @@ const clientInputSchema = z.object({
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
+const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
 
@@ -106,6 +107,28 @@ export async function seedCaseStudyAction(rawInput: z.input<typeof caseStudySche
   await db.insert(ptLocations).values({ clientId: client.id, name: fixture.location, locationType: fixture.locationType, equipment: fixture.equipment });
   revalidatePath("/designer");
   return { clientId: client.id, name: fixture.name, existing: false, riskFlags };
+}
+
+export async function generateCaseStudyDraftAction(rawInput: z.input<typeof caseStudyDraftSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = caseStudyDraftSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, notes: ptClients.notes, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Case-study client could not be found.");
+  const slug = client.notes?.match(/CASE STUDY FIXTURE: ([a-z]+)/i)?.[1]?.toLowerCase();
+  const plans: Record<string, { goal: string; days: number; duration: number; exercises: string[]; sessionExercises: Record<string, string[]>; sessionNames: Record<string, string> }> = {
+    ciara: { goal: "Fat loss and tone", days: 3, duration: 60, exercises: ["Leg Press", "DB Bench Press", "Seated Cable Row", "DB Romanian Deadlift", "Cable Lateral Raise", "Incline Treadmill Walk"], sessionExercises: { "1": ["Leg Press", "DB Bench Press", "Seated Cable Row", "DB Romanian Deadlift"], "3": ["Goblet Squat", "Machine Chest Press", "One-Arm Dumbbell Row", "Split Squat"], "5": ["Step-Up", "Push-Up", "Band Row", "Incline Treadmill Walk"] }, sessionNames: { "1": "Full Body Stability", "3": "Full Body Endurance", "5": "Full Body Conditioning" } },
+    jessica: { goal: "Power gain", days: 3, duration: 75, exercises: ["Trap-Bar Deadlift", "Barbell Bench Press", "Dumbbell Shoulder Press", "Chest-Supported DB Row", "Broad Jump", "Cable Pallof Press"], sessionExercises: { "1": ["Trap-Bar Deadlift", "Barbell Bench Press", "Chest-Supported DB Row"], "3": ["Broad Jump", "Dumbbell Shoulder Press", "Split Squat", "Cable Pallof Press"], "5": ["Barbell Deadlift", "Incline Dumbbell Press", "One-Arm Dumbbell Row"] }, sessionNames: { "1": "Strength Foundation", "3": "Power and Athletic Transfer", "5": "Deadlift Strength" } },
+    kevin: { goal: "Strength gain", days: 5, duration: 60, exercises: ["Barbell Back Squat", "Barbell Deadlift", "Barbell Bench Press", "Seated Cable Row", "Barbell Overhead Press", "Split Squat"], sessionExercises: { "1": ["Barbell Back Squat", "Barbell Bench Press", "Seated Cable Row"], "3": ["Barbell Deadlift", "Barbell Overhead Press", "One-Arm Dumbbell Row"], "5": ["Barbell Back Squat", "Barbell Bench Press", "Split Squat"] }, sessionNames: { "1": "Squat Strength", "3": "Deadlift Strength", "5": "Competition Lift Practice" } },
+    paul: { goal: "Muscle and strength gain", days: 2, duration: 60, exercises: ["Leg Press", "Machine Chest Press", "Seated Cable Row", "Barbell Hip Thrust", "Dead Bug", "Incline Treadmill Walk"], sessionExercises: { "1": ["Leg Press", "Machine Chest Press", "Seated Cable Row", "Dead Bug"], "3": ["Barbell Hip Thrust", "Machine Chest Press", "Band Row", "Incline Treadmill Walk"], "5": ["Leg Press", "Seated Cable Row", "Dead Bug"] }, sessionNames: { "1": "Full Body Foundation", "3": "Full Body Strength" } },
+  };
+  const plan = slug ? plans[slug] : undefined;
+  if (!plan) throw new Error("This client is not one of the labelled Module 7 case-study fixtures.");
+  const allExercises = await db.select({ name: ptExercises.name, movementPattern: ptExercises.movementPattern }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId)));
+  const selected = plan.exercises.map((name) => { const match = allExercises.find((exercise) => exercise.name.toLowerCase() === name.toLowerCase()); if (!match) throw new Error(`Exercise missing from library: ${name}`); return { name: match.name, pattern: match.movementPattern, sets: /jump|walk/i.test(name) ? 2 : 3, repsMin: /walk/i.test(name) ? 1 : /jump/i.test(name) ? 3 : 8, repsMax: /walk/i.test(name) ? 15 : /jump/i.test(name) ? 5 : 12, intensityValue: /jump/i.test(name) ? "RPE 6 · crisp reps" : "2 RIR", restSeconds: /jump|deadlift|squat/i.test(name) ? 120 : 90, tempo: "", progressionRule: "Progress when the top of the range is achieved with acceptable technique, target effort and no pain; otherwise hold or regress." }; });
+  const sessionExercises = Object.fromEntries(Object.entries(plan.sessionExercises).map(([day, names]) => [day, names.map((name) => selected.find((exercise) => exercise.name.toLowerCase() === name.toLowerCase())).filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise))]));
+  const result = await saveProgrammeAction({ clientName: `${client.firstName} ${client.lastName}`, goalSummary: plan.goal, trainingDays: plan.days, sessionDurationMinutes: plan.duration, exercises: selected, sessionExercises, sessionNames: plan.sessionNames });
+  return { ...result, slug, programmeLabel: `${plan.goal} case-study draft` };
 }
 
 export async function updateClientAction(rawInput: z.input<typeof clientUpdateSchema>) {
