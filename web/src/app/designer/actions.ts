@@ -27,12 +27,15 @@ const clientInputSchema = z.object({
   ptNotes: z.string().trim().max(2000).optional(),
 });
 
+const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional() });
+
 const programmeInputSchema = z.object({
   clientName: z.string().trim().min(1).max(160),
   goalSummary: z.string().trim().min(1).max(200),
   trainingDays: z.number().int().min(1).max(7),
   sessionDurationMinutes: z.number().int().min(15).max(180),
-  exercises: z.array(z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional() })).min(1).max(100),
+  exercises: z.array(exerciseDraftSchema).min(1).max(100),
+  sessionExercises: z.record(z.string(), z.array(exerciseDraftSchema)).optional(),
   sessionNames: z.record(z.string(), z.string().trim().min(1).max(120)).optional(),
 });
 
@@ -96,6 +99,13 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
     const match = allExercises.find((candidate) => candidate.name.toLowerCase() === exercise.name.toLowerCase());
     return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, progressionRule: "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
   }).filter((row): row is NonNullable<typeof row> => row !== null);
+  const rowsByDay: Record<string, typeof exerciseRows> = {};
+  for (const [day, exercises] of Object.entries(input.sessionExercises ?? {})) {
+    rowsByDay[day] = exercises.map((exercise, index) => {
+      const match = allExercises.find((candidate) => candidate.name.toLowerCase() === exercise.name.toLowerCase());
+      return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, progressionRule: "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
+    }).filter((row): row is NonNullable<typeof row> => row !== null);
+  }
   let savedPrescriptionCount = 0;
   for (let weekNumber = 1; weekNumber <= 8; weekNumber += 1) {
     const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review", volumeTarget: weekNumber <= 2 ? "Moderate" : "Moderate-high", intensityTarget: "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
@@ -103,8 +113,9 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
     for (const dayOfWeek of [1, 3, 5]) {
       const [session] = await db.insert(ptSessions).values({ programmeWeekId: week.id, dayOfWeek, name: input.sessionNames?.[String(dayOfWeek)] || (dayOfWeek === 1 ? "Monday - Strength / Hypertrophy" : dayOfWeek === 3 ? "Wednesday - Full body" : "Friday - Conditioning"), sessionType: dayOfWeek === 5 ? "conditioning" : "mixed", durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 }).returning({ id: ptSessions.id });
       if (!session) throw new Error("Programme session could not be saved.");
-      if (dayOfWeek === 1 && exerciseRows.length) {
-        const rows = exerciseRows.map((row) => ({ ...row, sessionId: session.id }));
+      const rowsForDay = rowsByDay[String(dayOfWeek)] ?? (dayOfWeek === 1 ? exerciseRows : []);
+      if (rowsForDay.length) {
+        const rows = rowsForDay.map((row) => ({ ...row, sessionId: session.id }));
         await db.insert(ptExercisePrescriptions).values(rows);
         savedPrescriptionCount += rows.length;
       }
