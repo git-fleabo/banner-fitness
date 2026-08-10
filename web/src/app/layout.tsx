@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PT Learning Lab",
-  description: "A private, self-guided learning companion for Level 3 personal training.",
+  title: "Origin PT Studio",
+  description: "An explainable programme-design workspace for personal trainers.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
