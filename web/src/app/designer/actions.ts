@@ -43,7 +43,8 @@ const programmeInputSchema = z.object({
 });
 
 const workoutInputSchema = z.object({
-  clientName: z.string().trim().min(1).max(160),
+  clientId: z.string().uuid(),
+  sessionId: z.string().uuid(),
   scheduledDate: z.string().min(10).max(10),
   status: z.enum(["completed", "partial", "missed", "skipped"]),
   sessionRpe: z.number().int().min(1).max(10).optional(),
@@ -52,7 +53,7 @@ const workoutInputSchema = z.object({
   enjoyment: z.number().int().min(1).max(5).optional(),
   durationMinutes: z.number().int().min(1).max(240).optional(),
   notes: z.string().trim().max(2000).optional(),
-  sets: z.array(z.object({ reps: z.number().int().min(0).max(100).optional(), loadKg: z.number().int().min(0).max(1000).optional(), rpe: z.number().int().min(1).max(10).optional(), rir: z.number().int().min(0).max(10).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean() })).max(40).optional(),
+  sets: z.array(z.object({ prescriptionId: z.string().uuid(), setNumber: z.number().int().min(1).max(20), reps: z.number().int().min(0).max(100).optional(), loadKg: z.number().int().min(0).max(1000).optional(), rpe: z.number().int().min(1).max(10).optional(), rir: z.number().int().min(0).max(10).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean() })).max(100).optional(),
 });
 
 async function requireDesignerAccess() {
@@ -179,22 +180,17 @@ export async function transitionProgrammeAction(rawInput: z.input<typeof program
 export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInputSchema>) {
   const owner = await requireDesignerAccess();
   const input = workoutInputSchema.parse(rawInput);
-  const [firstName, ...lastParts] = input.clientName.split(" ");
-  const lastName = lastParts.join(" ") || "Client";
   const db = getDb();
-  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, firstName), eq(ptClients.lastName, lastName))).limit(1);
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.id, input.clientId))).limit(1);
   if (!client) throw new Error("Save the client profile before logging a workout.");
-  const [programme] = await db.select({ id: ptProgrammes.id }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, client.id))).orderBy(desc(ptProgrammes.updatedAt)).limit(1);
-  if (!programme) throw new Error("Save a programme before logging a workout.");
-  const [week] = await db.select({ id: ptProgrammeWeeks.id }).from(ptProgrammeWeeks).where(eq(ptProgrammeWeeks.programmeId, programme.id)).orderBy(asc(ptProgrammeWeeks.weekNumber)).limit(1);
-  if (!week) throw new Error("The programme has no week to log against.");
-  const [session] = await db.select({ id: ptSessions.id }).from(ptSessions).where(and(eq(ptSessions.programmeWeekId, week.id), eq(ptSessions.dayOfWeek, 1))).limit(1);
-  if (!session) throw new Error("The programme has no Monday session to log against.");
+  const [session] = await db.select({ id: ptSessions.id }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptProgrammeWeeks.id, ptSessions.programmeWeekId)).innerJoin(ptProgrammes, eq(ptProgrammes.id, ptProgrammeWeeks.programmeId)).where(and(eq(ptSessions.id, input.sessionId), eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
+  if (!session) throw new Error("The selected session could not be found for this client.");
   const [result] = await db.insert(ptWorkoutResults).values({ ownerProfileId: owner.authUserId, clientId: client.id, sessionId: session.id, scheduledDate: input.scheduledDate, completedAt: input.status === "completed" || input.status === "partial" ? new Date() : null, status: input.status, sessionRpe: input.sessionRpe ?? null, energy: input.energy ?? null, painReported: input.painReported, enjoyment: input.enjoyment ?? null, durationMinutes: input.durationMinutes ?? null, notes: input.notes || null }).returning({ id: ptWorkoutResults.id });
   if (!result) throw new Error("Workout result could not be saved.");
   if (input.sets?.length) {
-    const prescriptions = await db.select({ id: ptExercisePrescriptions.id }).from(ptExercisePrescriptions).where(eq(ptExercisePrescriptions.sessionId, session.id)).orderBy(asc(ptExercisePrescriptions.orderIndex));
-    const setRows = input.sets.flatMap((set, index) => { const prescription = prescriptions[Math.min(index, prescriptions.length - 1)]; return prescription ? [{ workoutResultId: result.id, prescriptionId: prescription.id, setNumber: 1, actualReps: set.reps ?? null, actualLoadKg: set.loadKg ?? null, actualRpe: set.rpe ?? null, actualRir: set.rir ?? null, techniqueAcceptable: set.techniqueAcceptable, painReported: set.painReported }] : []; });
+    const prescriptions = await db.select({ id: ptExercisePrescriptions.id }).from(ptExercisePrescriptions).where(eq(ptExercisePrescriptions.sessionId, session.id));
+    const allowed = new Set(prescriptions.map((prescription) => prescription.id));
+    const setRows = input.sets.filter((set) => allowed.has(set.prescriptionId)).map((set) => ({ workoutResultId: result.id, prescriptionId: set.prescriptionId, setNumber: set.setNumber, actualReps: set.reps ?? null, actualLoadKg: set.loadKg ?? null, actualRpe: set.rpe ?? null, actualRir: set.rir ?? null, techniqueAcceptable: set.techniqueAcceptable, painReported: set.painReported }));
     if (setRows.length) await db.insert(ptWorkoutResultSets).values(setRows);
   }
   revalidatePath("/designer");
