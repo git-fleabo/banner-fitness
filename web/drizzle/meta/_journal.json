@@ -92,6 +92,13 @@
       "when": 1786450900000,
       "tag": "0012_warm_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786451000000,
+      "tag": "0013_add_suspension_exercises",
+      "breakpoints": true
     }
   ]
 }
