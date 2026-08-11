@@ -10,3 +10,9 @@ test("protects the learning route and renders sign-in accessibly", async ({ page
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact ?? ""))).toEqual([]);
 });
+
+test("protects the programme designer behind owner authentication", async ({ page }) => {
+  await page.goto("/designer");
+  await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fdesigner|\/auth\/sign-in\?next=\/designer/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Welcome back");
+});
