@@ -93,6 +93,7 @@ const standardWeekPlans: Record<string, WeekPlan[]> = {
 };
 
 const programmeInputSchema = z.object({
+  clientId: z.string().uuid().optional(),
   clientName: z.string().trim().min(1).max(160),
   goalSummary: z.string().trim().min(1).max(200),
   trainingDays: z.number().int().min(1).max(7),
@@ -418,11 +419,36 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   const db = getDb();
   const [firstName, ...lastParts] = input.clientName.split(" ");
   const lastName = lastParts.join(" ") || "Client";
-  let [client] = await db.select({ id: ptClients.id, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, firstName), eq(ptClients.lastName, lastName))).limit(1);
-  if (!client) [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName, lastName, sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: input.sessionDays ?? Array.from({ length: input.trainingDays }, (_, index) => index + 1) }).returning({ id: ptClients.id, preferredDays: ptClients.preferredDays });
+  let [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, preferredDays: ptClients.preferredDays, trainingExperience: ptClients.trainingExperience, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, notes: ptClients.notes }).from(ptClients).where(input.clientId ? and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.id, input.clientId)) : and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, firstName), eq(ptClients.lastName, lastName))).limit(1);
+  if (!client) [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName, lastName, sessionDurationMinutes: input.sessionDurationMinutes, preferredDays: input.sessionDays ?? Array.from({ length: input.trainingDays }, (_, index) => index + 1) }).returning({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, preferredDays: ptClients.preferredDays, trainingExperience: ptClients.trainingExperience, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, notes: ptClients.notes });
   if (!client) throw new Error("Client could not be resolved.");
+  const [assessment] = await db.select({ assessmentDate: ptAssessments.assessmentDate, reviewDate: ptAssessments.reviewDate, responses: ptAssessments.responses, clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+  const [goal] = await db.select({ goalType: ptGoals.goalType, target: ptGoals.target, metric: ptGoals.metric }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).orderBy(desc(ptGoals.updatedAt)).limit(1);
+  const [location] = await db.select({ name: ptLocations.name, locationType: ptLocations.locationType, equipment: ptLocations.equipment }).from(ptLocations).where(eq(ptLocations.clientId, client.id)).orderBy(desc(ptLocations.updatedAt)).limit(1);
+  const [preferences] = await db.select({ preferredStyle: ptPreferences.preferredStyle, preferredStructure: ptPreferences.preferredStructure, preferredEquipment: ptPreferences.preferredEquipment, confidenceNotes: ptPreferences.confidenceNotes }).from(ptPreferences).where(eq(ptPreferences.clientId, client.id)).limit(1);
+  const performanceRecords = await db.select({ exerciseId: ptClientPerformanceRecords.exerciseId, metricType: ptClientPerformanceRecords.metricType, value: ptClientPerformanceRecords.value, unit: ptClientPerformanceRecords.unit, repetitions: ptClientPerformanceRecords.repetitions, loadKg: ptClientPerformanceRecords.loadKg, performanceDate: ptClientPerformanceRecords.performanceDate, painReported: ptClientPerformanceRecords.painReported, techniqueAcceptable: ptClientPerformanceRecords.techniqueAcceptable }).from(ptClientPerformanceRecords).where(eq(ptClientPerformanceRecords.clientId, client.id)).orderBy(desc(ptClientPerformanceRecords.performanceDate), desc(ptClientPerformanceRecords.createdAt)).limit(10);
+  const assessmentValues = assessment?.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? assessment.responses as Record<string, unknown> : {};
+  const contextParts = [
+    `Goal: ${goal?.goalType || input.goalSummary}${goal?.target ? ` · target ${goal.target}` : ""}${goal?.metric ? ` · metric ${goal.metric}` : ""}`,
+    `Preferred days: ${Array.isArray(client.preferredDays) && client.preferredDays.length ? client.preferredDays.join(", ") : "not recorded"}`,
+    `Training experience: ${client.trainingExperience || "not recorded"}`,
+    `Daily activity: ${client.dailyActivity || "not recorded"}`,
+    `Sleep: ${client.sleepHours || "not recorded"}`,
+    `Stress: ${client.stressLevel || "not recorded"}`,
+    `Location/equipment: ${location ? `${location.name} (${location.locationType}); ${listText(location.equipment).join(", ") || "not recorded"}` : "not recorded"}`,
+    preferences?.preferredStyle ? `Preferred style: ${preferences.preferredStyle}` : "",
+    preferences?.preferredStructure ? `Preferred structure: ${preferences.preferredStructure}` : "",
+    `Screening review: ${assessment?.reviewDate || "not recorded"}; clearance required: ${assessment?.clearanceRequired ? "yes" : "no"}; risk flags: ${Array.isArray(assessment?.riskFlags) ? assessment.riskFlags.length : 0}`,
+    assessmentValues.injuryNotes ? `Pain/injury context: ${String(assessmentValues.injuryNotes)}` : "",
+    assessmentValues.contraindicationNotes ? `Restrictions/clearance context: ${String(assessmentValues.contraindicationNotes)}` : "",
+    assessment?.ptNotes ? `PT assessment notes: ${assessment.ptNotes}` : "",
+    client.notes ? `Client notes: ${client.notes}` : "",
+    performanceRecords.length ? `Performance baselines: ${performanceRecords.map((record) => `${record.metricType} ${record.value} ${record.unit} on ${record.performanceDate}${record.painReported ? "; pain reported" : ""}${!record.techniqueAcceptable ? "; technique not marked acceptable" : ""}`).join(" | ")}` : "Performance baselines: none recorded",
+  ].filter(Boolean).join(". ");
+  const contextNote = `Current client context captured when this version was created: ${contextParts}`;
+  const rationale = `${input.rationale || "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed."}\n\n${contextNote}`;
   const [previousProgramme] = await db.select({ version: ptProgrammes.version }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, client.id))).orderBy(desc(ptProgrammes.version)).limit(1);
-  const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: input.methodology || "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale: input.rationale || "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed." }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
+  const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: input.methodology || "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
   if (!programme) throw new Error("Programme could not be saved.");
   const allExercises = await db.select({ id: ptExercises.id, name: ptExercises.name }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId))).orderBy(asc(ptExercises.name));
   const toExerciseRows = (exercises: z.infer<typeof exerciseDraftSchema>[]) => exercises.map((exercise, index) => {
@@ -459,7 +485,7 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
       }
     }
   }
-  await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version } });
+  await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version, contextCapturedAt: new Date().toISOString(), contextSummary: contextNote } });
   await refreshProgrammeQuality(db, owner.authUserId, programme.id);
   revalidatePath("/designer");
   return { programmeId: programme.id, version: programme.version, exerciseCount: savedPrescriptionCount, weekCount: 8 };
