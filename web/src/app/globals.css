@@ -187,3 +187,49 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* The full weekday editor below owns schedule changes; hide the legacy 2/3/4 shortcut so it cannot suggest a restricted range. */
 .client-column .two-col > .inner-panel:first-child > label:nth-of-type(2) { display:none; }
+
+.dashboard-roster { margin:0 44px 22px; padding:23px; }
+.dashboard-roster-heading { margin-bottom:15px; }
+.dashboard-roster-heading .panel-muted { display:block; margin-top:5px; }
+.dashboard-roster-toolbar { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px; }
+.dashboard-view-tabs { display:flex; gap:4px; min-width:0; overflow:auto; }
+.dashboard-view-tabs button { border:1px solid transparent; border-radius:999px; background:#f5f6f2; color:#73817b; padding:8px 10px; white-space:nowrap; font:700 9px inherit; cursor:pointer; }
+.dashboard-view-tabs button:hover,.dashboard-view-tabs button:focus-visible { border-color:#c7dbca; color:#2f7054; }
+.dashboard-view-tabs button.active { border-color:#b8d2bd; background:#eaf5eb; color:#2f7054; }
+.dashboard-view-tabs em { display:inline-grid; place-items:center; min-width:16px; height:16px; margin-left:5px; padding:0 4px; border-radius:999px; background:#d98963; color:#fff; font:700 8px inherit; font-style:normal; }
+.dashboard-roster-filters { display:flex; gap:7px; flex:0 0 auto; }
+.dashboard-roster-filters input,.dashboard-roster-filters select { border:1px solid var(--designer-line); border-radius:5px; background:#fff; color:#506762; padding:9px 10px; font:10px inherit; outline-color:#4c8c70; }
+.dashboard-roster-filters input { width:150px; }
+.dashboard-roster-table { overflow-x:auto; border:1px solid #edf0eb; border-radius:6px; }
+.dashboard-roster-header,.dashboard-client-row { min-width:900px; display:grid; grid-template-columns:1.4fr 1.25fr 1fr .7fr 1fr .7fr; gap:12px; align-items:center; padding:10px 12px; }
+.dashboard-roster-header { background:#fafbf8; color:#8b9791; font-size:8px; font-weight:800; letter-spacing:.1em; }
+.dashboard-client-row { border:0; border-top:1px solid #edf0eb; background:#fff; color:#61736b; text-align:left; cursor:pointer; }
+.dashboard-client-row:hover,.dashboard-client-row:focus-visible { background:#f8fbf8; outline:none; }
+.dashboard-client-row.needs-attention { box-shadow:inset 3px 0 #d98963; }
+.dashboard-client-row strong { display:block; color:var(--navy); font-size:11px; }
+.dashboard-client-row small { display:block; color:#8a9791; font-size:9px; line-height:1.35; margin-top:4px; }
+.dashboard-client-name { display:flex; align-items:center; gap:9px; min-width:0; }
+.dashboard-client-name > span:last-child,.dashboard-client-programme,.dashboard-client-last,.dashboard-client-next { min-width:0; }
+.dashboard-client-name strong,.dashboard-client-name small,.dashboard-client-programme strong,.dashboard-client-programme small,.dashboard-client-last strong,.dashboard-client-last small,.dashboard-client-next strong,.dashboard-client-next small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dashboard-client-adherence { color:#2f7054; font:700 14px Georgia; }
+.dashboard-client-adherence small { font:400 8px inherit; white-space:nowrap; }
+.dashboard-client-status { color:#4c8a60; font-size:10px; font-weight:800; white-space:nowrap; }
+.dashboard-client-status.attention { color:#bd7047; }
+.dashboard-client-status b { margin-left:5px; font-size:12px; }
+.starter-template-picker { display:flex; align-items:flex-end; gap:12px; margin:0 0 16px; padding:12px; border:1px solid #dce8dd; border-radius:6px; background:#f6fbf6; }
+.starter-template-picker label { display:block; flex:0 1 330px; color:#7b8b83; font-size:9px; font-weight:800; letter-spacing:.1em; }
+.starter-template-picker select { display:block; width:100%; margin-top:6px; border:1px solid #cedfd0; border-radius:5px; background:#fff; color:#425f57; padding:9px; font:11px inherit; }
+.starter-template-picker small { color:#7b8d84; font-size:10px; line-height:1.4; }
+.equipment-help { margin:14px 0 0; color:#7c8e86; font-size:10px; line-height:1.4; }
+.equipment-groups { display:grid; gap:12px; margin-top:13px; }
+.equipment-group { padding-top:11px; border-top:1px solid #edf0eb; }
+.equipment-group > strong { color:#48655c; font-size:10px; }
+.equipment-group > strong span { display:inline-grid; place-items:center; min-width:16px; height:16px; margin-left:4px; border-radius:999px; background:#e5f2e6; color:#317353; font-size:8px; }
+.equipment-group-muted > strong { color:#87958f; }
+.equipment-group-muted > strong span { background:#f0f1ee; color:#87958f; }
+.equipment-group .equipment-picker { margin-top:8px; }
+.equipment-group-muted .equipment-picker button { background:#fbfbf9; color:#8a9691; }
+.equipment-group .equipment-picker > small { color:#89968f; font-size:10px; }
+
+@media (max-width: 980px) { .dashboard-roster { margin-left:25px; margin-right:25px; }.dashboard-roster-toolbar { align-items:stretch; flex-direction:column; }.dashboard-roster-filters { justify-content:flex-end; } }
+@media (max-width: 680px) { .dashboard-roster { margin:0 16px 16px; padding:17px; }.dashboard-roster-heading .text-button { display:none; }.dashboard-view-tabs { margin-right:-17px; padding-right:17px; }.dashboard-roster-filters { width:100%; }.dashboard-roster-filters input,.dashboard-roster-filters select { flex:1; min-width:0; width:auto; }.starter-template-picker { align-items:stretch; flex-direction:column; gap:8px; }.starter-template-picker label { flex-basis:auto; }.equipment-groups { gap:9px; } }
