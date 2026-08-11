@@ -34,6 +34,7 @@ describe("contextual programme quality engine", () => {
     expect(review.findings.find((item) => item.ruleId === "programme-completeness")?.message).toContain("16 of 24");
     expect(review.findings.find((item) => item.ruleId === "equipment-compatibility")?.message).toContain("Trap bar");
     expect(review.findings.find((item) => item.ruleId === "exercise-pain-context")?.message).toContain("Dumbbell Shoulder Press");
+    expect(review.findings.find((item) => item.ruleId === "exercise-pain-context")?.message.match(/Barbell Bench Press/g)).toHaveLength(1);
   });
 
   it("does not reject 8–12 reps or 2 RIR for general strength", () => {
