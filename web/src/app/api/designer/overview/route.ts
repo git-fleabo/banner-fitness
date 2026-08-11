@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
 import { hasRecordedScreeningReview } from "@/lib/pt-programming";
-import { ptAssessments, ptClients, ptGoals, ptLocations, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
+import { ptAssessments, ptClients, ptGoals, ptLocations, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,7 @@ export async function GET() {
   const completedResults = resultCounts.filter((row) => row.status === "completed" || row.status === "partial").reduce((sum, row) => sum + Number(row.value), 0);
   const clients = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, status: ptClients.status, trainingExperience: ptClients.trainingExperience, sessionDurationMinutes: ptClients.sessionDurationMinutes, updatedAt: ptClients.updatedAt }).from(ptClients).where(eq(ptClients.ownerProfileId, access.account.authUserId)).orderBy(desc(ptClients.updatedAt)).limit(100);
   const programmes = await db.select({ id: ptProgrammes.id, clientId: ptProgrammes.clientId, name: ptProgrammes.name, goalSummary: ptProgrammes.goalSummary, status: ptProgrammes.status, currentWeek: ptProgrammes.currentWeek, durationWeeks: ptProgrammes.durationWeeks, version: ptProgrammes.version, updatedAt: ptProgrammes.updatedAt }).from(ptProgrammes).where(eq(ptProgrammes.ownerProfileId, access.account.authUserId)).orderBy(desc(ptProgrammes.updatedAt)).limit(100);
+  const qualityReviews = await db.select({ programmeId: ptProgrammeQualityReviews.programmeId, score: ptProgrammeQualityReviews.score, approvalReadiness: ptProgrammeQualityReviews.approvalReadiness, blockingCount: ptProgrammeQualityReviews.blockingCount, significantCount: ptProgrammeQualityReviews.significantCount, advisoryCount: ptProgrammeQualityReviews.advisoryCount, evaluatedAt: ptProgrammeQualityReviews.evaluatedAt }).from(ptProgrammeQualityReviews).innerJoin(ptProgrammes, eq(ptProgrammeQualityReviews.programmeId, ptProgrammes.id)).where(eq(ptProgrammes.ownerProfileId, access.account.authUserId));
   const assessments = await db.select({ clientId: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, reviewDate: ptAssessments.reviewDate, clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, ptNotes: ptAssessments.ptNotes, assessmentDate: ptAssessments.assessmentDate }).from(ptAssessments).innerJoin(ptClients, eq(ptAssessments.clientId, ptClients.id)).where(eq(ptClients.ownerProfileId, access.account.authUserId)).orderBy(desc(ptAssessments.assessmentDate)).limit(100);
   const latestAssessments = new Map<string, typeof assessments[number]>();
   for (const assessment of assessments) if (!latestAssessments.has(assessment.clientId)) latestAssessments.set(assessment.clientId, assessment);
@@ -34,6 +35,15 @@ export async function GET() {
   for (const programme of programmes.filter((item) => item.status === "draft").slice(0, 5)) {
     const ownerClient = clients.find((item) => item.id === programme.clientId);
     if (ownerClient) attention.push({ id: `programme-${programme.id}`, clientId: programme.clientId, name: `${ownerClient.firstName} ${ownerClient.lastName}`, text: `Draft programme awaiting review · Week ${programme.currentWeek}`, tag: "Draft", tone: "blue" });
+  }
+  const qualityByProgramme = new Map(qualityReviews.map((review) => [review.programmeId, review]));
+  for (const programme of programmes) {
+    const quality = qualityByProgramme.get(programme.id);
+    if (!quality || quality.approvalReadiness === "ready") continue;
+    const ownerClient = clients.find((item) => item.id === programme.clientId);
+    if (!ownerClient) continue;
+    const severity = quality.blockingCount > 0 ? "blocked" : quality.significantCount > 0 ? "needs review" : "PT consideration";
+    attention.push({ id: `quality-${programme.id}`, clientId: programme.clientId, name: `${ownerClient.firstName} ${ownerClient.lastName}`, text: `Programme quality ${quality.score} · ${severity}`, tag: quality.blockingCount > 0 ? "Blocked" : "Quality", tone: quality.blockingCount > 0 ? "orange" : "blue" });
   }
   const scheduledSessions = await db.select({ id: ptSessions.id, clientId: ptProgrammes.clientId, firstName: ptClients.firstName, lastName: ptClients.lastName, dayOfWeek: ptSessions.dayOfWeek, name: ptSessions.name, sessionType: ptSessions.sessionType, durationMinutes: ptSessions.durationMinutes }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptSessions.programmeWeekId, ptProgrammeWeeks.id)).innerJoin(ptProgrammes, eq(ptProgrammeWeeks.programmeId, ptProgrammes.id)).innerJoin(ptClients, eq(ptProgrammes.clientId, ptClients.id)).where(and(eq(ptProgrammes.ownerProfileId, access.account.authUserId), eq(ptProgrammes.status, "active"), eq(ptProgrammeWeeks.weekNumber, ptProgrammes.currentWeek))).orderBy(ptSessions.dayOfWeek).limit(20);
   const schedule = scheduledSessions.map((session) => ({ ...session, clientName: `${session.firstName} ${session.lastName}`, day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][session.dayOfWeek % 7] }));
@@ -66,7 +76,8 @@ export async function GET() {
     const clientSchedule = schedule.filter((session) => session.clientId === client.id).sort((a, b) => ((a.dayOfWeek - currentDay + 7) % 7) - ((b.dayOfWeek - currentDay + 7) % 7));
     const dataGaps = [!assessment ? "screening" : "", !goalByClient.has(client.id) ? "goal" : "", !client.trainingExperience ? "experience" : "", !locationByClient.has(client.id) ? "location" : ""].filter(Boolean);
     const screeningConcern = Boolean(assessment && (!hasRecordedScreeningReview(assessment.ptNotes) && (assessment.clearanceRequired || (Array.isArray(assessment.riskFlags) && assessment.riskFlags.length > 0)))) || Boolean(assessment?.reviewDate && assessment.reviewDate < today);
-    return { ...client, programme: programme ? { id: programme.id, name: programme.name, status: programme.status, currentWeek: programme.currentWeek, durationWeeks: programme.durationWeeks, version: programme.version } : null, goal: goalByClient.get(client.id) ?? null, location: locationByClient.get(client.id) ?? null, lastWorkout: result ? { date: result.scheduledDate, status: result.status, painReported: result.painReported, energy: result.energy, sessionRpe: result.sessionRpe } : null, adherence: stats.total ? Math.round((stats.completed / stats.total) * 100) : null, nextSession: clientSchedule[0] ? { day: clientSchedule[0].day, name: clientSchedule[0].name, durationMinutes: clientSchedule[0].durationMinutes } : null, dataGaps, needsAttention: Boolean(dataGaps.length || screeningConcern || result?.painReported || programme?.status === "draft") };
+    const quality = programme ? qualityByProgramme.get(programme.id) ?? null : null;
+    return { ...client, programme: programme ? { id: programme.id, name: programme.name, status: programme.status, currentWeek: programme.currentWeek, durationWeeks: programme.durationWeeks, version: programme.version } : null, goal: goalByClient.get(client.id) ?? null, location: locationByClient.get(client.id) ?? null, lastWorkout: result ? { date: result.scheduledDate, status: result.status, painReported: result.painReported, energy: result.energy, sessionRpe: result.sessionRpe } : null, adherence: stats.total ? Math.round((stats.completed / stats.total) * 100) : null, nextSession: clientSchedule[0] ? { day: clientSchedule[0].day, name: clientSchedule[0].name, durationMinutes: clientSchedule[0].durationMinutes } : null, quality: quality ? { score: quality.score, approvalReadiness: quality.approvalReadiness, blockingCount: quality.blockingCount, significantCount: quality.significantCount, advisoryCount: quality.advisoryCount, evaluatedAt: quality.evaluatedAt } : null, dataGaps, needsAttention: Boolean(dataGaps.length || screeningConcern || result?.painReported || programme?.status === "draft" || (quality && quality.approvalReadiness !== "ready")) };
   });
   return NextResponse.json({ counts: { clients: Number(clientCount?.value ?? 0), draftProgrammes: Number(programmeCount?.value ?? 0), adherence: totalResults ? Math.round((completedResults / totalResults) * 100) : null, sessionsThisWeek: schedule.length }, clients, dashboardClients, programmes, attention, schedule });
 }

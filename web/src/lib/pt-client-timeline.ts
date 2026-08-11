@@ -2,7 +2,7 @@ export type TimelineDate = string | Date;
 
 export type ClientTimelineItem = {
   id: string;
-  kind: "profile" | "assessment" | "goal" | "location" | "preferences" | "programme" | "event" | "workout" | "performance";
+  kind: "profile" | "assessment" | "goal" | "location" | "preferences" | "programme" | "quality" | "event" | "workout" | "performance";
   date: string;
   title: string;
   detail: string;
@@ -16,6 +16,7 @@ type TimelineSource = {
   locations: Array<{ id: string; name: string; locationType: string; createdAt: TimelineDate; updatedAt: TimelineDate }>;
   preferences: Array<{ id: string; preferredStyle: string | null; preferredStructure: string | null; createdAt: TimelineDate; updatedAt: TimelineDate }>;
   programmes: Array<{ id: string; name: string; goalSummary: string; status: string; version: number; createdAt: TimelineDate; updatedAt: TimelineDate }>;
+  qualityReviews: Array<{ id: string; programmeId: string; programmeName: string; score: number; approvalReadiness: string; blockingCount: number; significantCount: number; advisoryCount: number; evidenceVersion: string; evaluatedAt: TimelineDate }>;
   programmeEvents: Array<{ id: string; programmeId: string; programmeName: string; action: string; details: unknown; createdAt: TimelineDate }>;
   workouts: Array<{ id: string; scheduledDate: string; sessionName: string | null; status: string; sessionRpe: number | null; energy: number | null; painReported: boolean; notes: string | null; createdAt: TimelineDate; updatedAt: TimelineDate }>;
   performance: Array<{ id: string; exerciseName: string | null; metricType: string; value: string | number; unit: string; performanceDate: string; source: string; createdAt: TimelineDate; updatedAt: TimelineDate }>;
@@ -57,6 +58,7 @@ export function buildClientTimeline(source: TimelineSource): ClientTimelineItem[
   source.locations.forEach((location) => add({ id: `location-${location.id}`, kind: "location", date: asIso(location.updatedAt), title: "Training location updated", detail: detailText([location.name, location.locationType]), tone: "sand" }));
   source.preferences.forEach((preference) => add({ id: `preferences-${preference.id}`, kind: "preferences", date: asIso(preference.updatedAt), title: "Exercise preferences updated", detail: detailText([preference.preferredStyle, preference.preferredStructure]) || "Preferences and confidence notes reviewed", tone: "purple" }));
   source.programmes.forEach((programme) => add({ id: `programme-${programme.id}`, kind: "programme", date: asIso(programme.updatedAt), title: `Programme v${programme.version} saved`, detail: detailText([programme.name, titleCase(programme.status), programme.goalSummary]), tone: "blue" }));
+  source.qualityReviews.forEach((review) => add({ id: `quality-${review.id}`, kind: "quality", date: asIso(review.evaluatedAt), title: "Programme quality reviewed", detail: detailText([review.programmeName, `Quality ${review.score}`, titleCase(review.approvalReadiness), `${review.blockingCount} blocking · ${review.significantCount} significant · ${review.advisoryCount} advisory`, `Evidence ${review.evidenceVersion}`]), tone: review.blockingCount > 0 || review.significantCount > 0 ? "orange" : review.advisoryCount > 0 ? "sand" : "green" }));
   source.programmeEvents.forEach((event) => add({ id: `programme-event-${event.id}`, kind: "event", date: asIso(event.createdAt), title: `Programme ${event.action.replaceAll("_", " ")}`, detail: detailText([event.programmeName, eventReason(event.details)]), tone: "teal" }));
   source.workouts.forEach((workout) => add({ id: `workout-${workout.id}`, kind: "workout", date: asIso(workout.updatedAt), title: `Workout result: ${workout.sessionName || "Session"}`, detail: detailText([titleCase(workout.status), workout.sessionRpe ? `RPE ${workout.sessionRpe}` : null, workout.energy ? `Energy ${workout.energy}/5` : null, workout.painReported ? "pain reported" : null, workout.notes ? "notes added" : null]), tone: workout.painReported ? "orange" : "green" }));
   source.performance.forEach((record) => add({ id: `performance-${record.id}`, kind: "performance", date: asIso(record.updatedAt), title: `Performance baseline recorded: ${record.exerciseName || record.metricType}`, detail: detailText([`${record.value} ${record.unit}`, titleCase(record.source)]), tone: "purple" }));
