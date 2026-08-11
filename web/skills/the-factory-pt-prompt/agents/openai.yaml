@@ -1,0 +1,7 @@
+interface:
+  display_name: "The Factory PT Prompt"
+  short_description: "Format PT-ready programme reviews and drafts"
+  default_prompt: "Use $the-factory-pt-prompt to format this client and programme bundle for The Factory."
+
+policy:
+  allow_implicit_invocation: true
