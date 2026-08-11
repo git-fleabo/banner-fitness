@@ -24,15 +24,19 @@ These are starting hypotheses. The pilot should measure willingness to pay, not 
 5. A client timeline covering assessment, notes, programme versions, quality reviews, performance baselines and workout results.
 6. Privacy, retention, export/delete, access-control, backup and incident-response documentation suitable for handling client health information.
 7. A short in-app explanation of what The Factory does and does not decide for the PT.
+8. A multi-client command centre with search, status views, review queues, no-recent-activity views, programme state and missing-context signals.
+9. Exact equipment confirmation language: confirmed available, not confirmed and unknown must remain distinct in the PT workflow.
 
 ## P1 — the paid-pilot value loop
 
-1. Programme templates for beginner full-body, home gym, minimal equipment, general strength, hypertrophy and conditioning.
-2. AI response import with schema validation, a diff preview and explicit PT approval before any data is saved.
-3. Reassessment and check-in forms for readiness, pain, recovery, adherence, enjoyment and confidence.
-4. Client-facing programme view with workout logging and a simple check-in response.
-5. Printable/exportable client summary, programme rationale, quality report and version history.
-6. Exercise media, cues and alternatives that are scoped to the available equipment.
+1. Programme templates for beginner full-body, home gym, minimal equipment, general strength, hypertrophy and conditioning, including persistent PT-created templates that can be named, reused and removed safely.
+2. A polished programme-builder loop: copy/duplicate sessions and blocks, map sessions to preferred days, edit prescriptions in place, and preview the resulting week before saving a new version.
+3. AI response import with schema validation, a diff preview and explicit PT approval before any data is saved. If no programme exists, the prompt should request a complete draft rather than assuming an existing programme.
+4. Reassessment and check-in forms for readiness, pain, recovery, adherence, enjoyment and confidence, with changes surfaced in the client timeline and quality review.
+5. Client-facing programme view with workout logging, simple check-in response and clear next-session context.
+6. Printable/exportable client summary, programme rationale, quality report and version history.
+7. Exercise media, cues, substitutions and alternatives that are scoped to the available equipment and client context.
+8. Baseline and progression capture for useful measures such as tested or estimated 1RM, rep-max performance, technique confidence and pain-free tolerance, without making testing mandatory for every client.
 
 ## P2 — expansion after evidence of demand
 
@@ -41,6 +45,17 @@ These are starting hypotheses. The pilot should measure willingness to pay, not 
 - Wearable integrations and richer progress dashboards.
 - Team accounts, referral workflows and branded client experiences.
 - Evidence update notifications and a maintained ruleset changelog.
+
+## Product recommendations from the commercial-app review
+
+The paid product should stay focused on the complete PT workflow rather than attempting to reproduce every coaching-platform feature:
+
+1. Prioritise the loop of client context → programme builder → quality review → PT approval → workout result → reassessment.
+2. Treat programme building, session duplication, multi-week planning, exercise-library search, client roster management, workout history and progress review as the shared category baseline.
+3. Make the dashboard useful for a PT managing many clients: filterable views, review queues, inactivity/adherence signals, next-session visibility and direct entry into the client workspace.
+4. Keep nutrition, communities, marketing, messaging and technique-video libraries outside the initial paid-pilot scope. They add breadth without strengthening The Factory’s core reason to join.
+5. Preserve the current restrained editorial branding, but improve density and spacing at high-use surfaces. The interface should feel like a calm professional record system, not a gamified consumer fitness app.
+6. Do not add complexity for its own sake. Advanced methods, periodisation labels and extra configuration should only appear when they help the PT make or explain a decision.
 
 ## Pilot success measures
 
