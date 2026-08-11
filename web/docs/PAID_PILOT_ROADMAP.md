@@ -27,6 +27,32 @@ These are starting hypotheses. The pilot should measure willingness to pay, not 
 8. A multi-client command centre with search, status views, review queues, no-recent-activity views, programme state and missing-context signals.
 9. Exact equipment confirmation language: confirmed available, not confirmed and unknown must remain distinct in the PT workflow.
 
+### P0 readiness audit — 11 August 2026
+
+This is a repository and deployed-application capability audit. It does not claim a signed-in visual smoke test of every PT workflow.
+
+| P0 item | Status | Evidence / remaining work |
+| --- | --- | --- |
+| PT onboarding or invitation/provisioning | Partial | Invited profiles can activate on first sign-in and owner-scoped access is enforced. There is no self-serve PT invitation/provisioning screen yet. |
+| Guided first-client path | Partial | The zero-client guide, starter programme templates and three-step client onboarding exist. Neutral sample data is still needed; the current case-study seed is explicitly test data. |
+| Functional workspace search | Ready for smoke test | Header search resolves client/programme names; the client roster and programme list also have working filters. |
+| Dashboard date and action queue | Partial | The date is dynamic and the queue covers missing screening, overdue reviews and draft programmes. It does not yet surface every live quality finding, such as programme incompleteness or equipment uncertainty. |
+| Client timeline | Partial | Assessment, profile, goals, locations, preferences, programme versions/events, performance baselines and workouts are present. Quality-review snapshots are not yet explicit timeline entries. |
+| Privacy, retention, export/delete, access control, backup and incident response | Outstanding — release blocker | Owner scoping and destructive client deletion exist, but the current export/delete page is for learner data. No PT-client privacy/retention, backup or incident-response documentation is present. |
+| Explanation of Banner Fitness’s scope | Ready for smoke test | Onboarding, screening and quality-review language explains that the app supports qualified-PT decisions and does not diagnose or replace clearance/referral processes. |
+| Multi-client command centre | Ready for smoke test | Roster search, client/status filters, needs-attention, no-recent-activity, draft/no-programme views, next-session data and missing-context signals are implemented. |
+| Equipment confirmation language | Partial | The UI distinguishes “Confirmed available here” and “Not confirmed”, while the quality engine distinguishes available, unknown and unavailable. The PT-facing flow should expose all three states explicitly. |
+
+#### P0 completion checklist
+
+- [ ] Add reliable PT invitation/provisioning or self-serve onboarding.
+- [ ] Add a neutral sample client/workflow for first-use guidance; keep case-study fixtures test-only.
+- [ ] Add quality readiness, incomplete-programme and equipment findings to the dashboard action queue.
+- [ ] Add explicit quality-review entries to the client timeline.
+- [ ] Define and publish PT-client privacy, retention, export/delete, access-control, backup and incident-response procedures.
+- [ ] Expose confirmed, not confirmed and unknown equipment states distinctly in the PT workflow.
+- [ ] Run signed-in desktop and mobile smoke tests for search, command-centre filters, onboarding, timeline, quality review and destructive-data controls.
+
 ## P1 — the paid-pilot value loop
 
 1. Programme templates for beginner full-body, home gym, minimal equipment, general strength, hypertrophy and conditioning, including persistent PT-created templates that can be named, reused and removed safely.
