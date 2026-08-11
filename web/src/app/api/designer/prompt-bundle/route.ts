@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
+import { getCurrentProgrammeQuality } from "@/lib/pt-quality-server";
 import { ptAssessments, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ function buildMarkdown(bundle: Record<string, unknown>, redacted: boolean) {
     `- Weight: ${display(client.weightKg)} kg`,
     `- Occupation: ${display(client.occupation)}`,
     `- Daily activity: ${display(client.dailyActivity)}`,
+    `- Resistance-training experience: ${display(client.trainingExperience)}`,
     `- Sleep: ${display(client.sleepHours)}`,
     `- Stress: ${display(client.stressLevel)}`,
     `- Session duration: ${display(client.sessionDurationMinutes)} minutes`,
@@ -116,7 +118,7 @@ export async function GET(request: NextRequest) {
   if (!clientId) return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   const redacted = request.nextUrl.searchParams.get("redact") === "true";
   const db = getDb();
-  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, dateOfBirth: ptClients.dateOfBirth, sexOrGender: ptClients.sexOrGender, heightCm: ptClients.heightCm, weightKg: ptClients.weightKg, occupation: ptClients.occupation, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays, notes: ptClients.notes }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, access.account.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, dateOfBirth: ptClients.dateOfBirth, sexOrGender: ptClients.sexOrGender, trainingExperience: ptClients.trainingExperience, heightCm: ptClients.heightCm, weightKg: ptClients.weightKg, occupation: ptClients.occupation, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays, notes: ptClients.notes }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, access.account.authUserId))).limit(1);
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   const [assessment] = await db.select({ assessmentDate: ptAssessments.assessmentDate, reviewDate: ptAssessments.reviewDate, responses: ptAssessments.responses, riskFlags: ptAssessments.riskFlags, clearanceRequired: ptAssessments.clearanceRequired, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
   const goals = await db.select({ goalType: ptGoals.goalType, priority: ptGoals.priority, target: ptGoals.target, metric: ptGoals.metric }).from(ptGoals).where(eq(ptGoals.clientId, client.id)).orderBy(asc(ptGoals.priority), asc(ptGoals.createdAt));
@@ -136,12 +138,9 @@ export async function GET(request: NextRequest) {
   const resultSetsByResult = new Map<string, string[]>();
   for (const set of resultSets) { const current = resultSetsByResult.get(set.workoutResultId) ?? []; current.push(`${set.exerciseName}: ${set.actualReps ?? "—"} reps @ ${set.actualLoadKg ?? "—"} kg, RPE ${set.actualRpe ?? "—"}, RIR ${set.actualRir ?? "—"}, technique ${set.techniqueAcceptable ? "acceptable" : "not acceptable"}, pain ${set.painReported ? "reported" : "not reported"}`); resultSetsByResult.set(set.workoutResultId, current); }
   const programmeData = programme ? { ...programme, events, weeks: weeks.map((week) => ({ ...week, sessions: sessions.filter((session) => session.programmeWeekId === week.id).map((session) => ({ ...session, exercises: prescriptions.filter((exercise) => exercise.sessionId === session.id).map((exercise) => ({ ...exercise, reps: exercise.repsMin ? `${exercise.repsMin}${exercise.repsMax && exercise.repsMax !== exercise.repsMin ? `–${exercise.repsMax}` : ""}` : "as prescribed", intensity: exercise.intensityValue })) })) })) } : null;
-  const warnings = [
-    assessment?.clearanceRequired ? "Screening flag present: review referral or clearance requirements before assigning this programme." : "",
-    programme && programmeData && (programmeData.weeks as Array<{ sessions: Array<{ exercises: Array<unknown> }> }>).flatMap((week) => week.sessions).length < (Array.isArray(client.preferredDays) ? client.preferredDays.length : 0) ? "Saved programme session count may be below the client's preferred weekly frequency." : "",
-    programme && programmeData && (programmeData.weeks as Array<{ sessions: Array<{ exercises: Array<{ name: string; sets: number }> }> }>).flatMap((week) => week.sessions).flatMap((session) => session.exercises).reduce((sum, exercise) => sum + exercise.sets, 0) > 160 ? "Total programme volume may create a high recovery demand." : "",
-  ].filter(Boolean);
+  const currentQuality = programme ? await getCurrentProgrammeQuality(db, access.account.authUserId, programme.id) : null;
   const screening = assessment ? { ...assessment, injuryNotes: assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? (assessment.responses as Record<string, unknown>).injuryNotes ?? null : null, contraindicationNotes: assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? (assessment.responses as Record<string, unknown>).contraindicationNotes ?? null : null } : { clearanceRequired: false, riskFlags: [], responses: {}, ptNotes: null, injuryNotes: null, contraindicationNotes: null };
-  const bundle = { client: { ...client, name: redacted ? "Redacted client" : `${client.firstName} ${client.lastName}`, firstName: redacted ? "Redacted" : client.firstName, lastName: redacted ? "client" : client.lastName }, screening, goals, preferences: preferences ?? {}, locations, currentProgramme: programmeData, programmeHistory, qualityChecks: { score: Math.max(0, 100 - warnings.length * 8), warnings }, recentWorkoutResults: results.map((result) => ({ ...result, sets: resultSetsByResult.get(result.id) ?? [] })), privacy: { redacted, excluded: redacted ? ["client name", "date of birth"] : [] } };
+  const qualityChecks = currentQuality?.review ? { ...currentQuality.review, warnings: currentQuality.review.findings.map((finding) => finding.message) } : { score: 100, warnings: [] };
+  const bundle = { client: { ...client, name: redacted ? "Redacted client" : `${client.firstName} ${client.lastName}`, firstName: redacted ? "Redacted" : client.firstName, lastName: redacted ? "client" : client.lastName }, screening, goals, preferences: preferences ?? {}, locations, currentProgramme: programmeData, programmeHistory, qualityChecks, recentWorkoutResults: results.map((result) => ({ ...result, sets: resultSetsByResult.get(result.id) ?? [] })), privacy: { redacted, excluded: redacted ? ["client name", "date of birth"] : [] } };
   return NextResponse.json({ markdown: buildMarkdown(bundle, redacted), json: bundle, meta: { redacted, programmeVersion: programme?.version ?? null, programmeCount: programmeHistory.length, workoutResultCount: results.length } });
 }

@@ -1,3 +1,5 @@
+import { evaluateProgrammeQuality } from "./pt-quality";
+
 export type ScreeningAnswers = {
   chestPain?: boolean;
   cardiovascularHistory?: boolean;
@@ -82,24 +84,16 @@ export type QualityWarning = {
 export type QualityResult = { score: number; warnings: QualityWarning[] };
 
 export function checkProgrammeQuality(programme: QualityProgramme): QualityResult {
-  const warnings: QualityWarning[] = [];
-  const patterns = programme.sessions.flatMap((session) => session.exercises.map((exercise) => exercise.pattern));
-  const presses = patterns.filter((pattern) => /push|press/i.test(pattern)).length;
-  const pulls = patterns.filter((pattern) => /pull|row/i.test(pattern)).length;
-  const uniqueDays = new Set(programme.sessions.map((session) => session.dayOfWeek)).size;
-  const totalSets = programme.sessions.reduce((sum, session) => sum + session.exercises.reduce((inner, exercise) => inner + exercise.sets, 0), 0);
-
-  if (programme.screeningFlags?.some((flag) => flag.action === "clearance")) warnings.push({ code: "screening-clearance", severity: "critical", message: "Screening flags indicate that appropriate clearance should be resolved before finalising this programme." });
-  else if (programme.screeningFlags?.length) warnings.push({ code: "screening-review", severity: "warning", message: "Screening flags are present. Record the PT decision and any referral or scope boundary before assigning." });
-  if (uniqueDays < programme.trainingDays) warnings.push({ code: "frequency", severity: "warning", message: `The programme has ${uniqueDays} scheduled training day${uniqueDays === 1 ? "" : "s"}, below the selected ${programme.trainingDays}-day target.` });
-  if (programme.experience === "beginner" && programme.sessions.some((session) => session.exercises.some((exercise) => exercise.technicalComplexity === "high"))) warnings.push({ code: "complexity", severity: "warning", message: "This programme uses technically demanding exercises for a beginner. Consider simpler alternatives or additional coaching." });
-  if (presses > pulls + 2) warnings.push({ code: "push-pull-balance", severity: "warning", message: "This programme contains a high amount of pressing volume relative to pulling volume." });
-  if (totalSets > programme.sessions.length * (programme.experience === "beginner" ? 18 : 28)) warnings.push({ code: "volume", severity: "warning", message: "Total prescribed set volume may be high for the selected training experience and recovery assumptions." });
-  const unavailable = programme.sessions.flatMap((session) => session.exercises.flatMap((exercise) => exercise.equipment.filter((item) => !programme.availableEquipment.includes(item))));
-  if (unavailable.length) warnings.push({ code: "equipment", severity: "warning", message: `Some exercises require equipment not listed for this location: ${[...new Set(unavailable)].join(", ")}.` });
-  if (programme.goal.toLowerCase().includes("hypertrophy") && totalSets < programme.sessions.length * 6) warnings.push({ code: "goal-volume", severity: "info", message: "The selected hypertrophy goal may need more weekly stimulus or a documented reason for the lower volume." });
-  const deduction = warnings.reduce((sum, warning) => sum + (warning.severity === "critical" ? 25 : warning.severity === "warning" ? 8 : 3), 0);
-  return { score: Math.max(0, Math.min(100, 100 - deduction)), warnings };
+  // Keep the legacy public shape for existing callers while routing evaluation through
+  // the contextual engine used by the designer and persistence layer.
+  const review = evaluateProgrammeQuality({
+    client: { preferredDays: Array.from({ length: programme.trainingDays }, (_, index) => index + 1), trainingExperience: programme.experience },
+    assessment: programme.screeningFlags?.length ? { riskFlags: programme.screeningFlags.map((flag) => ({ code: flag.code, action: flag.action })) } : null,
+    goal: { goalType: programme.goal },
+    location: { equipment: programme.availableEquipment },
+    programme: { goalSummary: programme.goal, durationWeeks: 1, trainingDays: programme.trainingDays, sessions: programme.sessions.map((session) => ({ ...session, exercises: session.exercises.map((exercise) => ({ ...exercise, repsMin: 8, repsMax: 12, progressionRule: null })) })) },
+  });
+  return { score: review.score, warnings: review.findings.map((item) => ({ code: item.ruleId, severity: item.severity === "blocking" ? "critical" : item.severity === "significant" ? "warning" : "info", message: item.message })) };
 }
 
 export type ProgressionInput = {

@@ -6,10 +6,11 @@ import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
-import { ptAssessments, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
-import { getScreeningFlags, hasRecordedScreeningReview, screeningReviewMarker } from "@/lib/pt-programming";
+import { ptAssessments, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityAcknowledgements, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
+import { getScreeningFlags, hasRecordedScreeningReview, screeningReviewMarker, type ScreeningAnswers } from "@/lib/pt-programming";
 import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
 import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings } from "@/lib/pt-quality";
+import { findingCanBeAcknowledged, getCurrentProgrammeQuality, refreshClientProgrammeQuality, refreshOwnerProgrammeQuality, refreshProgrammeQuality } from "@/lib/pt-quality-server";
 
 const clientInputSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -17,6 +18,7 @@ const clientInputSchema = z.object({
   email: z.string().trim().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
   sexOrGender: z.string().trim().max(80).optional(),
+  trainingExperience: z.string().trim().max(80).optional(),
   goalType: z.string().trim().min(1).max(120),
   trainingDays: z.number().int().min(1).max(7),
   sessionDurationMinutes: z.number().int().min(15).max(180),
@@ -31,15 +33,16 @@ const clientInputSchema = z.object({
 
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), technique: z.string().trim().max(80).optional(), notes: z.string().trim().max(500).optional(), groupKey: z.string().trim().max(80).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
-const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
+const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), trainingExperience: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
 const deleteClientSchema = z.object({ clientId: z.string().uuid(), confirmation: z.literal("DELETE CLIENT") });
 const clientPreferencesSchema = z.object({ clientId: z.string().uuid(), likedExercises: z.array(z.string().trim().min(1)).max(30), dislikedExercises: z.array(z.string().trim().min(1)).max(30), preferredStyle: z.string().trim().max(120).optional(), preferredStructure: z.string().trim().max(120).optional(), preferredEquipment: z.array(z.string().trim().min(1)).max(30), cardioModalities: z.array(z.string().trim().min(1)).max(20), varietyPreference: z.string().trim().max(80).optional(), confidenceNotes: z.string().trim().max(2000).optional() });
+const clientLocationSchema = z.object({ clientId: z.string().uuid(), name: z.string().trim().min(1).max(120), locationType: z.string().trim().min(1).max(80), equipment: z.array(z.string().trim().min(1)).max(40) });
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
-const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(80)).max(20), reason: z.string().trim().min(3).max(1000) });
+const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(120)).max(20), reason: z.string().trim().min(3).max(1000), decision: z.enum(["acknowledged", "overridden"]).optional() });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
 const screeningReviewSchema = z.object({ clientId: z.string().uuid(), outcome: z.enum(["pt_review_completed", "professional_clearance_obtained"]), reason: z.string().trim().min(10).max(1000) });
-const clientAssessmentUpdateSchema = z.object({ clientId: z.string().uuid(), injuryNotes: z.string().trim().max(4000).optional(), contraindicationNotes: z.string().trim().max(4000).optional(), clearanceRequired: z.boolean(), ptNotes: z.string().trim().max(4000).optional() });
+const clientAssessmentUpdateSchema = z.object({ clientId: z.string().uuid(), screening: z.record(z.string(), z.boolean()).optional(), injuryNotes: z.string().trim().max(4000).optional(), contraindicationNotes: z.string().trim().max(4000).optional(), clearanceRequired: z.boolean(), ptNotes: z.string().trim().max(4000).optional() });
 const qualitySettingsSchema = z.object({ checkScreening: z.boolean(), checkFrequency: z.boolean(), checkBalance: z.boolean(), checkVolume: z.boolean(), checkProgression: z.boolean(), checkDuration: z.boolean(), maxSetsPerSession: z.number().int().min(1).max(100), pressPullTolerance: z.number().int().min(0).max(10) });
 const weekPlanSchema = z.object({ focus: z.string().trim().min(1).max(120), volumeTarget: z.string().trim().min(1).max(80), intensityTarget: z.string().trim().min(1).max(80) });
 
@@ -141,6 +144,7 @@ export async function createClientAction(rawInput: z.input<typeof clientInputSch
     email: input.email || null,
     dateOfBirth: input.dateOfBirth || null,
     sexOrGender: input.sexOrGender || null,
+    trainingExperience: input.trainingExperience || null,
     sessionDurationMinutes: input.sessionDurationMinutes,
     preferredDays,
     notes: input.ptNotes || null,
@@ -162,10 +166,11 @@ export async function seedCaseStudyAction(rawInput: z.input<typeof caseStudySche
   const existing = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.firstName, fixture.name), eq(ptClients.lastName, "Case Study"))).limit(1);
   if (existing[0]) {
     if (input.slug === "ciara") await db.update(ptLocations).set({ equipment: fixture.equipment, updatedAt: new Date() }).where(eq(ptLocations.clientId, existing[0].id));
+    await refreshClientProgrammeQuality(db, owner.authUserId, existing[0].id);
     return { clientId: existing[0].id, name: fixture.name, existing: true, riskFlags: getScreeningFlags(fixture.screening) };
   }
   const dateOfBirth = `${new Date().getFullYear() - fixture.age}-01-01`;
-  const [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName: fixture.name, lastName: "Case Study", dateOfBirth, sexOrGender: fixture.sex, heightCm: fixture.heightCm, weightKg: fixture.weightKg, occupation: "Module 7 case-study profile", dailyActivity: fixture.notes, sessionDurationMinutes: fixture.sessionDurationMinutes, preferredDays: Array.from({ length: fixture.trainingDays }, (_, index) => index + 1), notes: `[CASE STUDY FIXTURE: ${input.slug}] ${fixture.notes}` }).returning({ id: ptClients.id });
+  const [client] = await db.insert(ptClients).values({ ownerProfileId: owner.authUserId, firstName: fixture.name, lastName: "Case Study", dateOfBirth, sexOrGender: fixture.sex, trainingExperience: fixture.experience, heightCm: fixture.heightCm, weightKg: fixture.weightKg, occupation: "Module 7 case-study profile", dailyActivity: fixture.notes, sessionDurationMinutes: fixture.sessionDurationMinutes, preferredDays: Array.from({ length: fixture.trainingDays }, (_, index) => index + 1), notes: `[CASE STUDY FIXTURE: ${input.slug}] ${fixture.notes}` }).returning({ id: ptClients.id });
   if (!client) throw new Error("Case-study client could not be created.");
   const riskFlags = getScreeningFlags(fixture.screening);
   await db.insert(ptAssessments).values({ clientId: client.id, assessmentDate: new Date().toISOString().slice(0, 10), responses: fixture.screening, riskFlags, clearanceRequired: riskFlags.some((flag) => flag.action === "clearance"), ptNotes: "Imported from Module 7 case-study source. Verify the PAR-Q responses and professional screening decision before assigning a programme." });
@@ -245,6 +250,7 @@ export async function updateClientAction(rawInput: z.input<typeof clientUpdateSc
   const [goal] = await db.select({ id: ptGoals.id }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).limit(1);
   if (goal) await db.update(ptGoals).set({ goalType: input.goalType, updatedAt: new Date() }).where(eq(ptGoals.id, goal.id));
   else await db.insert(ptGoals).values({ clientId: client.id, goalType: input.goalType, priority: "primary" });
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { clientId: client.id };
 }
@@ -253,8 +259,9 @@ export async function updateClientProfileAction(rawInput: z.input<typeof clientP
   const owner = await requireDesignerAccess();
   const input = clientProfileUpdateSchema.parse(rawInput);
   const db = getDb();
-  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
+  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, trainingExperience: input.trainingExperience || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
   if (!client) throw new Error("Client profile could not be updated.");
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { clientId: client.id };
 }
@@ -280,6 +287,21 @@ export async function updateClientPreferencesAction(rawInput: z.input<typeof cli
   const [existing] = await db.select({ id: ptPreferences.id }).from(ptPreferences).where(eq(ptPreferences.clientId, client.id)).limit(1);
   if (existing) await db.update(ptPreferences).set(values).where(eq(ptPreferences.id, existing.id));
   else await db.insert(ptPreferences).values({ clientId: client.id, ...values });
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
+  revalidatePath("/designer");
+  return { clientId: client.id };
+}
+
+export async function updateClientLocationAction(rawInput: z.input<typeof clientLocationSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = clientLocationSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Client could not be found.");
+  const [existing] = await db.select({ id: ptLocations.id }).from(ptLocations).where(eq(ptLocations.clientId, client.id)).orderBy(desc(ptLocations.updatedAt)).limit(1);
+  if (existing) await db.update(ptLocations).set({ name: input.name, locationType: input.locationType, equipment: input.equipment, updatedAt: new Date() }).where(eq(ptLocations.id, existing.id));
+  else await db.insert(ptLocations).values({ clientId: client.id, name: input.name, locationType: input.locationType, equipment: input.equipment });
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { clientId: client.id };
 }
@@ -299,6 +321,7 @@ export async function updateDesignerSettingsAction(rawInput: z.input<typeof qual
   const [existing] = await db.select({ ownerProfileId: ptDesignerSettings.ownerProfileId }).from(ptDesignerSettings).where(eq(ptDesignerSettings.ownerProfileId, owner.authUserId)).limit(1);
   if (existing) await db.update(ptDesignerSettings).set({ qualityRules: rules, updatedAt: new Date() }).where(eq(ptDesignerSettings.ownerProfileId, owner.authUserId));
   else await db.insert(ptDesignerSettings).values({ ownerProfileId: owner.authUserId, qualityRules: rules });
+  await refreshOwnerProgrammeQuality(db, owner.authUserId, rules);
   revalidatePath("/designer");
   return rules;
 }
@@ -309,10 +332,13 @@ export async function updateClientAssessmentAction(rawInput: z.input<typeof clie
   const db = getDb();
   const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
   if (!client) throw new Error("Client could not be found.");
-  const [assessment] = await db.select({ id: ptAssessments.id, responses: ptAssessments.responses }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+  const [assessment] = await db.select({ id: ptAssessments.id, responses: ptAssessments.responses, riskFlags: ptAssessments.riskFlags }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
   if (!assessment) throw new Error("Record an assessment before editing safety notes.");
   const previousResponses = assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? assessment.responses as Record<string, unknown> : {};
-  await db.update(ptAssessments).set({ responses: { ...previousResponses, injuryNotes: input.injuryNotes || null, contraindicationNotes: input.contraindicationNotes || null }, clearanceRequired: input.clearanceRequired, ptNotes: input.ptNotes || null, updatedAt: new Date() }).where(eq(ptAssessments.id, assessment.id));
+  const responses = input.screening ? { ...previousResponses, ...input.screening } : previousResponses;
+  const riskFlags = input.screening ? getScreeningFlags(responses as ScreeningAnswers) : assessment.riskFlags;
+  await db.update(ptAssessments).set({ responses: { ...responses, injuryNotes: input.injuryNotes || null, contraindicationNotes: input.contraindicationNotes || null }, riskFlags, clearanceRequired: input.clearanceRequired, ptNotes: input.ptNotes || null, updatedAt: new Date() }).where(eq(ptAssessments.id, assessment.id));
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { clientId: client.id };
 }
@@ -365,6 +391,7 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
     }
   }
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version } });
+  await refreshProgrammeQuality(db, owner.authUserId, programme.id);
   revalidatePath("/designer");
   return { programmeId: programme.id, version: programme.version, exerciseCount: savedPrescriptionCount, weekCount: 8 };
 }
@@ -373,11 +400,18 @@ export async function recordProgrammeOverrideAction(rawInput: z.input<typeof pro
   const owner = await requireDesignerAccess();
   const input = programmeOverrideSchema.parse(rawInput);
   const db = getDb();
-  const [programme] = await db.select({ id: ptProgrammes.id, overrideReasons: ptProgrammes.overrideReasons }).from(ptProgrammes).where(and(eq(ptProgrammes.id, input.programmeId), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
+  const [programme] = await db.select({ id: ptProgrammes.id, clientId: ptProgrammes.clientId, overrideReasons: ptProgrammes.overrideReasons }).from(ptProgrammes).where(and(eq(ptProgrammes.id, input.programmeId), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
   if (!programme) throw new Error("Programme could not be found.");
-  const override = { warningCodes: input.warningCodes, reason: input.reason, recordedAt: new Date().toISOString() };
+  const current = await getCurrentProgrammeQuality(db, owner.authUserId, programme.id);
+  if (!current) throw new Error("Programme quality could not be evaluated.");
+  const selected = current.review.findings.filter((item) => input.warningCodes.includes(item.key) || input.warningCodes.includes(item.ruleId));
+  if (!selected.length) throw new Error("Select a current advisory finding before recording a PT decision.");
+  if (selected.some((item) => !findingCanBeAcknowledged(item))) throw new Error("Blocking and significant safety findings cannot be bypassed by acknowledgement. Resolve or update the underlying information first.");
+  const decision = input.decision ?? "overridden";
+  const override = { warningCodes: selected.map((item) => item.ruleId), findingKeys: selected.map((item) => item.key), decision, reason: input.reason, recordedAt: new Date().toISOString(), rulesetVersion: current.review.rulesetVersion, evidenceVersion: current.review.evidence.evidenceVersion, sourceFingerprint: current.review.sourceFingerprint };
   const previous = Array.isArray(programme.overrideReasons) ? programme.overrideReasons : [];
   await db.update(ptProgrammes).set({ overrideReasons: [...previous, override], updatedAt: new Date() }).where(eq(ptProgrammes.id, programme.id));
+  for (const item of selected) await db.insert(ptProgrammeQualityAcknowledgements).values({ programmeId: programme.id, ruleId: item.ruleId, findingKey: item.key, decision, reason: input.reason, rulesetVersion: current.review.rulesetVersion, evidenceVersion: current.review.evidence.evidenceVersion, sourceFingerprint: current.review.sourceFingerprint, updatedAt: new Date() }).onConflictDoUpdate({ target: [ptProgrammeQualityAcknowledgements.programmeId, ptProgrammeQualityAcknowledgements.findingKey], set: { decision, reason: input.reason, rulesetVersion: current.review.rulesetVersion, evidenceVersion: current.review.evidence.evidenceVersion, sourceFingerprint: current.review.sourceFingerprint, updatedAt: new Date() } });
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "quality_override", details: override });
   revalidatePath("/designer");
   return { programmeId: programme.id };
@@ -391,6 +425,8 @@ export async function transitionProgrammeAction(rawInput: z.input<typeof program
   if (!programme) throw new Error("Programme could not be found.");
   if (programme.status === input.status) return { programmeId: programme.id, status: programme.status };
   if (input.status === "assigned" || input.status === "active") {
+    const quality = await getCurrentProgrammeQuality(db, owner.authUserId, programme.id);
+    if (quality?.review.approvalReadiness === "blocked") throw new Error("Resolve the blocking programme quality findings before assigning this programme.");
     const [assessment] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, programme.clientId)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
     const unresolvedRiskFlags = Array.isArray(assessment?.riskFlags) && assessment.riskFlags.length > 0 && !hasRecordedScreeningReview(assessment?.ptNotes);
     if (assessment?.clearanceRequired || unresolvedRiskFlags) throw new Error("Resolve the screening or clearance flag before assigning this programme.");
@@ -422,6 +458,7 @@ export async function resolveScreeningAction(rawInput: z.input<typeof screeningR
   await db.update(ptAssessments).set({ clearanceRequired: false, reviewDate, ptNotes: previousNotes ? `${previousNotes}\n\n${note}` : note, updatedAt: new Date() }).where(eq(ptAssessments.id, assessment.id));
   const [programme] = await db.select({ id: ptProgrammes.id }).from(ptProgrammes).where(and(eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).orderBy(desc(ptProgrammes.updatedAt)).limit(1);
   if (programme) await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "screening_reviewed", details: { outcome: input.outcome, reason: input.reason, reviewDate } });
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { clientId: client.id, outcome: input.outcome };
 }
@@ -436,6 +473,7 @@ export async function createExerciseAction(rawInput: z.input<typeof exerciseCrea
   const slugBase = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "custom-exercise";
   const [exercise] = await db.insert(ptExercises).values({ ownerProfileId: owner.authUserId, slug: `${slugBase}-${Date.now().toString(36)}`, name: input.name, movementPattern: input.pattern, primaryMuscles: input.target, equipment: input.equipment, difficulty: input.difficulty, technicalComplexity: input.complexity, suitability: ["strength", "hypertrophy", "general fitness"], compound: input.compound, unilateral: input.unilateral, tags: ["custom"], regressions: [], progressions: [], alternatives: [], coachingCues: [], commonErrors: [], cautionTags: [] }).returning({ id: ptExercises.id, name: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, equipment: ptExercises.equipment, difficulty: ptExercises.difficulty, complexity: ptExercises.technicalComplexity, suitability: ptExercises.suitability, compound: ptExercises.compound, unilateral: ptExercises.unilateral, regressions: ptExercises.regressions, progressions: ptExercises.progressions, alternatives: ptExercises.alternatives, coachingCues: ptExercises.coachingCues, commonErrors: ptExercises.commonErrors, cautionTags: ptExercises.cautionTags });
   if (!exercise) throw new Error("Exercise could not be created.");
+  await refreshOwnerProgrammeQuality(db, owner.authUserId);
   revalidatePath("/designer");
   return { exercise };
 }
@@ -457,6 +495,7 @@ export async function updateExerciseAction(rawInput: z.input<typeof exerciseUpda
   }
   const [exercise] = await db.select({ id: ptExercises.id, name: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, secondary: ptExercises.secondaryMuscles, equipment: ptExercises.equipment, difficulty: ptExercises.difficulty, complexity: ptExercises.technicalComplexity, suitability: ptExercises.suitability, compound: ptExercises.compound, unilateral: ptExercises.unilateral, tags: ptExercises.tags, regressions: ptExercises.regressions, progressions: ptExercises.progressions, alternatives: ptExercises.alternatives, coachingCues: ptExercises.coachingCues, commonErrors: ptExercises.commonErrors, cautionTags: ptExercises.cautionTags, ownerProfileId: ptExercises.ownerProfileId }).from(ptExercises).where(eq(ptExercises.id, exerciseId)).limit(1);
   if (!exercise) throw new Error("Updated exercise could not be loaded.");
+  await refreshOwnerProgrammeQuality(db, owner.authUserId);
   revalidatePath("/designer");
   return { exercise };
 }
@@ -481,6 +520,7 @@ export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInp
   const [result] = await db.insert(ptWorkoutResults).values({ ownerProfileId: owner.authUserId, clientId: client.id, sessionId: session.id, scheduledDate: input.scheduledDate, completedAt: input.status === "completed" || input.status === "partial" ? new Date() : null, status: input.status, sessionRpe: input.sessionRpe ?? null, energy: input.energy ?? null, painReported: input.painReported, enjoyment: input.enjoyment ?? null, durationMinutes: input.durationMinutes ?? null, volumeLoadKg, repetitionLoad, averageRpe, averageRir, notes: input.notes || null }).returning({ id: ptWorkoutResults.id });
   if (!result) throw new Error("Workout result could not be saved.");
   if (setRows.length) await db.insert(ptWorkoutResultSets).values(setRows.map((set) => ({ ...set, workoutResultId: result.id })));
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { resultId: result.id, metrics: { volumeLoadKg, repetitionLoad, averageRpe, averageRir } };
 }

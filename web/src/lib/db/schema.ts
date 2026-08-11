@@ -53,6 +53,7 @@ export const ptClients = pgTable("pt_clients", {
   bodyComposition: jsonb("body_composition").default({}).notNull(),
   occupation: text("occupation"),
   dailyActivity: text("daily_activity"),
+  trainingExperience: text("training_experience"),
   sleepHours: text("sleep_hours"),
   stressLevel: text("stress_level"),
   sessionDurationMinutes: smallint("session_duration_minutes"),
@@ -242,6 +243,39 @@ export const ptWorkoutResultSets = pgTable("pt_workout_result_sets", {
   painReported: boolean("pain_reported").default(false).notNull(),
   ...timestamps,
 }, (table) => [uniqueIndex("pt_workout_result_sets_number_unique").on(table.workoutResultId, table.prescriptionId, table.setNumber)]);
+
+export const ptProgrammeQualityReviews = pgTable("pt_programme_quality_reviews", {
+  programmeId: uuid("programme_id").primaryKey().references(() => ptProgrammes.id, { onDelete: "cascade" }),
+  rulesetVersion: text("ruleset_version").notNull(),
+  evidenceVersion: text("evidence_version").notNull(),
+  evaluatedAt: timestamp("evaluated_at", { withTimezone: true }).defaultNow().notNull(),
+  score: smallint("score").notNull(),
+  approvalReadiness: text("approval_readiness").notNull(),
+  blockingCount: smallint("blocking_count").notNull(),
+  significantCount: smallint("significant_count").notNull(),
+  advisoryCount: smallint("advisory_count").notNull(),
+  infoCount: smallint("info_count").notNull(),
+  scheduledSessions: smallint("scheduled_sessions").notNull(),
+  emptySessions: smallint("empty_sessions").notNull(),
+  totalSets: integer("total_sets").notNull(),
+  sourceFingerprint: text("source_fingerprint").notNull(),
+  findings: jsonb("findings").default([]).notNull(),
+  passedRuleIds: jsonb("passed_rule_ids").default([]).notNull(),
+  ...timestamps,
+}, (table) => [index("pt_quality_reviews_readiness_idx").on(table.approvalReadiness)]);
+
+export const ptProgrammeQualityAcknowledgements = pgTable("pt_programme_quality_acknowledgements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  programmeId: uuid("programme_id").notNull().references(() => ptProgrammes.id, { onDelete: "cascade" }),
+  ruleId: text("rule_id").notNull(),
+  findingKey: text("finding_key").notNull(),
+  decision: text("decision").notNull(),
+  reason: text("reason").notNull(),
+  rulesetVersion: text("ruleset_version").notNull(),
+  evidenceVersion: text("evidence_version").notNull(),
+  sourceFingerprint: text("source_fingerprint").notNull(),
+  ...timestamps,
+}, (table) => [uniqueIndex("pt_quality_acknowledgements_finding_unique").on(table.programmeId, table.findingKey), index("pt_quality_acknowledgements_programme_idx").on(table.programmeId)]);
 
 export const profiles = pgTable("profiles", {
   authUserId: text("auth_user_id").primaryKey(),
