@@ -1,3 +1,7 @@
+export const programmePromptBrand = "The Factory";
+export const programmePromptTitle = "The Factory - Programme design review bundle";
+export const programmePromptFilename = "the-factory-pt-review";
+
 export function buildProgrammeTask(hasProgramme: boolean) {
   if (hasProgramme) return "Review the current programme against the client context. Identify important uncertainties, mismatches and practical options for the qualified PT to consider.";
   return "No saved programme exists for this client. Help the qualified PT draft a suitable programme from the supplied client context, goals, screening boundaries, preferences, equipment, performance baselines and recovery information. Propose a structure, exercise options, sets, reps, effort, rest, progression gates and review questions, while clearly identifying missing information and keeping final decisions with the PT.";

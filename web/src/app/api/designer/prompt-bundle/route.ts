@@ -5,7 +5,7 @@ import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
 import { getCurrentProgrammeQuality } from "@/lib/pt-quality-server";
 import { ptAssessments, ptClientPerformanceRecords, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
-import { buildProgrammeTask, promptEvidenceInstruction } from "@/lib/pt-prompt";
+import { buildProgrammeTask, programmePromptTitle, promptEvidenceInstruction } from "@/lib/pt-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,7 @@ function buildMarkdown(bundle: Record<string, unknown>, redacted: boolean) {
   const programmeHistory = bundle.programmeHistory as Array<Record<string, unknown>>;
   const results = bundle.recentWorkoutResults as Array<Record<string, unknown>>;
   const lines = [
-    "# Engine PT - Construction review bundle",
+    `# ${programmePromptTitle}`,
     "",
     "Use this as a review aid for a qualified Personal Trainer. Analyse the supplied facts, identify uncertainties and propose options for PT consideration. Do not diagnose, prescribe medical treatment or bypass screening, referral or professional-clearance requirements. The PT remains responsible for the final programme.",
     `- Task: ${buildProgrammeTask(Boolean(programme))}`,
