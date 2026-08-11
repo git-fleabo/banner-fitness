@@ -6,11 +6,12 @@ import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
-import { ptAssessments, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityAcknowledgements, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
+import { ptAssessments, ptClientPerformanceRecords, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityAcknowledgements, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { getScreeningFlags, hasRecordedScreeningReview, screeningReviewMarker, type ScreeningAnswers } from "@/lib/pt-programming";
 import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
 import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings } from "@/lib/pt-quality";
 import { findingCanBeAcknowledged, getCurrentProgrammeQuality, refreshClientProgrammeQuality, refreshOwnerProgrammeQuality, refreshProgrammeQuality } from "@/lib/pt-quality-server";
+import { defaultEffortForExperience, listText, performanceBaselineText, remapSessionDays } from "@/lib/pt-performance";
 
 const clientInputSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -36,6 +37,7 @@ const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.s
 const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), trainingExperience: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
 const deleteClientSchema = z.object({ clientId: z.string().uuid(), confirmation: z.literal("DELETE CLIENT") });
 const clientPreferencesSchema = z.object({ clientId: z.string().uuid(), likedExercises: z.array(z.string().trim().min(1)).max(30), dislikedExercises: z.array(z.string().trim().min(1)).max(30), preferredStyle: z.string().trim().max(120).optional(), preferredStructure: z.string().trim().max(120).optional(), preferredEquipment: z.array(z.string().trim().min(1)).max(30), cardioModalities: z.array(z.string().trim().min(1)).max(20), varietyPreference: z.string().trim().max(80).optional(), confidenceNotes: z.string().trim().max(2000).optional() });
+const performanceRecordSchema = z.object({ clientId: z.string().uuid(), exerciseId: z.string().uuid().optional(), metricType: z.enum(["one_rm", "estimated_one_rm", "rep_max", "other"]), metricName: z.string().trim().max(120).optional(), performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), value: z.number().positive().max(100000), unit: z.string().trim().min(1).max(20), repetitions: z.number().int().min(1).max(100).optional(), loadKg: z.number().positive().max(1000).optional(), source: z.enum(["tested", "estimated", "client_reported", "workout_result", "other"]), confidence: z.enum(["high", "moderate", "low"]).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean(), notes: z.string().trim().max(2000).optional() }).superRefine((input, context) => { if (!input.exerciseId && !input.metricName?.trim()) context.addIssue({ code: "custom", path: ["metricName"], message: "Add a metric name when no exercise is selected." }); if (input.metricType === "rep_max" && (!input.repetitions || !input.loadKg)) context.addIssue({ code: "custom", path: ["repetitions"], message: "Rep-max records need repetitions and load." }); });
 const clientLocationSchema = z.object({ clientId: z.string().uuid(), name: z.string().trim().min(1).max(120), locationType: z.string().trim().min(1).max(80), equipment: z.array(z.string().trim().min(1)).max(40) });
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
@@ -185,9 +187,14 @@ export async function generateCaseStudyDraftAction(rawInput: z.input<typeof case
   const owner = await requireDesignerAccess();
   const input = caseStudyDraftSchema.parse(rawInput);
   const db = getDb();
-  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, notes: ptClients.notes, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, notes: ptClients.notes, trainingExperience: ptClients.trainingExperience, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
   if (!client) throw new Error("Case-study client could not be found.");
   const slug = client.notes?.match(/CASE STUDY FIXTURE: ([a-z]+)/i)?.[1]?.toLowerCase();
+  const [assessment] = await db.select({ responses: ptAssessments.responses, riskFlags: ptAssessments.riskFlags, clearanceRequired: ptAssessments.clearanceRequired, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
+  const [goal] = await db.select({ goalType: ptGoals.goalType, target: ptGoals.target, metric: ptGoals.metric }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).orderBy(desc(ptGoals.updatedAt)).limit(1);
+  const [preferences] = await db.select({ likedExercises: ptPreferences.likedExercises, dislikedExercises: ptPreferences.dislikedExercises, preferredStyle: ptPreferences.preferredStyle, preferredStructure: ptPreferences.preferredStructure, preferredEquipment: ptPreferences.preferredEquipment, cardioModalities: ptPreferences.cardioModalities, confidenceNotes: ptPreferences.confidenceNotes }).from(ptPreferences).where(eq(ptPreferences.clientId, client.id)).limit(1);
+  const [location] = await db.select({ name: ptLocations.name, locationType: ptLocations.locationType, equipment: ptLocations.equipment }).from(ptLocations).where(eq(ptLocations.clientId, client.id)).orderBy(desc(ptLocations.updatedAt)).limit(1);
+  const performanceRecords = await db.select({ exerciseId: ptClientPerformanceRecords.exerciseId, exerciseName: ptExercises.name, metricType: ptClientPerformanceRecords.metricType, value: ptClientPerformanceRecords.value, unit: ptClientPerformanceRecords.unit, repetitions: ptClientPerformanceRecords.repetitions, loadKg: ptClientPerformanceRecords.loadKg, source: ptClientPerformanceRecords.source, confidence: ptClientPerformanceRecords.confidence, techniqueAcceptable: ptClientPerformanceRecords.techniqueAcceptable, painReported: ptClientPerformanceRecords.painReported, performanceDate: ptClientPerformanceRecords.performanceDate, notes: ptClientPerformanceRecords.notes }).from(ptClientPerformanceRecords).leftJoin(ptExercises, eq(ptClientPerformanceRecords.exerciseId, ptExercises.id)).where(eq(ptClientPerformanceRecords.clientId, client.id)).orderBy(desc(ptClientPerformanceRecords.performanceDate), desc(ptClientPerformanceRecords.createdAt)).limit(100);
   type CaseStudyPlan = { goal: string; days: number; duration: number; exercises: string[]; sessionExercises: Record<string, string[]>; sessionExercisesByWeek?: Record<string, Record<string, string[]>>; sessionNames: Record<string, string>; sessionDays: number[]; methodology: string; rationale: string; weekPlans: WeekPlan[] };
   const ciaraWeekSessionExercises: Record<string, Record<string, string[]>> = Object.fromEntries(Array.from({ length: 8 }, (_, index) => {
     const week = index + 1;
@@ -216,15 +223,57 @@ export async function generateCaseStudyDraftAction(rawInput: z.input<typeof case
   };
   const plan = slug ? plans[slug] : undefined;
   if (!plan) throw new Error("This client is not one of the labelled Module 7 case-study fixtures.");
-  const allExercises = await db.select({ name: ptExercises.name, movementPattern: ptExercises.movementPattern }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId)));
+  const allExercises = await db.select({ id: ptExercises.id, name: ptExercises.name, movementPattern: ptExercises.movementPattern }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId)));
+  const configuredDays = Array.isArray(client.preferredDays) ? client.preferredDays.filter((day): day is number => typeof day === "number" && Number.isInteger(day) && day >= 1 && day <= 7) : [];
+  const sessionDays = configuredDays.length ? Array.from(new Set(configuredDays)).sort((a, b) => a - b).slice(0, plan.sessionDays.length) : plan.sessionDays;
+  const sessionDuration = client.sessionDurationMinutes ?? plan.duration;
+  const currentGoal = goal?.goalType?.trim() || plan.goal;
+  const currentGoalDetail = [goal?.target, goal?.metric].filter((value): value is string => Boolean(value?.trim())).join(" / ");
+  const responses = assessment?.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? assessment.responses as Record<string, unknown> : {};
+  const injuryNotes = String(responses.injuryNotes ?? "").trim();
+  const contraindicationNotes = String(responses.contraindicationNotes ?? "").trim();
+  const likedExercises = listText(preferences?.likedExercises);
+  const dislikedExercises = listText(preferences?.dislikedExercises);
+  const preferredEquipment = listText(preferences?.preferredEquipment);
+  const cardioModalities = listText(preferences?.cardioModalities);
+  const locationEquipment = listText(location?.equipment);
+  const performanceFor = (exerciseId: string, exerciseName: string) => performanceRecords.find((record) => record.exerciseId === exerciseId || record.exerciseName?.toLowerCase() === exerciseName.toLowerCase());
   const caseStudyRule = slug === "ciara" ? "Use the weekly case-study target table: progress in small load or duration steps only after the prescribed reps, target RIR and acceptable technique; hold for pain, fatigue, poor recovery or missed sessions." : slug === "jessica" ? "Keep power reps crisp and low-repetition; progress only when ankle comfort, landing quality, technical position and athletics-session recovery are acceptable." : slug === "kevin" ? "Progress primary lifts in small increments only when the target RIR and technique are repeatable; use the tested lift baselines as reference points, not automatic loading instructions." : "Use conservative double progression and hold or regress for pain, symptoms, poor technique, fatigue or reduced recovery; review the press-up and sit-and-reach measures at the next block.";
+  const contextSummary = [
+    `Current goal: ${currentGoal}${currentGoalDetail ? ` (${currentGoalDetail})` : ""}`,
+    `Training schedule: ${sessionDays.join(", ")} at ${sessionDuration} minutes`,
+    client.trainingExperience ? `Training experience: ${client.trainingExperience}` : "Training experience is not recorded",
+    client.dailyActivity ? `Daily/external activity: ${client.dailyActivity}` : "Daily/external activity is not recorded",
+    client.sleepHours ? `Sleep: ${client.sleepHours}` : "Sleep is not recorded",
+    client.stressLevel ? `Stress: ${client.stressLevel}` : "Stress is not recorded",
+    location ? `Location: ${location.name} (${location.locationType}); equipment recorded: ${locationEquipment.join(", ") || "none"}` : "Training location/equipment is not recorded",
+    preferences?.preferredStyle ? `Preferred style: ${preferences.preferredStyle}` : "",
+    preferences?.preferredStructure ? `Preferred structure: ${preferences.preferredStructure}` : "",
+    preferredEquipment.length ? `Preferred equipment: ${preferredEquipment.join(", ")}` : "",
+    cardioModalities.length ? `Preferred cardio: ${cardioModalities.join(", ")}` : "",
+    likedExercises.length ? `Liked exercises: ${likedExercises.join(", ")}` : "",
+    dislikedExercises.length ? `Disliked exercises: ${dislikedExercises.join(", ")}` : "",
+    preferences?.confidenceNotes ? `Confidence/adherence notes: ${preferences.confidenceNotes}` : "",
+    assessment?.clearanceRequired ? "Clearance is currently marked as required; PT screening workflow remains in control." : "",
+    Array.isArray(assessment?.riskFlags) && assessment.riskFlags.length ? `${assessment.riskFlags.length} screening flag(s) are recorded for PT review.` : "",
+    injuryNotes ? `Recorded pain/injury context for PT review: ${injuryNotes}` : "",
+    contraindicationNotes ? `Recorded restrictions/context for PT review: ${contraindicationNotes}` : "",
+    assessment?.ptNotes ? `PT assessment notes: ${assessment.ptNotes}` : "",
+    client.notes ? `Client notes: ${client.notes.replace(/\[CASE STUDY FIXTURE: [a-z]+\]/i, "").trim()}` : "",
+    performanceRecords.slice(0, 10).map((record) => `${record.exerciseName ?? "General measure"}: ${performanceBaselineText(record)} on ${record.performanceDate}${record.painReported ? "; pain reported" : ""}`).join(" | "),
+  ].filter(Boolean).join(". ").slice(0, 1800);
+  const defaultEffort = defaultEffortForExperience(client.trainingExperience);
   const selected = plan.exercises.map((name) => {
     const match = allExercises.find((exercise) => exercise.name.toLowerCase() === name.toLowerCase());
     if (!match) throw new Error(`Exercise missing from library: ${name}`);
     const isConditioning = /walk|cross-trainer/i.test(name);
     const isPower = /jump/i.test(name);
     const isCiaraSquat = slug === "ciara" && /back squat/i.test(name);
-    return { name: match.name, pattern: match.movementPattern, sets: isConditioning || isPower ? 2 : 3, repsMin: isConditioning ? 1 : isPower ? 3 : 8, repsMax: isConditioning ? 15 : isPower ? 5 : isCiaraSquat ? 10 : 12, intensityValue: isCiaraSquat ? "30 kg 10RM baseline · 2–3 RIR" : isPower ? "RPE 6 · crisp reps" : isConditioning && /cross-trainer/i.test(name) ? "RPE 5–6 · aerobic base" : isConditioning ? "RPE 6–7 · sustainable pace" : "2 RIR", restSeconds: isPower || /deadlift|squat/i.test(name) ? 120 : 90, tempo: "", technique: isPower ? "Power / crisp reps" : isConditioning && /cross-trainer/i.test(name) ? "Continuous / interval aerobic" : isConditioning ? "Incline treadmill" : undefined, notes: isCiaraSquat ? "Tested baseline: 30 kg × 10. Aim toward 40 kg × 10 by week 8. Increase only when target RIR and technique are maintained; otherwise hold." : isConditioning && /cross-trainer/i.test(name) ? "Weeks 1–4: cross-trainer block. Progress duration or work:recovery before adding intensity." : isConditioning ? "Weeks 5–8: treadmill block. Build pace and duration toward the 5 km objective without forcing running." : undefined, groupKey: isConditioning ? "conditioning" : undefined, progressionRule: caseStudyRule };
+    const baseline = performanceFor(match.id, match.name);
+    const baselineText = baseline ? performanceBaselineText(baseline) : "";
+    const baseIntensity = isCiaraSquat ? "30 kg 10RM baseline · 2–3 RIR" : isPower ? "RPE 6 · crisp reps" : isConditioning && /cross-trainer/i.test(name) ? "RPE 5–6 · aerobic base" : isConditioning ? "RPE 6–7 · sustainable pace" : defaultEffort;
+    const baseNotes = isCiaraSquat ? "Tested baseline: 30 kg × 10. Aim toward 40 kg × 10 by week 8. Increase only when target RIR and technique are maintained; otherwise hold." : isConditioning && /cross-trainer/i.test(name) ? "Weeks 1–4: cross-trainer block. Progress duration or work:recovery before adding intensity." : isConditioning ? "Weeks 5–8: treadmill block. Build pace and duration toward the 5 km objective without forcing running." : undefined;
+    return { name: match.name, pattern: match.movementPattern, sets: isConditioning || isPower ? 2 : 3, repsMin: isConditioning ? 1 : isPower ? 3 : 8, repsMax: isConditioning ? 15 : isPower ? 5 : isCiaraSquat ? 10 : 12, intensityValue: baselineText ? `${baselineText} · ${baseIntensity}` : baseIntensity, restSeconds: isPower || /deadlift|squat/i.test(name) ? 120 : 90, tempo: "", technique: isPower ? "Power / crisp reps" : isConditioning && /cross-trainer/i.test(name) ? "Continuous / interval aerobic" : isConditioning ? "Incline treadmill" : undefined, notes: [baseNotes, baselineText ? `Latest recorded baseline: ${baselineText}${baseline?.confidence ? ` (${baseline.confidence} confidence)` : ""}.` : "", baseline?.painReported ? "Pain was reported with this observation; review tolerance before progression." : "", baseline && !baseline.techniqueAcceptable ? "Technique was not marked acceptable; do not treat this as an automatic progression signal." : ""].filter(Boolean).join(" ") || undefined, groupKey: isConditioning ? "conditioning" : undefined, progressionRule: caseStudyRule };
   });
   const selectedByName = new Map(selected.map((exercise) => [exercise.name.toLowerCase(), exercise]));
   type SelectedExercise = (typeof selected)[number];
@@ -232,12 +281,16 @@ export async function generateCaseStudyDraftAction(rawInput: z.input<typeof case
     if (slug !== "ciara" || !/back squat/i.test(exercise.name)) return exercise;
     const squatTargets = [30, 30, 32.5, 32.5, 35, 35, 37.5, 40];
     const target = squatTargets[weekNumber - 1] ?? squatTargets[0];
-    return { ...exercise, intensityValue: `${target} kg · ${weekNumber === 8 ? "10-rep target" : "2–3 RIR"}`, notes: `Tested baseline 30 kg × 10; week ${weekNumber} target ${target} kg. Hold if technique, pain, recovery or target RIR are not acceptable.` };
+    const baseline = performanceFor("", exercise.name);
+    return { ...exercise, intensityValue: `${target} kg · ${weekNumber === 8 ? "10-rep target" : "2–3 RIR"}${baseline ? ` · ${performanceBaselineText(baseline)} recorded` : ""}`, notes: `${baseline ? `Latest recorded baseline: ${performanceBaselineText(baseline)}. ` : "Tested baseline 30 kg × 10; "}week ${weekNumber} target ${target} kg. Hold if technique, pain, recovery or target RIR are not acceptable.` };
   };
-  const sessionExercises = Object.fromEntries(Object.entries(plan.sessionExercises).map(([day, names]) => [day, names.map((name) => { const exercise = selectedByName.get(name.toLowerCase()); return exercise ? forWeek(exercise, 1) : undefined; }).filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise))]));
-  const sessionExercisesByWeek = plan.sessionExercisesByWeek ? Object.fromEntries(Object.entries(plan.sessionExercisesByWeek).map(([week, byDay]) => [week, Object.fromEntries(Object.entries(byDay).map(([day, names]) => [day, names.map((name) => { const exercise = selectedByName.get(name.toLowerCase()); return exercise ? forWeek(exercise, Number(week)) : undefined; }).filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise))]))])) : undefined;
-  const result = await saveProgrammeAction({ clientName: `${client.firstName} ${client.lastName}`, goalSummary: plan.goal, trainingDays: plan.days, sessionDurationMinutes: plan.duration, exercises: selected, sessionExercises, sessionExercisesByWeek, sessionNames: plan.sessionNames, sessionDays: plan.sessionDays, methodology: plan.methodology, rationale: plan.rationale, weekPlans: plan.weekPlans });
-  return { ...result, slug, programmeLabel: `${plan.goal} case-study draft` };
+  const sessionExercisesForPlan = Object.fromEntries(Object.entries(plan.sessionExercises).map(([day, names]) => [day, names.map((name) => { const exercise = selectedByName.get(name.toLowerCase()); return exercise ? forWeek(exercise, 1) : undefined; }).filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise))]));
+  const sessionExercises = remapSessionDays(sessionExercisesForPlan, plan.sessionDays, sessionDays);
+  const sessionExercisesByWeek = plan.sessionExercisesByWeek ? Object.fromEntries(Object.entries(plan.sessionExercisesByWeek).map(([week, byDay]) => { const mapped = Object.fromEntries(Object.entries(byDay).map(([day, names]) => [day, names.map((name) => { const exercise = selectedByName.get(name.toLowerCase()); return exercise ? forWeek(exercise, Number(week)) : undefined; }).filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise))])); return [week, remapSessionDays(mapped, plan.sessionDays, sessionDays)]; })) : undefined;
+  const sessionNames = Object.fromEntries(sessionDays.map((day, index) => [String(day), plan.sessionNames[String(plan.sessionDays[index])] ?? `Day ${day} - Full body` ]));
+  const contextRule = `${caseStudyRule} Current client context was read when this version was generated. PT review remains responsible for screening, equipment fit, exercise tolerance and progression decisions.`;
+  const result = await saveProgrammeAction({ clientName: `${client.firstName} ${client.lastName}`, goalSummary: currentGoal, trainingDays: sessionDays.length, sessionDurationMinutes: sessionDuration, exercises: selected, sessionExercises, sessionExercisesByWeek, sessionNames, sessionDays, methodology: `${plan.methodology}. Current preference: ${preferences?.preferredStyle || "not recorded"}.`, rationale: `${plan.rationale} Generated from current client information: ${contextSummary} ${contextRule}`, weekPlans: plan.weekPlans });
+  return { ...result, slug, programmeLabel: `${currentGoal} case-study draft` };
 }
 
 export async function updateClientAction(rawInput: z.input<typeof clientUpdateSchema> & { preferredDays?: number[] }) {
@@ -287,6 +340,22 @@ export async function updateClientPreferencesAction(rawInput: z.input<typeof cli
   const [existing] = await db.select({ id: ptPreferences.id }).from(ptPreferences).where(eq(ptPreferences.clientId, client.id)).limit(1);
   if (existing) await db.update(ptPreferences).set(values).where(eq(ptPreferences.id, existing.id));
   else await db.insert(ptPreferences).values({ clientId: client.id, ...values });
+  await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
+  revalidatePath("/designer");
+  return { clientId: client.id };
+}
+
+export async function saveClientPerformanceRecordAction(rawInput: z.input<typeof performanceRecordSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = performanceRecordSchema.parse(rawInput);
+  const db = getDb();
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  if (!client) throw new Error("Client could not be found.");
+  if (input.exerciseId) {
+    const [exercise] = await db.select({ id: ptExercises.id }).from(ptExercises).where(and(eq(ptExercises.id, input.exerciseId), or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId)))).limit(1);
+    if (!exercise) throw new Error("Exercise could not be found.");
+  }
+  await db.insert(ptClientPerformanceRecords).values({ clientId: client.id, exerciseId: input.exerciseId || null, metricType: input.metricType, metricName: input.metricName || null, performanceDate: input.performanceDate, value: input.value.toString(), unit: input.unit, repetitions: input.repetitions ?? null, loadKg: input.loadKg?.toString() ?? null, source: input.source, confidence: input.confidence || null, techniqueAcceptable: input.techniqueAcceptable, painReported: input.painReported, notes: input.notes || null });
   await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
   return { clientId: client.id };

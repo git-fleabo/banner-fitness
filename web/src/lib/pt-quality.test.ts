@@ -10,6 +10,7 @@ const baseContext = (overrides: Partial<QualityContext> = {}): QualityContext =>
   goal: { goalType: "General strength", target: "Increase major-lift performance", metric: "repeatable load" },
   location: { name: "Full gym", locationType: "Full gym", equipment: ["Dumbbells", "Cable", "Barbell"] },
   preferences: { dislikedExercises: [] },
+  performanceRecords: [{ exerciseId: "squat-1", metricType: "estimated_one_rm", value: "100", performanceDate: "2026-08-01", techniqueAcceptable: true, painReported: false }],
   programme: { goalSummary: "General strength", durationWeeks: 1, trainingDays: 3, sessions: [
     { weekNumber: 1, dayOfWeek: 1, name: "Day 1", sessionType: "strength", durationMinutes: 60, exercises: [exercise("DB Bench Press", "Horizontal push"), exercise("Goblet Squat", "Squat", { primaryMuscles: ["quads", "glutes"], equipment: ["Dumbbells"] })] },
     { weekNumber: 1, dayOfWeek: 3, name: "Day 2", sessionType: "strength", durationMinutes: 60, exercises: [exercise("Seated Cable Row", "Horizontal pull", { primaryMuscles: ["back"], equipment: ["Cable"] })] },
@@ -63,5 +64,13 @@ describe("contextual programme quality engine", () => {
     expect(review.rulesetVersion).toBe(QUALITY_RULESET.version);
     expect(review.evidence).toEqual(QUALITY_EVIDENCE);
     expect(review.findings.find((item) => item.ruleId === "goal-strength-optimisation")?.evidence).toEqual(QUALITY_EVIDENCE);
+  });
+
+  it("treats a performance baseline as useful context, not a mandatory maximal test", () => {
+    const missing = evaluateProgrammeQuality(baseContext({ performanceRecords: [] }));
+    const recorded = evaluateProgrammeQuality(baseContext());
+    expect(missing.findings.find((item) => item.ruleId === "missing-performance-baseline")?.severity).toBe("info");
+    expect(recorded.findings.some((item) => item.ruleId === "missing-performance-baseline")).toBe(false);
+    expect(missing.sourceFingerprint).not.toBe(recorded.sourceFingerprint);
   });
 });

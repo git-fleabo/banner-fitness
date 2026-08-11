@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -137,6 +138,25 @@ export const ptExercises = pgTable("pt_exercises", {
   cautionTags: jsonb("caution_tags").default([]).notNull(),
   ...timestamps,
 }, (table) => [index("pt_exercises_pattern_idx").on(table.movementPattern), index("pt_exercises_owner_idx").on(table.ownerProfileId)]);
+
+export const ptClientPerformanceRecords = pgTable("pt_client_performance_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull().references(() => ptClients.id, { onDelete: "cascade" }),
+  exerciseId: uuid("exercise_id").references(() => ptExercises.id, { onDelete: "set null" }),
+  metricType: text("metric_type").notNull(),
+  metricName: text("metric_name"),
+  performanceDate: date("performance_date").notNull(),
+  value: numeric("value", { precision: 10, scale: 2 }).notNull(),
+  unit: text("unit").notNull(),
+  repetitions: smallint("repetitions"),
+  loadKg: numeric("load_kg", { precision: 10, scale: 2 }),
+  source: text("source").notNull(),
+  confidence: text("confidence"),
+  techniqueAcceptable: boolean("technique_acceptable").default(true).notNull(),
+  painReported: boolean("pain_reported").default(false).notNull(),
+  notes: text("notes"),
+  ...timestamps,
+}, (table) => [index("pt_client_performance_client_date_idx").on(table.clientId, table.performanceDate), index("pt_client_performance_exercise_idx").on(table.exerciseId), check("pt_client_performance_value_positive", sql`${table.value} > 0`)]);
 
 export const ptProgrammes = pgTable("pt_programmes", {
   id: uuid("id").defaultRandom().primaryKey(),

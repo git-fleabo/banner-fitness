@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, desc, eq } from "drizzle-orm";
 
-import { ptAssessments, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeQualityAcknowledgements, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
+import { ptAssessments, ptClientPerformanceRecords, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeQualityAcknowledgements, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
 import { getDb } from "@/lib/db/client";
 import { defaultQualitySettings, evaluateProgrammeQuality, normalizeQualitySettings, QUALITY_EVIDENCE, QUALITY_RULESET, type QualityContext, type QualityFinding, type QualityReview, type QualitySettings } from "@/lib/pt-quality";
 
@@ -34,6 +34,7 @@ export async function loadProgrammeQualityContext(db: ReturnType<typeof getDb>, 
     sessionMap.set(row.id, session);
   });
   const recentResults = await db.select({ painReported: ptWorkoutResults.painReported, energy: ptWorkoutResults.energy, sessionRpe: ptWorkoutResults.sessionRpe, notes: ptWorkoutResults.notes }).from(ptWorkoutResults).where(and(eq(ptWorkoutResults.clientId, programme.clientId), eq(ptWorkoutResults.ownerProfileId, ownerProfileId))).orderBy(desc(ptWorkoutResults.scheduledDate)).limit(30);
+  const performanceRecords = await db.select({ exerciseId: ptClientPerformanceRecords.exerciseId, metricType: ptClientPerformanceRecords.metricType, value: ptClientPerformanceRecords.value, performanceDate: ptClientPerformanceRecords.performanceDate, painReported: ptClientPerformanceRecords.painReported, techniqueAcceptable: ptClientPerformanceRecords.techniqueAcceptable }).from(ptClientPerformanceRecords).where(eq(ptClientPerformanceRecords.clientId, programme.clientId)).orderBy(desc(ptClientPerformanceRecords.performanceDate), desc(ptClientPerformanceRecords.createdAt)).limit(100);
   const riskFlags = Array.isArray(assessmentRow?.riskFlags) ? assessmentRow.riskFlags as Array<{ code?: string; action?: string; label?: string }> : [];
   return {
     client: { preferredDays: asNumberList(client.preferredDays), trainingExperience: client.trainingExperience, dailyActivity: client.dailyActivity, sessionDurationMinutes: client.sessionDurationMinutes, sleepHours: client.sleepHours, stressLevel: client.stressLevel },
@@ -41,6 +42,7 @@ export async function loadProgrammeQualityContext(db: ReturnType<typeof getDb>, 
     goal: goal ?? null,
     location: location ? { ...location, equipment: asList(location.equipment) } : null,
     preferences: preferences ? { ...preferences, likedExercises: asList(preferences.likedExercises), dislikedExercises: asList(preferences.dislikedExercises), preferredEquipment: asList(preferences.preferredEquipment) } : null,
+    performanceRecords,
     programme: { id: programme.id, goalSummary: programme.goalSummary, durationWeeks: programme.durationWeeks, trainingDays: asNumberList(client.preferredDays).length, sessions: Array.from(sessionMap.values()) },
     recentResults,
   };
