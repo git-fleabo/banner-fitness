@@ -81,3 +81,27 @@ export function buildEditorSessionState({ preferredDays, trainingDays, week, sav
   const names = Object.fromEntries(days.map((day, index) => [String(day), `${weekdayLabels[day]} - ${index === days.length - 1 ? "Conditioning" : index === 0 ? "Strength / Hypertrophy" : "Full body"}`]));
   return { days, sessions, names };
 }
+
+export function copySessionToDay({ days, sessions, names, sourceDay, targetDay }: { days: number[]; sessions: Record<string, EditorExercise[]>; names: Record<string, string>; sourceDay: number; targetDay: number }) {
+  if (!days.includes(sourceDay) || !days.includes(targetDay) || sourceDay === targetDay) return { sessions, names };
+  const sourceName = names[String(sourceDay)]?.trim() || `${weekdayLabels[sourceDay]} session`;
+  const suffix = sourceName.split("·").slice(1).join("·").trim() || sourceName.replace(new RegExp(`^${weekdayLabels[sourceDay]}\\s*[·-]?\\s*`, "i"), "").trim();
+  return {
+    sessions: { ...sessions, [String(targetDay)]: [...(sessions[String(sourceDay)] ?? [])] },
+    names: { ...names, [String(targetDay)]: `${weekdayLabels[targetDay]} · ${suffix || "Copied session"}` },
+  };
+}
+
+export function buildWeekPreview({ days, sessions, names }: { days: number[]; sessions: Record<string, EditorExercise[]>; names: Record<string, string> }) {
+  return days.map((day) => {
+    const exercises = sessions[String(day)] ?? [];
+    return {
+      day,
+      label: weekdayLabels[day],
+      name: names[String(day)] || `${weekdayLabels[day]} session`,
+      exercises,
+      exerciseCount: exercises.length,
+      totalSets: exercises.reduce((sum, exercise) => sum + (exercise.sets ?? Number(exercise.prescription.match(/^\d+/)?.[0] ?? 0)), 0),
+    };
+  });
+}

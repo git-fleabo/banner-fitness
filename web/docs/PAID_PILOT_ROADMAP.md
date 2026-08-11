@@ -56,7 +56,7 @@ This is a repository and deployed-application capability audit. It does not clai
 ## P1 — the paid-pilot value loop
 
 1. Programme templates for beginner full-body, home gym, minimal equipment, general strength, hypertrophy and conditioning, including persistent PT-created templates that can be named, reused and removed safely.
-2. A polished programme-builder loop: copy/duplicate sessions and blocks, map sessions to preferred days, edit prescriptions in place, and preview the resulting week before saving a new version.
+2. A polished programme-builder loop: copy/duplicate sessions and blocks, map sessions to preferred days, edit prescriptions in place, and preview the resulting week before saving a new version. **Implemented — ready for signed-in smoke test.** The editor now copies a session across scheduled days, applies the change across the saved block when a new version is created, and shows an explicit week review before persistence; historical versions remain separate.
 3. AI response import with schema validation, a diff preview and explicit PT approval before any data is saved. If no programme exists, the prompt should request a complete draft rather than assuming an existing programme.
 4. Reassessment and check-in forms for readiness, pain, recovery, adherence, enjoyment and confidence, with changes surfaced in the client timeline and quality review.
 5. Client-facing programme view with workout logging, simple check-in response and clear next-session context.

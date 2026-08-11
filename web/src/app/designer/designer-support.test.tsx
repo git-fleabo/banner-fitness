@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildEditorSessionState, buildProgrammeTemplateState, buildStarterTemplateState, getEditorSessionDays } from "@/lib/programme-editor";
+import { buildEditorSessionState, buildProgrammeTemplateState, buildStarterTemplateState, buildWeekPreview, copySessionToDay, getEditorSessionDays } from "@/lib/programme-editor";
 
 const exercise = { name: "Squat", pattern: "Squat", prescription: "3 × 8–12", target: "Quads", equipment: "Dumbbells" };
 
@@ -39,5 +39,22 @@ describe("programme editor schedule", () => {
     expect(state.days).toEqual([5, 7]);
     expect(state.names).toEqual({ "5": "Friday · Custom A", "7": "Sunday · Custom A" });
     expect(state.sessions["5"][0]).toEqual(exercise);
+  });
+
+  it("copies a session to another scheduled day without mutating the source", () => {
+    const state = buildEditorSessionState({ preferredDays: [1, 3], trainingDays: 2, week: [exercise] });
+    const copied = copySessionToDay({ ...state, sourceDay: 1, targetDay: 3 });
+    expect(copied.sessions["3"]).toEqual(copied.sessions["1"]);
+    expect(copied.sessions["3"]).not.toBe(copied.sessions["1"]);
+    expect(copied.names["3"]).toContain("Wednesday");
+    expect(copied.names["1"]).toContain("Monday");
+  });
+
+  it("builds a reviewable week preview with exercise and set totals", () => {
+    const preview = buildWeekPreview({ days: [2, 4], sessions: { "2": [exercise], "4": [] }, names: { "2": "Tuesday · Strength", "4": "Thursday · Conditioning" } });
+    expect(preview.map((session) => session.label)).toEqual(["Tuesday", "Thursday"]);
+    expect(preview[0].exerciseCount).toBe(1);
+    expect(preview[0].totalSets).toBe(3);
+    expect(preview[1].exerciseCount).toBe(0);
   });
 });
