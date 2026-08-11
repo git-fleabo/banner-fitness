@@ -115,6 +115,17 @@ export const ptLocations = pgTable("pt_locations", {
   ...timestamps,
 }, (table) => [index("pt_locations_client_idx").on(table.clientId)]);
 
+export const ptProgrammeTemplates = pgTable("pt_programme_templates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerProfileId: text("owner_profile_id").notNull().references(() => profiles.authUserId, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  goalSummary: text("goal_summary").notNull(),
+  sessionDurationMinutes: smallint("session_duration_minutes").default(45).notNull(),
+  sessions: jsonb("sessions").default([]).notNull(),
+  ...timestamps,
+}, (table) => [index("pt_programme_templates_owner_updated_idx").on(table.ownerProfileId, table.updatedAt)]);
+
 export const ptExercises = pgTable("pt_exercises", {
   id: uuid("id").defaultRandom().primaryKey(),
   ownerProfileId: text("owner_profile_id").references(() => profiles.authUserId, { onDelete: "cascade" }),

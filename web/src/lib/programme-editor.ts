@@ -1,6 +1,7 @@
 export type EditorExercise = { name: string; pattern: string; prescription: string; target: string; equipment: string; sets?: number; repsMin?: number; repsMax?: number; intensityValue?: string; restSeconds?: number; tempo?: string; progressionRule?: string; note?: string };
 export type SavedSession = { dayOfWeek: number; name: string; exercises: EditorExercise[] };
-export type StarterProgrammeTemplate = { id: string; label: string; description: string; goal: string; sessions: Array<{ name: string; exercises: EditorExercise[] }> };
+export type ProgrammeTemplateDefinition = { id: string; label: string; description: string; goal: string; sessionDurationMinutes?: number; sessions: Array<{ name: string; exercises: EditorExercise[] }> };
+export type StarterProgrammeTemplate = ProgrammeTemplateDefinition;
 
 export const weekdayLabels = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -49,12 +50,21 @@ export function getEditorSessionDays(preferredDays: number[] | undefined, traini
   return Array.from({ length: Math.min(Math.max(trainingDays, 1), 7) }, (_, index) => index + 1);
 }
 
+function templateSessionName(name: string, day: number) {
+  const suffix = name.split("·").slice(1).join("·").trim();
+  return `${weekdayLabels[day]} · ${suffix || name.trim()}`;
+}
+
 export function buildStarterTemplateState(templateId: string, preferredDays: number[] | undefined, trainingDays: number) {
   const template = starterProgrammeTemplates.find((candidate) => candidate.id === templateId);
   if (!template) return null;
+  return buildProgrammeTemplateState(template, preferredDays, trainingDays);
+}
+
+export function buildProgrammeTemplateState(template: ProgrammeTemplateDefinition, preferredDays: number[] | undefined, trainingDays: number) {
   const days = getEditorSessionDays(preferredDays, Math.min(trainingDays, template.sessions.length));
   const sessions = Object.fromEntries(days.map((day, index) => [String(day), template.sessions[index % template.sessions.length].exercises]));
-  const names = Object.fromEntries(days.map((day, index) => [String(day), template.sessions[index % template.sessions.length].name.replace(/^[^·]+·\s*/, `${weekdayLabels[day]} · `)]));
+  const names = Object.fromEntries(days.map((day, index) => [String(day), templateSessionName(template.sessions[index % template.sessions.length].name, day)]));
   return { days, sessions, names, template };
 }
 

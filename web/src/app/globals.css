@@ -220,6 +220,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .starter-template-picker label { display:block; flex:0 1 330px; color:#7b8b83; font-size:9px; font-weight:800; letter-spacing:.1em; }
 .starter-template-picker select { display:block; width:100%; margin-top:6px; border:1px solid #cedfd0; border-radius:5px; background:#fff; color:#425f57; padding:9px; font:11px inherit; }
 .starter-template-picker small { color:#7b8d84; font-size:10px; line-height:1.4; }
+.template-save-row { display:flex; align-items:flex-end; gap:9px; margin:0 0 16px; }
+.template-save-row label { display:block; flex:1; color:#7b8b83; font-size:9px; font-weight:800; letter-spacing:.1em; }
+.template-save-row input { display:block; width:100%; margin-top:6px; border:1px solid var(--designer-line); border-radius:5px; background:#fff; color:var(--navy); padding:9px; font:11px inherit; }
+.template-delete-button { align-self:flex-end; border:1px solid #e9c9c1; border-radius:5px; background:#fff8f5; color:#a76050; padding:8px 10px; font:700 9px inherit; cursor:pointer; white-space:nowrap; }
+.template-delete-button:hover,.template-delete-button:focus-visible { background:#fdece6; }
 .equipment-help { margin:14px 0 0; color:#7c8e86; font-size:10px; line-height:1.4; }
 .equipment-groups { display:grid; gap:12px; margin-top:13px; }
 .equipment-group { padding-top:11px; border-top:1px solid #edf0eb; }
@@ -232,4 +237,4 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .equipment-group .equipment-picker > small { color:#89968f; font-size:10px; }
 
 @media (max-width: 980px) { .dashboard-roster { margin-left:25px; margin-right:25px; }.dashboard-roster-toolbar { align-items:stretch; flex-direction:column; }.dashboard-roster-filters { justify-content:flex-end; } }
-@media (max-width: 680px) { .dashboard-roster { margin:0 16px 16px; padding:17px; }.dashboard-roster-heading .text-button { display:none; }.dashboard-view-tabs { margin-right:-17px; padding-right:17px; }.dashboard-roster-filters { width:100%; }.dashboard-roster-filters input,.dashboard-roster-filters select { flex:1; min-width:0; width:auto; }.starter-template-picker { align-items:stretch; flex-direction:column; gap:8px; }.starter-template-picker label { flex-basis:auto; }.equipment-groups { gap:9px; } }
+@media (max-width: 680px) { .dashboard-roster { margin:0 16px 16px; padding:17px; }.dashboard-roster-heading .text-button { display:none; }.dashboard-view-tabs { margin-right:-17px; padding-right:17px; }.dashboard-roster-filters { width:100%; }.dashboard-roster-filters input,.dashboard-roster-filters select { flex:1; min-width:0; width:auto; }.starter-template-picker { align-items:stretch; flex-direction:column; gap:8px; }.starter-template-picker label { flex-basis:auto; }.template-save-row { align-items:stretch; flex-direction:column; }.template-save-row .secondary-button { align-self:flex-start; }.equipment-groups { gap:9px; } }

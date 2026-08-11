@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildEditorSessionState, buildStarterTemplateState, getEditorSessionDays } from "@/lib/programme-editor";
+import { buildEditorSessionState, buildProgrammeTemplateState, buildStarterTemplateState, getEditorSessionDays } from "@/lib/programme-editor";
 
 const exercise = { name: "Squat", pattern: "Squat", prescription: "3 × 8–12", target: "Quads", equipment: "Dumbbells" };
 
@@ -31,5 +31,13 @@ describe("programme editor schedule", () => {
 
   it("returns null for an unknown starter template", () => {
     expect(buildStarterTemplateState("not-a-template", [1, 3, 5], 3)).toBeNull();
+  });
+
+  it("maps a saved custom template without changing its exercise snapshot", () => {
+    const custom = { id: "custom-1", label: "My template", description: "", goal: "General fitness", sessions: [{ name: "Custom A", exercises: [exercise] }] };
+    const state = buildProgrammeTemplateState(custom, [5, 7], 2);
+    expect(state.days).toEqual([5, 7]);
+    expect(state.names).toEqual({ "5": "Friday · Custom A", "7": "Sunday · Custom A" });
+    expect(state.sessions["5"][0]).toEqual(exercise);
   });
 });

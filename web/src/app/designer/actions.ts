@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
-import { ptAssessments, ptClientPerformanceRecords, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityAcknowledgements, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
+import { ptAssessments, ptClientPerformanceRecords, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityAcknowledgements, ptProgrammeTemplates, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { getScreeningFlags, hasRecordedScreeningReview, screeningReviewMarker, type ScreeningAnswers } from "@/lib/pt-programming";
 import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures";
 import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings } from "@/lib/pt-quality";
@@ -107,6 +107,10 @@ const programmeInputSchema = z.object({
   rationale: z.string().trim().max(2000).optional(),
   weekPlans: z.array(weekPlanSchema).length(8).optional(),
 });
+const programmeTemplateExerciseSchema = exerciseDraftSchema.extend({ prescription: z.string().trim().max(80).default("3 × 8–12"), target: z.string().trim().max(200).default(""), equipment: z.string().trim().max(120).default(""), note: z.string().trim().max(500).optional() });
+const programmeTemplateSessionSchema = z.object({ name: z.string().trim().min(1).max(120), exercises: z.array(programmeTemplateExerciseSchema).max(100) });
+const programmeTemplateSchema = z.object({ name: z.string().trim().min(1).max(120), description: z.string().trim().max(500).optional(), goalSummary: z.string().trim().min(1).max(200), sessionDurationMinutes: z.number().int().min(15).max(180), sessions: z.array(programmeTemplateSessionSchema).min(1).max(7) }).superRefine((input, context) => { if (!input.sessions.some((session) => session.exercises.length > 0)) context.addIssue({ code: "custom", path: ["sessions"], message: "Add at least one exercise before saving a programme template." }); });
+const programmeTemplateDeleteSchema = z.object({ templateId: z.string().uuid() });
 
 const workoutInputSchema = z.object({
   clientId: z.string().uuid(),
@@ -381,6 +385,34 @@ export async function getDesignerSettingsAction() {
   const db = getDb();
   const [settings] = await db.select({ qualityRules: ptDesignerSettings.qualityRules }).from(ptDesignerSettings).where(eq(ptDesignerSettings.ownerProfileId, owner.authUserId)).limit(1);
   return normalizeQualitySettings(settings?.qualityRules ?? defaultQualitySettings);
+}
+
+export async function listProgrammeTemplatesAction() {
+  const owner = await requireDesignerAccess();
+  const db = getDb();
+  const templates = await db.select({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name, description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId)).orderBy(desc(ptProgrammeTemplates.updatedAt)).limit(50);
+  return templates.map((template) => ({ id: template.id, label: template.name, description: template.description ?? "", goal: template.goalSummary, sessionDurationMinutes: template.sessionDurationMinutes, sessions: programmeTemplateSessionSchema.array().parse(template.sessions) }));
+}
+
+export async function saveProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = programmeTemplateSchema.parse(rawInput);
+  const db = getDb();
+  const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, sessions: input.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
+  if (!template) throw new Error("Programme template could not be saved.");
+  revalidatePath("/designer");
+  return { templateId: template.id, name: template.name };
+}
+
+export async function deleteProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateDeleteSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = programmeTemplateDeleteSchema.parse(rawInput);
+  const db = getDb();
+  const [template] = await db.select({ id: ptProgrammeTemplates.id }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
+  if (!template) throw new Error("Programme template could not be found.");
+  await db.delete(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.id, template.id));
+  revalidatePath("/designer");
+  return { templateId: template.id };
 }
 
 export async function updateDesignerSettingsAction(rawInput: z.input<typeof qualitySettingsSchema>) {
