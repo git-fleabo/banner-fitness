@@ -29,10 +29,6 @@ export async function GET() {
     if (ownerClient) attention.push({ id: `programme-${programme.id}`, clientId: programme.clientId, name: `${ownerClient.firstName} ${ownerClient.lastName}`, text: `Draft programme awaiting review · Week ${programme.currentWeek}`, tag: "Draft", tone: "blue" });
   }
   const scheduledSessions = await db.select({ id: ptSessions.id, clientId: ptProgrammes.clientId, firstName: ptClients.firstName, lastName: ptClients.lastName, dayOfWeek: ptSessions.dayOfWeek, name: ptSessions.name, sessionType: ptSessions.sessionType, durationMinutes: ptSessions.durationMinutes }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptSessions.programmeWeekId, ptProgrammeWeeks.id)).innerJoin(ptProgrammes, eq(ptProgrammeWeeks.programmeId, ptProgrammes.id)).innerJoin(ptClients, eq(ptProgrammes.clientId, ptClients.id)).where(and(eq(ptProgrammes.ownerProfileId, access.account.authUserId), eq(ptProgrammes.status, "active"), eq(ptProgrammeWeeks.weekNumber, ptProgrammes.currentWeek))).orderBy(ptSessions.dayOfWeek).limit(20);
-  const currentProgramme = programmes.map((programme) => {
-    const ownerClient = clients.find((item) => item.id === programme.clientId);
-    return ownerClient ? { ...programme, clientName: `${ownerClient.firstName} ${ownerClient.lastName}` } : null;
-  }).find(Boolean) ?? null;
   const schedule = scheduledSessions.map((session) => ({ ...session, clientName: `${session.firstName} ${session.lastName}`, day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][session.dayOfWeek % 7] }));
-  return NextResponse.json({ counts: { clients: Number(clientCount?.value ?? 0), draftProgrammes: Number(programmeCount?.value ?? 0), adherence: totalResults ? Math.round((completedResults / totalResults) * 100) : null, sessionsThisWeek: schedule.length }, clients, programmes, attention, schedule, currentProgramme });
+  return NextResponse.json({ counts: { clients: Number(clientCount?.value ?? 0), draftProgrammes: Number(programmeCount?.value ?? 0), adherence: totalResults ? Math.round((completedResults / totalResults) * 100) : null, sessionsThisWeek: schedule.length }, clients, programmes, attention, schedule });
 }
