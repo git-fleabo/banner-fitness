@@ -1,6 +1,6 @@
-export const programmePromptBrand = "The Factory";
-export const programmePromptTitle = "The Factory - Programme design review bundle";
-export const programmePromptFilename = "the-factory-pt-review";
+export const programmePromptBrand = "Banner Fitness";
+export const programmePromptTitle = "Banner Fitness - Programme design review bundle";
+export const programmePromptFilename = "banner-fitness-pt-review";
 
 export function buildProgrammeTask(hasProgramme: boolean) {
   if (hasProgramme) return "Review the current programme against the client context. Identify important uncertainties, mismatches and practical options for the qualified PT to consider.";

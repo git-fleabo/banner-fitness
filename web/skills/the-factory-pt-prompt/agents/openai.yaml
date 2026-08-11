@@ -1,7 +1,7 @@
 interface:
-  display_name: "The Factory PT Prompt"
+  display_name: "Banner Fitness PT Prompt"
   short_description: "Format PT-ready programme reviews and drafts"
-  default_prompt: "Use $the-factory-pt-prompt to format this client and programme bundle for The Factory."
+  default_prompt: "Use $the-factory-pt-prompt to format this client and programme bundle for Banner Fitness."
 
 policy:
   allow_implicit_invocation: true

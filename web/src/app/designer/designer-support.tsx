@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { Icon } from "./semantic-icon";
+
 import { deleteProgrammeTemplateAction, listProgrammeTemplatesAction, saveProgrammeAction, saveProgrammeTemplateAction } from "./actions";
 import { buildEditorSessionState, buildProgrammeTemplateState, starterProgrammeTemplates, weekdayLabels, type EditorExercise, type ProgrammeTemplateDefinition, type SavedSession } from "@/lib/programme-editor";
 
@@ -9,7 +11,7 @@ export type { EditorExercise } from "@/lib/programme-editor";
 type LibraryExercise = { name: string; pattern: string; target: string; equipment: string };
 
 export function MobileNav({ onClose, onOverview, onClients, onProgrammes, onLibrary, onSettings }: { onClose: () => void; onOverview: () => void; onClients: () => void; onProgrammes: () => void; onLibrary: () => void; onSettings: () => void }) {
-  return <div className="mobile-nav-backdrop" onClick={onClose}><nav className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}><div className="brand-mark"><span>F</span><div><strong>THE FACTORY</strong><small>CONSTRUCTION</small></div></div><button className="close-button" onClick={onClose}>×</button><button onClick={onOverview}>⌂ Overview</button><button onClick={onClients}>♧ Clients</button><button onClick={onProgrammes}>▦ Programmes</button><button onClick={onLibrary}>◈ Exercise library</button><button onClick={onSettings}>⚙ Settings</button><small className="mobile-nav-user">Noaman · Personal trainer</small></nav></div>;
+  return <div className="mobile-nav-backdrop" onClick={onClose}><nav className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}><div className="brand-mark"><img src="/banner-fitness-logo.png" alt="Banner Fitness" /></div><button className="close-button" onClick={onClose}>×</button><button onClick={onOverview}><Icon name="overview" /> Overview</button><button onClick={onClients}><Icon name="clients" /> Clients</button><button onClick={onProgrammes}><Icon name="programmes" /> Programmes</button><button onClick={onLibrary}><Icon name="library" /> Exercise library</button><button onClick={onSettings}><Icon name="settings" /> Settings</button><small className="mobile-nav-user">Noaman · Personal trainer</small></nav></div>;
 }
 
 export function SessionEditorModal({ clientId, clientName, goal, days, preferredDays, sessionDurationMinutes, week, savedSessions, onClose, onSaved, notify }: { clientId?: string; clientName: string; goal: string; days: number; preferredDays?: number[]; sessionDurationMinutes?: number; week: EditorExercise[]; savedSessions?: SavedSession[]; onClose: () => void; onSaved?: () => void; notify: (message: string) => void }) {

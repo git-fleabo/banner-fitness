@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "The Factory - Construction",
+  title: "Banner Fitness - PT Workspace",
   description: "An explainable programme-design workspace for personal trainers.",
 };
 

@@ -41,12 +41,12 @@ function PromptBuilder({clientId,onClose,notify}:{clientId:string;onClose:()=>vo
 
   async function downloadSkill() {
     try {
-      const response = await fetch("/the-factory-pt-prompt-skill.md", { cache: "no-store" });
+      const response = await fetch("/banner-fitness-pt-prompt-skill.md", { cache: "no-store" });
       if (!response.ok) throw new Error("Skill unavailable");
-      download("the-factory-pt-prompt.md", await response.text(), "text/markdown");
-      notify("The Factory AI skill downloaded");
+      download("banner-fitness-pt-prompt.md", await response.text(), "text/markdown");
+      notify("Banner Fitness AI skill downloaded");
     } catch {
-      notify("The Factory AI skill is temporarily unavailable");
+      notify("Banner Fitness AI skill is temporarily unavailable");
     }
   }
 

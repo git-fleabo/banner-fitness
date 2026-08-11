@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { buildProgrammeTask, programmePromptFilename, programmePromptTitle, promptEvidenceInstruction } from "./pt-prompt";
 
 describe("PT AI prompt instructions", () => {
-  it("uses The Factory branding in generated bundles and downloads", () => {
-    expect(programmePromptTitle).toContain("The Factory");
-    expect(programmePromptFilename).toBe("the-factory-pt-review");
+  it("uses Banner Fitness branding in generated bundles and downloads", () => {
+    expect(programmePromptTitle).toContain("Banner Fitness");
+    expect(programmePromptFilename).toBe("banner-fitness-pt-review");
   });
 
   it("asks the AI to help generate a programme when none exists", () => {

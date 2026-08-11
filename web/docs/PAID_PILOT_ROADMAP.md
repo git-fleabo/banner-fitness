@@ -1,8 +1,8 @@
-# The Factory paid pilot roadmap
+# Banner Fitness paid pilot roadmap
 
 ## Product position
 
-The Factory should be sold first as an evidence-aware programme design and quality-control workspace for newly qualified PTs. It should help a PT capture the right client context, notice omissions and contradictions, build an explainable programme and retain an auditable review trail.
+Banner Fitness should be sold first as an evidence-aware programme design and quality-control workspace for newly qualified PTs. It should help a PT capture the right client context, notice omissions and contradictions, build an explainable programme and retain an auditable review trail.
 
 It should not initially compete with broad coaching platforms on payments, nutrition, video calls or white-label client apps. Those are later expansion areas, not the reason to join the pilot.
 
@@ -23,7 +23,7 @@ These are starting hypotheses. The pilot should measure willingness to pay, not 
 4. A dynamic dashboard date and an action queue for unresolved screening, overdue reviews and programmes awaiting approval.
 5. A client timeline covering assessment, notes, programme versions, quality reviews, performance baselines and workout results.
 6. Privacy, retention, export/delete, access-control, backup and incident-response documentation suitable for handling client health information.
-7. A short in-app explanation of what The Factory does and does not decide for the PT.
+7. A short in-app explanation of what Banner Fitness does and does not decide for the PT.
 8. A multi-client command centre with search, status views, review queues, no-recent-activity views, programme state and missing-context signals.
 9. Exact equipment confirmation language: confirmed available, not confirmed and unknown must remain distinct in the PT workflow.
 
@@ -53,7 +53,7 @@ The paid product should stay focused on the complete PT workflow rather than att
 1. Prioritise the loop of client context → programme builder → quality review → PT approval → workout result → reassessment.
 2. Treat programme building, session duplication, multi-week planning, exercise-library search, client roster management, workout history and progress review as the shared category baseline.
 3. Make the dashboard useful for a PT managing many clients: filterable views, review queues, inactivity/adherence signals, next-session visibility and direct entry into the client workspace.
-4. Keep nutrition, communities, marketing, messaging and technique-video libraries outside the initial paid-pilot scope. They add breadth without strengthening The Factory’s core reason to join.
+4. Keep nutrition, communities, marketing, messaging and technique-video libraries outside the initial paid-pilot scope. They add breadth without strengthening Banner Fitness’s core reason to join.
 5. Preserve the current restrained editorial branding, but improve density and spacing at high-use surfaces. The interface should feel like a calm professional record system, not a gamified consumer fitness app.
 6. Do not add complexity for its own sake. Advanced methods, periodisation labels and extra configuration should only appear when they help the PT make or explain a decision.
 
