@@ -1,5 +1,5 @@
 ---
-name: the-factory-pt-prompt
+name: banner-fitness-pt-prompt
 description: Format Banner Fitness PT review and programme-generation responses from a client and programme bundle, including screening context, quality findings, evidence-aware programming, missing information and copy-ready session prescriptions. Use when the AI receives Banner Fitness's PT prompt or is asked to draft or review a programme for a client.
 ---
 

@@ -23,7 +23,6 @@
 
 # production
 /build
-/public/the-factory-pt-prompt-skill.md
 
 # misc
 .DS_Store

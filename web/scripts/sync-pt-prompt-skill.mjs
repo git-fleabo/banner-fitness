@@ -3,11 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const sourcePath = resolve(projectRoot, "skills/the-factory-pt-prompt/SKILL.md");
-const targetPaths = [
-  resolve(projectRoot, "public/banner-fitness-pt-prompt-skill.md"),
-  resolve(projectRoot, "public/the-factory-pt-prompt-skill.md"),
-];
+const sourcePath = resolve(projectRoot, "skills/banner-fitness-pt-prompt/SKILL.md");
+const targetPaths = [resolve(projectRoot, "public/banner-fitness-pt-prompt-skill.md")];
 
 const skill = await readFile(sourcePath, "utf8");
 await Promise.all(targetPaths.map(async (targetPath) => {
