@@ -99,6 +99,13 @@
       "when": 1786451000000,
       "tag": "0013_add_suspension_exercises",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786451100000,
+      "tag": "0014_add_more_suspension_exercises",
+      "breakpoints": true
     }
   ]
 }
