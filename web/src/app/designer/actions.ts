@@ -480,8 +480,6 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   const contextNote = `Current client context captured when this version was created: ${contextParts}`;
   const rationale = `${input.rationale || "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed."}\n\n${contextNote}`;
   const [previousProgramme] = await db.select({ version: ptProgrammes.version }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, client.id))).orderBy(desc(ptProgrammes.version)).limit(1);
-  const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: input.methodology || "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
-  if (!programme) throw new Error("Programme could not be saved.");
   const allExercises = await db.select({ id: ptExercises.id, name: ptExercises.name }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId))).orderBy(asc(ptExercises.name));
   const toExerciseRows = (exercises: z.infer<typeof exerciseDraftSchema>[]) => exercises.map((exercise, index) => {
     const match = allExercises.find((candidate) => candidate.name.toLowerCase() === exercise.name.toLowerCase());
@@ -499,25 +497,30 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   }
   let savedPrescriptionCount = 0;
   const sessionDays = input.sessionDays ?? normalizePreferredDays(client.preferredDays, input.trainingDays);
-  for (let weekNumber = 1; weekNumber <= 8; weekNumber += 1) {
-    const weekPlan = input.weekPlans?.[weekNumber - 1];
-    const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekPlan?.focus || (weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review"), volumeTarget: weekPlan?.volumeTarget || (weekNumber <= 2 ? "Moderate" : "Moderate-high"), intensityTarget: weekPlan?.intensityTarget || "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
-    if (!week) throw new Error("Programme week could not be saved.");
-    for (const dayOfWeek of sessionDays) {
-      const sessionName = input.sessionNames?.[String(dayOfWeek)] || `Day ${dayOfWeek} - Full body`;
-      const sessionType = /conditioning|interval|aerobic/i.test(sessionName) ? "conditioning" : /power|athletic/i.test(sessionName) ? "strength" : /strength/i.test(sessionName) ? "strength" : "mixed";
-      const [session] = await db.insert(ptSessions).values({ programmeWeekId: week.id, dayOfWeek, name: sessionName, sessionType, durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 }).returning({ id: ptSessions.id });
-      if (!session) throw new Error("Programme session could not be saved.");
-      const activeRowsByDay = rowsByWeek[String(weekNumber)] ?? rowsByDay;
-      const rowsForDay = activeRowsByDay[String(dayOfWeek)] ?? (dayOfWeek === 1 ? exerciseRows : []);
-      if (rowsForDay.length) {
-        const rows = rowsForDay.map((row) => ({ ...row, sessionId: session.id }));
-        await db.insert(ptExercisePrescriptions).values(rows);
-        savedPrescriptionCount += rows.length;
+  const programme = await db.transaction(async (tx) => {
+    const [savedProgramme] = await tx.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: input.methodology || "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
+    if (!savedProgramme) throw new Error("Programme could not be saved.");
+    for (let weekNumber = 1; weekNumber <= 8; weekNumber += 1) {
+      const weekPlan = input.weekPlans?.[weekNumber - 1];
+      const [week] = await tx.insert(ptProgrammeWeeks).values({ programmeId: savedProgramme.id, weekNumber, focus: weekPlan?.focus || (weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review"), volumeTarget: weekPlan?.volumeTarget || (weekNumber <= 2 ? "Moderate" : "Moderate-high"), intensityTarget: weekPlan?.intensityTarget || "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
+      if (!week) throw new Error("Programme week could not be saved.");
+      for (const dayOfWeek of sessionDays) {
+        const sessionName = input.sessionNames?.[String(dayOfWeek)] || `Day ${dayOfWeek} - Full body`;
+        const sessionType = /conditioning|interval|aerobic/i.test(sessionName) ? "conditioning" : /power|athletic/i.test(sessionName) ? "strength" : /strength/i.test(sessionName) ? "strength" : "mixed";
+        const [session] = await tx.insert(ptSessions).values({ programmeWeekId: week.id, dayOfWeek, name: sessionName, sessionType, durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 }).returning({ id: ptSessions.id });
+        if (!session) throw new Error("Programme session could not be saved.");
+        const activeRowsByDay = rowsByWeek[String(weekNumber)] ?? rowsByDay;
+        const rowsForDay = activeRowsByDay[String(dayOfWeek)] ?? (dayOfWeek === 1 ? exerciseRows : []);
+        if (rowsForDay.length) {
+          const rows = rowsForDay.map((row) => ({ ...row, sessionId: session.id }));
+          await tx.insert(ptExercisePrescriptions).values(rows);
+          savedPrescriptionCount += rows.length;
+        }
       }
     }
-  }
-  await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version, contextCapturedAt: new Date().toISOString(), contextSummary: contextNote } });
+    await tx.insert(ptProgrammeEvents).values({ programmeId: savedProgramme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: savedProgramme.version, contextCapturedAt: new Date().toISOString(), contextSummary: contextNote } });
+    return savedProgramme;
+  });
   await refreshProgrammeQuality(db, owner.authUserId, programme.id);
   // The designer is a client-fetched workspace. Its explicit overview/detail
   // refresh handles the post-save update; revalidating the route here causes
