@@ -8,5 +8,5 @@ export async function GET() {
   const access = await getAccountAccess();
   if (access.state === "unauthenticated" || access.state === "unprovisioned") return NextResponse.json({ state: access.state }, { status: 401 });
   if (access.state !== "active" || !["owner", "pt"].includes(access.account.role)) return NextResponse.json({ state: "blocked" }, { status: 403 });
-  return NextResponse.json({ state: "active", displayName: access.account.displayName });
+  return NextResponse.json({ state: "active", displayName: access.account.displayName, role: access.account.role });
 }

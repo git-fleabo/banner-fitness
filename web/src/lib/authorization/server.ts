@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth/server";
 import { getDb } from "@/lib/db/client";
-import { profiles } from "@/lib/db/schema";
+import { profiles, ptInvitations } from "@/lib/db/schema";
 
 export type AccountAccess =
   | { state: "unauthenticated" }
@@ -27,7 +27,16 @@ export async function getAccountAccess(): Promise<AccountAccess> {
     .limit(1);
 
   if (!profile) {
-    return { state: "unprovisioned", email: session.user.email };
+    const email = session.user.email.toLowerCase();
+    const [invitation] = await db
+      .select()
+      .from(ptInvitations)
+      .where(and(eq(ptInvitations.email, email), eq(ptInvitations.status, "pending")))
+      .limit(1);
+    if (!invitation) return { state: "unprovisioned", email: session.user.email };
+    const [claimed] = await db.insert(profiles).values({ authUserId: session.user.id, email, displayName: session.user.name ?? email.split("@")[0], role: "pt", status: "invited", invitedBy: invitation.invitedBy }).returning();
+    await db.update(ptInvitations).set({ status: "claimed", claimedAt: new Date(), updatedAt: new Date() }).where(and(eq(ptInvitations.id, invitation.id), eq(ptInvitations.status, "pending")));
+    return { state: "active", account: { ...claimed, status: "active", activatedAt: new Date() } };
   }
 
   if (profile.email.toLowerCase() !== session.user.email.toLowerCase()) {

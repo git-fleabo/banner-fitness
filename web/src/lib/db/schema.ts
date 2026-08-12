@@ -19,6 +19,7 @@ import {
 
 export const accountRole = pgEnum("account_role", ["owner", "pt", "learner"]);
 export const accountStatus = pgEnum("account_status", ["invited", "active", "blocked"]);
+export const ptInviteStatus = pgEnum("pt_invite_status", ["pending", "claimed", "revoked"]);
 export const mappingStatus = pgEnum("mapping_status", ["confirmed", "provisional", "needs_confirmation"]);
 export const contentStatus = pgEnum("content_status", ["draft", "in_review", "approved", "published", "retired"]);
 export const learningObjectType = pgEnum("learning_object_type", ["hook", "explain", "explore", "apply", "check", "close", "visual", "structured_text"]);
@@ -325,6 +326,15 @@ export const profiles = pgTable("profiles", {
   index("profiles_role_status_idx").on(table.role, table.status),
   check("profiles_active_timestamp", sql`${table.status} <> 'active' or ${table.activatedAt} is not null`),
 ]);
+
+export const ptInvitations = pgTable("pt_invitations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull(),
+  invitedBy: text("invited_by").notNull().references(() => profiles.authUserId, { onDelete: "cascade" }),
+  status: ptInviteStatus("status").default("pending").notNull(),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [index("pt_invitations_email_status_idx").on(table.email, table.status)]);
 
 export const curriculumTopics = pgTable("curriculum_topics", {
   id: uuid("id").defaultRandom().primaryKey(),

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { createClientAction, deleteClientAction, logWorkoutResultAction, recordProgrammeOverrideAction, resolveScreeningAction, saveProgrammeAction, transitionProgrammeAction, updateClientAction, updateClientAssessmentAction, updateClientLocationAction, updateClientProfileAction } from "./actions";
 import { MobileNav, SessionEditorModal } from "./designer-support";
 import { DesignerSettings } from "./designer-settings";
+import { TeamAccess } from "./team-access";
 import { ExerciseLibrary } from "./exercise-library";
 import { ProgrammeLibrary, type ProgrammeLibraryTemplate } from "./programme-library";
 import { PromptBuilderLauncher } from "./prompt-builder";
@@ -95,6 +96,8 @@ export default function DesignerPage() {
   const [importApproval, setImportApproval] = useState<AiProgrammeImportApproval | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
+  const [accountRole, setAccountRole] = useState<"owner" | "pt">("pt");
   const [showHelp, setShowHelp] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -116,6 +119,7 @@ export default function DesignerPage() {
       .then((response) => {
         if (response.status === 401) { router.replace("/auth/sign-in?next=/designer"); return; }
         if (!response.ok) { router.replace("/learn"); return; }
+        void response.json().then((accessData: { role?: "owner" | "pt" }) => setAccountRole(accessData.role === "owner" ? "owner" : "pt"));
         setAccessState("active");
         void fetch("/api/designer/overview", { credentials: "same-origin", cache: "no-store" }).then(async (overviewResponse) => { if (overviewResponse.ok) setOverview(await overviewResponse.json() as OverviewData); }).catch(() => undefined);
         void import("./actions").then(({ getDesignerSettingsAction }) => getDesignerSettingsAction()).then(setQualitySettings).catch(() => undefined);
@@ -227,6 +231,7 @@ export default function DesignerPage() {
         </nav>
         <div className="sidebar-bottom">
           <button className="sidebar-link" onClick={() => setShowSettings(true)}><Icon name="settings" />Quality rules</button>
+          {accountRole === "owner" && <button className="sidebar-link" onClick={() => setShowTeam(true)}><Icon name="clients" />Team access</button>}
           <div className="profile-chip"><div className="avatar">NO</div><div><strong>Noaman</strong><small>Personal trainer</small></div></div>
         </div>
       </aside>
@@ -262,6 +267,7 @@ export default function DesignerPage() {
       {showSessionEditor && <SessionEditorModal clientId={clientId ?? undefined} clientName={client} goal={goal} days={importedSessions?.length ?? clientDetail?.programme?.sessions.length ?? days} preferredDays={preferredDays} sessionDurationMinutes={importApproval?.sessionDurationMinutes ?? clientDetail?.programme?.sessions[0]?.durationMinutes ?? clientDetail?.client.sessionDurationMinutes ?? 45} week={importedSessions?.[0]?.exercises ?? clientDetail?.programme?.sessions[0]?.exercises ?? []} savedSessions={importedSessions ?? clientDetail?.programme?.sessions} importApproval={importApproval} onClose={() => { setShowSessionEditor(false); setImportedSessions(null); setImportApproval(null); }} onSaved={() => { refreshOverview(); setClientDetail(null); setDetailRefresh((current) => current + 1); }} notify={notify} />}
       {showOnboarding && <ClientOnboarding onClose={() => setShowOnboarding(false)} onCreated={(name, riskCount, createdClientId, guideNext) => { refreshOverview(); setClientId(createdClientId); setClient(name); setScreening(riskCount > 0); setGuidedOnboarding(guideNext); setShowOnboarding(false); setShowClient(true); notify(riskCount ? `Client created with ${riskCount} screening flag${riskCount === 1 ? "" : "s"}` : "Client created and ready to programme"); }} />}
       {showSettings && <DesignerSettings onClose={() => setShowSettings(false)} onSaved={(settings) => { setQualitySettings(settings); notify("Quality settings saved"); }} />}
+      {showTeam && <TeamAccess onClose={() => setShowTeam(false)} />}
       {showHelp && <DesignerHelp onClose={() => setShowHelp(false)} />}
       <button className="mobile-menu-launcher" onClick={() => setMobileMenuOpen(true)} aria-label="Open navigation">☰</button>
       {mobileMenuOpen && <MobileNav onClose={() => setMobileMenuOpen(false)} onProgrammeLibrary={() => { setMobileMenuOpen(false); setShowProgrammeLibrary(true); setActiveNav("Programme library"); }} onLibrary={() => { setMobileMenuOpen(false); setShowLibrary(true); setActiveNav("Exercise library"); }} onClients={() => { setMobileMenuOpen(false); setShowClients(true); setActiveNav("Clients"); }} onProgrammes={() => { setMobileMenuOpen(false); setShowProgrammes(true); setActiveNav("Programmes"); }} onSettings={() => { setMobileMenuOpen(false); setShowSettings(true); }} onOverview={() => { setMobileMenuOpen(false); setShowClients(false); setShowLibrary(false); setShowProgrammes(false); setShowProgrammeLibrary(false); setActiveNav("Overview"); }} />}
