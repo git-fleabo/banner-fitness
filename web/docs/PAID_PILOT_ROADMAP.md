@@ -67,7 +67,7 @@ This is a repository and deployed-application capability audit. It does not clai
 
 ### Catalogue update — 12 August 2026
 
-- Added 10 reusable programme-library templates covering full-body strength, upper/lower hypertrophy, home dumbbell, minimal equipment, suspension/rings, kettlebell, power, climbing-support and general-fitness contexts.
+- Added 30 reusable programme-library templates covering full-body and intermediate strength, established-framework adaptations, upper/lower and push/pull/legs hypertrophy, home/travel/minimal equipment, suspension/rings, kettlebell, power, concurrent conditioning, running support, climbing support and general fitness contexts. Source links and adaptation boundaries are recorded in `docs/PROGRAMME_LIBRARY_SOURCES.md`.
 - Added the dedicated Programme Library surface with goal/search filters, previews, duplication and editor-backed session changes. The existing client-specific Programmes view remains the version-management surface.
 - Applied `drizzle/0016_expand_exercise_catalogue_again.sql`, `0017_add_exercise_catalogue_complement.sql` and `0018_complete_exercise_catalogue_double.sql` to the live Neon database. The structured catalogue now reports 170 exercises, including 168 global exercises and the existing owner-scoped custom entries.
 - The seed is idempotent and owner-scoped: `pnpm db:seed-programme-library` adds missing library templates for each active owner without overwriting PT-created or previously edited templates.

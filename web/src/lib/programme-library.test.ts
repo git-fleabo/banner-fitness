@@ -4,9 +4,11 @@ import { mapLibraryTemplateToClientSessions, programmeLibrarySeed } from "./prog
 
 describe("programme library", () => {
   it("ships a varied reusable catalogue", () => {
-    expect(programmeLibrarySeed).toHaveLength(10);
+    expect(programmeLibrarySeed).toHaveLength(30);
     expect(new Set(programmeLibrarySeed.map((template) => template.goal)).size).toBeGreaterThanOrEqual(5);
     expect(programmeLibrarySeed.every((template) => template.sessions.every((session) => session.exercises.length > 0))).toBe(true);
+    expect(programmeLibrarySeed.some((template) => template.id === "library-5x5-strength-3-day")).toBe(true);
+    expect(programmeLibrarySeed.some((template) => template.id === "library-concurrent-strength-conditioning-4-day")).toBe(true);
   });
 
   it("maps a reusable template to the client's preferred days when the frequency matches", () => {

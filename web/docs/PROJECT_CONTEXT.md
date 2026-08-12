@@ -31,7 +31,7 @@ The dedicated Programme Library is available from the designer navigation. It cu
 - editor-backed changes to all sessions and prescriptions.
 - apply-to-client: choose a client, open the sessions in the client-specific editor, adapt them and save a new draft that runs contextual quality checks.
 
-The current seeded catalogue contains 10 templates:
+The current seeded catalogue contains 30 templates:
 
 1. Foundational strength · 2 day
 2. Full-body strength · 3 day
@@ -43,6 +43,8 @@ The current seeded catalogue contains 10 templates:
 8. Power foundation · 2 day
 9. Climbing support strength · 2 day
 10. General fitness circuit · 3 day
+
+The additional 20 templates cover 5×5/linear/tiered/intermediate strength adaptations, beginner express and machine/dumbbell options, full-body and push/pull/legs hypertrophy, upper/lower emphasis, barbell minimalist, bodyweight, travel bands, suspension/rings, concurrent conditioning, running support and field-sport power. Sources and adaptation boundaries are recorded in `docs/PROGRAMME_LIBRARY_SOURCES.md`.
 
 The seed definition is shared in `src/lib/programme-library.ts`; `scripts/seed-programme-library.ts` applies it idempotently to each active owner. It does not overwrite an existing template with the same name. Applying a template maps to recorded preferred days when the session frequency matches; mismatched frequency uses a complete weekday fallback so the PT can review the schedule explicitly.
 
