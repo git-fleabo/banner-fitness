@@ -1,0 +1,25 @@
+import { describe, expect, it } from "vitest";
+
+import { mapLibraryTemplateToClientSessions, programmeLibrarySeed } from "./programme-library";
+
+describe("programme library", () => {
+  it("ships a varied reusable catalogue", () => {
+    expect(programmeLibrarySeed).toHaveLength(10);
+    expect(new Set(programmeLibrarySeed.map((template) => template.goal)).size).toBeGreaterThanOrEqual(5);
+    expect(programmeLibrarySeed.every((template) => template.sessions.every((session) => session.exercises.length > 0))).toBe(true);
+  });
+
+  it("maps a reusable template to the client's preferred days when the frequency matches", () => {
+    const template = programmeLibrarySeed.find((candidate) => candidate.id === "library-full-body-strength-3-day");
+    expect(template).toBeDefined();
+    const sessions = mapLibraryTemplateToClientSessions(template!, [1, 3, 5]);
+    expect(sessions.map((session) => session.dayOfWeek)).toEqual([1, 3, 5]);
+    expect(sessions[0]?.exercises[0]?.name).toBe("Barbell Back Squat");
+  });
+
+  it("uses a complete weekday fallback when the template frequency differs", () => {
+    const template = programmeLibrarySeed.find((candidate) => candidate.id === "library-upper-lower-hypertrophy-4-day");
+    expect(template).toBeDefined();
+    expect(mapLibraryTemplateToClientSessions(template!, [1, 3, 5]).map((session) => session.dayOfWeek)).toEqual([1, 2, 3, 4]);
+  });
+});

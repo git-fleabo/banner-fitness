@@ -1,4 +1,4 @@
-import type { EditorExercise, ProgrammeTemplateDefinition } from "./programme-editor";
+import type { EditorExercise, ProgrammeTemplateDefinition, SavedSession } from "./programme-editor";
 
 const exercise = (
   name: string,
@@ -150,3 +150,8 @@ export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [
     ],
   },
 ];
+
+export function mapLibraryTemplateToClientSessions(template: ProgrammeTemplateDefinition, preferredDays: number[]): SavedSession[] {
+  const days = preferredDays.length === template.sessions.length ? preferredDays : template.sessions.map((_, index) => index + 1);
+  return template.sessions.map((session, index) => ({ dayOfWeek: days[index], name: session.name, exercises: session.exercises }));
+}

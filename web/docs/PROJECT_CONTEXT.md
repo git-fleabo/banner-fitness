@@ -29,6 +29,7 @@ The dedicated Programme Library is available from the designer navigation. It cu
 - session-level preview;
 - duplicate as a separate owner template;
 - editor-backed changes to all sessions and prescriptions.
+- apply-to-client: choose a client, open the sessions in the client-specific editor, adapt them and save a new draft that runs contextual quality checks.
 
 The current seeded catalogue contains 10 templates:
 
@@ -43,7 +44,7 @@ The current seeded catalogue contains 10 templates:
 9. Climbing support strength · 2 day
 10. General fitness circuit · 3 day
 
-The seed definition is shared in `src/lib/programme-library.ts`; `scripts/seed-programme-library.ts` applies it idempotently to each active owner. It does not overwrite an existing template with the same name. The next useful library increment is an explicit “apply to client” flow that opens a new client-specific draft and runs the normal quality review.
+The seed definition is shared in `src/lib/programme-library.ts`; `scripts/seed-programme-library.ts` applies it idempotently to each active owner. It does not overwrite an existing template with the same name. Applying a template maps to recorded preferred days when the session frequency matches; mismatched frequency uses a complete weekday fallback so the PT can review the schedule explicitly.
 
 ## Exercise catalogue status
 
@@ -68,13 +69,12 @@ The current database migration ledger includes `0016_expand_exercise_catalogue_a
 
 ## Verification and handoff boundaries
 
-The current implementation has passed local TypeScript, ESLint (with the repository's existing image optimisation warnings), Vitest and Next production build checks. Live Neon migration and programme-library seeding have been run and verified read-only by count and template name. The next deployment must still be checked at the public Cloudflare URL, including authenticated navigation to Programme Library, preview, duplicate and edit; no claim of those live UI interactions should be made until that smoke test is completed.
+The current implementation has passed local TypeScript, ESLint (with the repository's existing image optimisation warnings), Vitest and Next production build checks. Live Neon migration and programme-library seeding have been run and verified read-only by count and template name. The current release should still be smoke-tested at the public Cloudflare URL after each deploy; the latest pass covers authenticated navigation to Programme Library, seeded cards, the client chooser and the narrow-sidebar geometry. Duplicate/edit/save-to-client mutations remain separate signed-in smoke-test actions unless explicitly exercised.
 
 Case-study clients remain test fixtures only. Do not present them as onboarding examples for real PTs. Keep professional-scope language: Banner Fitness supports qualified-PT decision-making; it does not diagnose, prescribe medical treatment or bypass PAR-Q, referral or clearance processes.
 
 ## Immediate next steps
 
-1. Deploy the current catalogue/library build to Cloudflare and verify the signed-in Programme Library at desktop and mobile widths.
-2. Add an explicit apply-to-client action that creates a new client-specific draft from a library template and invokes contextual quality checks.
-3. Add archive/status and richer filters (frequency, duration, equipment) once the initial library workflow has been smoke-tested.
-4. Keep `skills/banner-fitness-pt-prompt/SKILL.md` and its public mirror updated whenever the prompt bundle, programme fields, quality rules, evidence version or library workflow changes.
+1. Add archive/status and richer filters (frequency, duration, equipment) once the initial library workflow has been smoke-tested.
+2. Exercise duplicate, edit and save-to-client mutations in a disposable signed-in test account, then record the result here.
+3. Keep `skills/banner-fitness-pt-prompt/SKILL.md` and its public mirror updated whenever the prompt bundle, programme fields, quality rules, evidence version or library workflow changes.

@@ -55,8 +55,8 @@ This is a repository and deployed-application capability audit. It does not clai
 
 ## P1 — the paid-pilot value loop
 
-1. Programme templates for beginner full-body, home gym, minimal equipment, general strength, hypertrophy and conditioning, including persistent PT-created templates that can be named, reused and removed safely. **Programme Library implemented with a seeded catalogue, search/filter, preview, duplicate and full session editing; apply-to-client remains the next workflow refinement.**
-   - The library is separate from client-specific programme versions. Seeded templates are owner-scoped and editable starting points; applying one to a client must still create a client-specific draft that is adapted and quality-checked in context.
+1. Programme templates for beginner full-body, home gym, minimal equipment, general strength, hypertrophy and conditioning, including persistent PT-created templates that can be named, reused and removed safely. **Programme Library implemented with a seeded catalogue, search/filter, preview, duplicate, full session editing and apply-to-client draft flow.**
+   - The library is separate from client-specific programme versions. Applying a template now selects a client, opens the editable sessions against that client context and saves a new client-specific draft that triggers the normal contextual quality review.
 2. A polished programme-builder loop: copy/duplicate sessions and blocks, map sessions to preferred days, edit prescriptions in place, and preview the resulting week before saving a new version. **Implemented — ready for signed-in smoke test.** The editor now copies a session across scheduled days, applies the change across the saved block when a new version is created, and shows an explicit week review before persistence; historical versions remain separate.
 3. AI response import with schema validation, a diff preview and explicit PT approval before any data is saved. If no programme exists, the prompt should request a complete draft rather than assuming an existing programme.
 4. Reassessment and check-in forms for readiness, pain, recovery, adherence, enjoyment and confidence, with changes surfaced in the client timeline and quality review.
@@ -72,6 +72,8 @@ This is a repository and deployed-application capability audit. It does not clai
 - Applied `drizzle/0016_expand_exercise_catalogue_again.sql`, `0017_add_exercise_catalogue_complement.sql` and `0018_complete_exercise_catalogue_double.sql` to the live Neon database. The structured catalogue now reports 170 exercises, including 168 global exercises and the existing owner-scoped custom entries.
 - The seed is idempotent and owner-scoped: `pnpm db:seed-programme-library` adds missing library templates for each active owner without overwriting PT-created or previously edited templates.
 - The maintained AI contract now explicitly explains how to treat a reusable template as an editable starting point rather than an approved client programme.
+- Applying a library template now opens the client-specific editor and maps sessions to the client's preferred days when the frequency matches; a different frequency uses a complete weekday fallback for PT review.
+- The narrow desktop sidebar now centres the Banner Fitness logo within its actual box, and the unused workspace collapse glyph has been removed rather than presenting a non-functional control.
 
 ## P2 — expansion after evidence of demand
 
