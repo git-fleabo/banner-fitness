@@ -195,7 +195,7 @@ export default function DesignerPage() {
         <nav className="designer-nav" aria-label="Main navigation">
           {["Overview", "Clients", "Programmes", "Programme library", "Exercise library"].map((item, index) => (
               <button key={item} className={activeNav === item ? "active" : ""} onClick={() => { setActiveNav(item); setShowLibrary(item === "Exercise library"); setShowClients(item === "Clients"); setShowProgrammes(item === "Programmes"); setShowProgrammeLibrary(item === "Programme library"); }}>
-              <Icon name={(["overview", "clients", "programmes", "library", "library"] as SemanticIconName[])[index]} />{item}
+              <Icon name={(["overview", "clients", "programmes", "library", "exercise-library"] as SemanticIconName[])[index]} />{item}
               {item === "Clients" && <em>{overview ? overview.counts.clients : "—"}</em>}
             </button>
           ))}

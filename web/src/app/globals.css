@@ -354,6 +354,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .designer-help-modal h2 { color:var(--navy); font:500 23px Georgia; margin-top:7px; }
 .designer-help-modal header p:not(.eyebrow) { color:#86918d; font-size:11px; line-height:1.5; margin-top:7px; max-width:620px; }
 .designer-help-sections { display:grid; gap:8px; }
+.help-search { display:block; margin:0 0 18px; color:#8a9591; font-size:9px; letter-spacing:.1em; font-weight:700; }
+.help-search input { display:block; width:100%; margin-top:7px; border:1px solid var(--designer-line); border-radius:6px; padding:11px 12px; color:#385450; background:#fbfcfa; font:11px inherit; }
+.mobile-nav-panel > button:last-of-type { font-size:0; }
+.mobile-nav-panel > button:last-of-type::after { content:"Quality rules"; font-size:12px; }
+.help-topic-group { display:grid; gap:8px; }
+.help-topic-group > .eyebrow { margin:8px 0 0; }
 .designer-help-sections details { border:1px solid #e7e5df; border-radius:7px; background:#fbfcfa; padding:0 12px; }
 .designer-help-sections details[open] { border-color:#cfe3d2; background:#f7fbf7; }
 .designer-help-sections summary { padding:12px 0; color:var(--navy); font:700 11px inherit; cursor:pointer; list-style-position:inside; }
@@ -381,5 +387,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .ai-import-notice { margin-top:13px; padding:12px 14px; border:1px solid #f1d5aa; border-radius:6px; background:#fff8ed; color:#8e6b3e; }
 .ai-import-notice strong { font-size:11px; }
 .ai-import-notice p { margin-top:5px; color:#9c805d; font-size:10px; line-height:1.5; }
+.workout-log-modal:has(select option[value="missed"]:checked) .set-log,.workout-log-modal:has(select option[value="skipped"]:checked) .set-log { display:none; }
 @media (max-width: 680px) { .designer-help-modal,.ai-import-modal,.client-preview-panel,.calendar-panel,.workspace-drawer,.onboarding-drawer,.log-modal { max-height:calc(100dvh - 20px); } }
 @media (max-width: 680px) { .workspace-body { grid-template-columns:minmax(0,1fr); }.client-column,.plan-column { min-width:0; } }

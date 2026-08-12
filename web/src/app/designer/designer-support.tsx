@@ -40,6 +40,8 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     const template = [...starterProgrammeTemplates, ...customTemplates].find((candidate) => candidate.id === templateId);
     const next = template ? buildProgrammeTemplateState(template, preferredDays, days) : null;
     if (!next) { setSelectedTemplateId(""); return; }
+    const hasUnsavedExercises = sessionDays.some((day) => (sessions[String(day)] ?? []).length > 0);
+    if (hasUnsavedExercises && !window.confirm("Choosing this template will replace the current unsaved sessions. Continue?")) return;
     setSelectedTemplateId(templateId);
     setSessionDays(next.days);
     setActiveDay(next.days[0] ?? 1);
@@ -83,6 +85,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   const moveExercise = (index: number, delta: number) => { const nextIndex = index + delta; if (nextIndex < 0 || nextIndex >= currentExercises.length) return; const reordered = [...currentExercises]; [reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]]; setSessions((current) => ({ ...current, [String(activeDay)]: reordered })); };
   function copyCurrentSession() {
     if (resolvedCopyTargetDay === activeDay) return;
+    if ((sessions[String(resolvedCopyTargetDay)] ?? []).length && !window.confirm(`Replace the unsaved ${weekdayLabels[resolvedCopyTargetDay]} session?`)) return;
     const next = copySessionToDay({ days: sessionDays, sessions, names, sourceDay: activeDay, targetDay: resolvedCopyTargetDay });
     setSessions(next.sessions);
     setNames(next.names);
