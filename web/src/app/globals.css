@@ -366,6 +366,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .designer-help-sections details[open] { border-color:#cfe3d2; background:#f7fbf7; }
 .designer-help-sections summary { padding:12px 0; color:var(--navy); font:700 11px inherit; cursor:pointer; list-style-position:inside; }
 .designer-help-sections details p { padding:0 0 13px 20px; color:#64766f; font-size:10px; line-height:1.55; }
+.help-topic-body { padding:0 0 13px 20px; color:#64766f; font-size:10px; line-height:1.55; }
+.help-topic-body ol { margin:0; padding-left:18px; }
+.help-topic-body li { margin:0 0 9px; padding-left:3px; }
+.help-topic-body li:last-child { margin-bottom:0; }
+.help-topic-body strong { color:#48655c; }
 .designer-help-modal footer { display:flex; justify-content:flex-end; margin-top:18px; }
 @media (max-width: 680px) { .pt-tools-grid { grid-template-columns:repeat(2,minmax(0,1fr)); flex:auto; width:100%; }.designer-help-modal { padding:18px; max-height:calc(100vh - 20px); } }
 .pt-tools-grid > button,.pt-tools-grid > a { height:38px; min-height:38px; font-family:inherit !important; font-size:10px !important; font-weight:700 !important; line-height:1.15 !important; }
