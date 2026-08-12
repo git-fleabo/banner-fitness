@@ -387,6 +387,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .ai-import-notice { margin-top:13px; padding:12px 14px; border:1px solid #f1d5aa; border-radius:6px; background:#fff8ed; color:#8e6b3e; }
 .ai-import-notice strong { font-size:11px; }
 .ai-import-notice p { margin-top:5px; color:#9c805d; font-size:10px; line-height:1.5; }
+.ai-handoff-copy { margin:13px 0 0; padding:11px 13px; border:1px solid #d3e6d4; border-radius:6px; background:#edf5ed; color:#52705f; font-size:10px; line-height:1.5; }
 .workout-log-modal:has(select option[value="missed"]:checked) .set-log,.workout-log-modal:has(select option[value="skipped"]:checked) .set-log { display:none; }
 @media (max-width: 680px) { .designer-help-modal,.ai-import-modal,.client-preview-panel,.calendar-panel,.workspace-drawer,.onboarding-drawer,.log-modal { max-height:calc(100dvh - 20px); } }
 @media (max-width: 680px) { .workspace-body { grid-template-columns:minmax(0,1fr); }.client-column,.plan-column { min-width:0; } }
