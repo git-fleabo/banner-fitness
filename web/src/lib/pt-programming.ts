@@ -1,5 +1,3 @@
-import { evaluateProgrammeQuality } from "./pt-quality";
-
 export type ScreeningAnswers = {
   chestPain?: boolean;
   cardiovascularHistory?: boolean;
@@ -49,53 +47,6 @@ export function getScreeningFlags(answers: ScreeningAnswers): ScreeningFlag[] {
   return flags;
 }
 
-export type QualityExercise = {
-  name: string;
-  pattern: string;
-  equipment: string[];
-  technicalComplexity: "low" | "moderate" | "high";
-  primaryMuscles: string[];
-  sets: number;
-};
-
-export type QualitySession = {
-  name: string;
-  durationMinutes: number;
-  targetDurationMinutes: number;
-  exercises: QualityExercise[];
-  dayOfWeek: number;
-};
-
-export type QualityProgramme = {
-  goal: string;
-  trainingDays: number;
-  experience: "beginner" | "intermediate" | "advanced";
-  availableEquipment: string[];
-  sessions: QualitySession[];
-  screeningFlags?: ScreeningFlag[];
-};
-
-export type QualityWarning = {
-  code: string;
-  severity: "info" | "warning" | "critical";
-  message: string;
-};
-
-export type QualityResult = { score: number; warnings: QualityWarning[] };
-
-export function checkProgrammeQuality(programme: QualityProgramme): QualityResult {
-  // Keep the legacy public shape for existing callers while routing evaluation through
-  // the contextual engine used by the designer and persistence layer.
-  const review = evaluateProgrammeQuality({
-    client: { preferredDays: Array.from({ length: programme.trainingDays }, (_, index) => index + 1), trainingExperience: programme.experience },
-    assessment: programme.screeningFlags?.length ? { riskFlags: programme.screeningFlags.map((flag) => ({ code: flag.code, action: flag.action })) } : null,
-    goal: { goalType: programme.goal },
-    location: { equipment: programme.availableEquipment },
-    programme: { goalSummary: programme.goal, durationWeeks: 1, trainingDays: programme.trainingDays, sessions: programme.sessions.map((session) => ({ ...session, exercises: session.exercises.map((exercise) => ({ ...exercise, repsMin: 8, repsMax: 12, progressionRule: null })) })) },
-  });
-  return { score: review.score, warnings: review.findings.map((item) => ({ code: item.ruleId, severity: item.severity === "blocking" ? "critical" : item.severity === "significant" ? "warning" : "info", message: item.message })) };
-}
-
 export type ProgressionInput = {
   prescribedSets: number;
   repsMin: number;
@@ -107,9 +58,10 @@ export type ProgressionInput = {
   readiness?: "low" | "usual" | "high";
 };
 
-export type ProgressionDecision = { action: "progress" | "hold" | "regress"; reason: string; nextLoadKg?: number };
+export type ProgressionDecision = { action: "progress" | "hold" | "regress" | "no-data"; reason: string; nextLoadKg?: number };
 
 export function evaluateProgression(input: ProgressionInput): ProgressionDecision {
+  if (input.completed.length === 0) return { action: "no-data", reason: "No completed sets were recorded. Do not recommend progression until this exposure has been logged." };
   if (input.completed.some((set) => set.painReported)) return { action: "hold", reason: "Pain or discomfort was reported. Do not automatically progress; assess and document the appropriate next step." };
   if (input.completed.some((set) => !set.techniqueAcceptable)) return { action: "hold", reason: "Technique was not acceptable across every completed set. Repeat or regress with a coaching decision." };
   if (input.readiness === "low") return { action: "regress", reason: "Readiness was low. Reduce load, sets or complexity for this exposure." };

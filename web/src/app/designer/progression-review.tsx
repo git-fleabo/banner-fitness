@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Decision = { prescriptionId: string; exerciseName: string; pattern: string; prescription: string; intensityValue: string; progressionRule: string | null; lastDate: string | null; decision: { action: "progress" | "hold" | "regress"; reason: string; nextLoadKg?: number } | null };
+type Decision = { prescriptionId: string; exerciseName: string; pattern: string; prescription: string; intensityValue: string; progressionRule: string | null; lastDate: string | null; decision: { action: "progress" | "hold" | "regress" | "no-data"; reason: string; nextLoadKg?: number } | null };
 
 export function ProgressionReviewLauncher({ clientId }: { clientId: string }) {
   const [open, setOpen] = useState(false);

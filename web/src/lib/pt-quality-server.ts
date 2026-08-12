@@ -5,6 +5,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { ptAssessments, ptClientPerformanceRecords, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeQualityAcknowledgements, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
 import { getDb } from "@/lib/db/client";
 import { defaultQualitySettings, evaluateProgrammeQuality, normalizeQualitySettings, QUALITY_EVIDENCE, QUALITY_RULESET, type QualityContext, type QualityFinding, type QualityReview, type QualitySettings } from "@/lib/pt-quality";
+import { readAssessmentNotes } from "@/lib/pt-data";
 
 const asList = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 const asRecord = (value: unknown) => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -23,6 +24,7 @@ export async function loadProgrammeQualityContext(db: ReturnType<typeof getDb>, 
   if (!client) return null;
   const [assessmentRow] = await db.select({ clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, responses: ptAssessments.responses, reviewDate: ptAssessments.reviewDate, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, programme.clientId)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
   const assessmentValues = asRecord(assessmentRow?.responses);
+  const assessmentNotes = readAssessmentNotes(assessmentRow?.responses);
   const [goal] = await db.select({ goalType: ptGoals.goalType, target: ptGoals.target, metric: ptGoals.metric }).from(ptGoals).where(and(eq(ptGoals.clientId, programme.clientId), eq(ptGoals.priority, "primary"))).orderBy(desc(ptGoals.updatedAt)).limit(1);
   const [location] = await db.select({ name: ptLocations.name, locationType: ptLocations.locationType, equipment: ptLocations.equipment }).from(ptLocations).where(eq(ptLocations.clientId, programme.clientId)).orderBy(desc(ptLocations.updatedAt)).limit(1);
   const [preferences] = await db.select({ likedExercises: ptPreferences.likedExercises, dislikedExercises: ptPreferences.dislikedExercises, preferredEquipment: ptPreferences.preferredEquipment, confidenceNotes: ptPreferences.confidenceNotes }).from(ptPreferences).where(eq(ptPreferences.clientId, programme.clientId)).limit(1);
@@ -38,7 +40,7 @@ export async function loadProgrammeQualityContext(db: ReturnType<typeof getDb>, 
   const riskFlags = Array.isArray(assessmentRow?.riskFlags) ? assessmentRow.riskFlags as Array<{ code?: string; action?: string; label?: string }> : [];
   return {
     client: { preferredDays: asNumberList(client.preferredDays), trainingExperience: client.trainingExperience, dailyActivity: client.dailyActivity, sessionDurationMinutes: client.sessionDurationMinutes, sleepHours: client.sleepHours, stressLevel: client.stressLevel },
-    assessment: assessmentRow ? { responses: assessmentValues, riskFlags, clearanceRequired: assessmentRow.clearanceRequired ?? undefined, reviewDate: assessmentRow.reviewDate, ptNotes: assessmentRow.ptNotes, injuryNotes: typeof assessmentValues.injuryNotes === "string" ? assessmentValues.injuryNotes : null, contraindicationNotes: typeof assessmentValues.contraindicationNotes === "string" ? assessmentValues.contraindicationNotes : null } : null,
+    assessment: assessmentRow ? { responses: assessmentValues, riskFlags, clearanceRequired: assessmentRow.clearanceRequired ?? undefined, reviewDate: assessmentRow.reviewDate, ptNotes: assessmentRow.ptNotes, ...assessmentNotes } : null,
     goal: goal ?? null,
     location: location ? { ...location, equipment: asList(location.equipment) } : null,
     preferences: preferences ? { ...preferences, likedExercises: asList(preferences.likedExercises), dislikedExercises: asList(preferences.dislikedExercises), preferredEquipment: asList(preferences.preferredEquipment) } : null,

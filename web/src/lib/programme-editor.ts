@@ -1,3 +1,5 @@
+import { parsePrescriptionSetCount } from "./pt-data";
+
 export type EditorExercise = { name: string; pattern: string; prescription: string; target: string; equipment: string; sets?: number; repsMin?: number; repsMax?: number; intensityValue?: string; restSeconds?: number; tempo?: string; progressionRule?: string; note?: string };
 export type SavedSession = { dayOfWeek: number; name: string; exercises: EditorExercise[] };
 export type ProgrammeTemplateDefinition = { id: string; label: string; description: string; goal: string; sessionDurationMinutes?: number; experienceLevel?: string; frameworkType?: string; sessions: Array<{ name: string; exercises: EditorExercise[] }> };
@@ -101,7 +103,7 @@ export function buildWeekPreview({ days, sessions, names }: { days: number[]; se
       name: names[String(day)] || `${weekdayLabels[day]} session`,
       exercises,
       exerciseCount: exercises.length,
-      totalSets: exercises.reduce((sum, exercise) => sum + (exercise.sets ?? Number(exercise.prescription.match(/^\d+/)?.[0] ?? 0)), 0),
+      totalSets: exercises.reduce((sum, exercise) => sum + (exercise.sets ?? parsePrescriptionSetCount(exercise.prescription) ?? 0), 0),
     };
   });
 }

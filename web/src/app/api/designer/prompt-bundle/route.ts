@@ -1,11 +1,12 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getAccountAccess } from "@/lib/authorization/server";
+import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { getCurrentProgrammeQuality } from "@/lib/pt-quality-server";
 import { ptAssessments, ptClientPerformanceRecords, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { buildProgrammeTask, programmeImportInstruction, programmePromptTitle, promptEvidenceInstruction } from "@/lib/pt-prompt";
+import { readAssessmentNotes } from "@/lib/pt-data";
 
 export const dynamic = "force-dynamic";
 
@@ -130,8 +131,9 @@ function buildMarkdown(bundle: Record<string, unknown>, redacted: boolean) {
 }
 
 export async function GET(request: NextRequest) {
-  const access = await getAccountAccess();
-  if (access.state !== "active" || access.account.role !== "owner") return NextResponse.json({ error: "PT owner access required" }, { status: 403 });
+  const owner = await requireOwner();
+  if (!isActiveOwner(owner)) return owner;
+  const access = { state: "active" as const, account: owner };
   const clientId = request.nextUrl.searchParams.get("clientId");
   if (!clientId) return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   const redacted = request.nextUrl.searchParams.get("redact") === "true";
@@ -158,7 +160,7 @@ export async function GET(request: NextRequest) {
   for (const set of resultSets) { const current = resultSetsByResult.get(set.workoutResultId) ?? []; current.push(`${set.exerciseName}: ${set.actualReps ?? "—"} reps @ ${set.actualLoadKg ?? "—"} kg, RPE ${set.actualRpe ?? "—"}, RIR ${set.actualRir ?? "—"}, technique ${set.techniqueAcceptable ? "acceptable" : "not acceptable"}, pain ${set.painReported ? "reported" : "not reported"}`); resultSetsByResult.set(set.workoutResultId, current); }
   const programmeData = programme ? { ...programme, events, weeks: weeks.map((week) => ({ ...week, sessions: sessions.filter((session) => session.programmeWeekId === week.id).map((session) => ({ ...session, exercises: prescriptions.filter((exercise) => exercise.sessionId === session.id).map((exercise) => ({ ...exercise, reps: exercise.repsMin ? `${exercise.repsMin}${exercise.repsMax && exercise.repsMax !== exercise.repsMin ? `–${exercise.repsMax}` : ""}` : "as prescribed", intensity: exercise.intensityValue })) })) })) } : null;
   const currentQuality = programme ? await getCurrentProgrammeQuality(db, access.account.authUserId, programme.id) : null;
-  const screening = assessment ? { ...assessment, injuryNotes: assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? (assessment.responses as Record<string, unknown>).injuryNotes ?? null : null, contraindicationNotes: assessment.responses && typeof assessment.responses === "object" && !Array.isArray(assessment.responses) ? (assessment.responses as Record<string, unknown>).contraindicationNotes ?? null : null } : { clearanceRequired: false, riskFlags: [], responses: {}, ptNotes: null, injuryNotes: null, contraindicationNotes: null };
+  const screening = assessment ? { ...assessment, ...readAssessmentNotes(assessment.responses) } : { clearanceRequired: false, riskFlags: [], responses: {}, ptNotes: null, injuryNotes: null, contraindicationNotes: null };
   const qualityChecks = currentQuality?.review ? { ...currentQuality.review, warnings: currentQuality.review.findings.map((finding) => finding.message) } : { score: null, approvalReadiness: "no_programme", warnings: [] };
   const bundle = { client: { ...client, name: redacted ? "Redacted client" : `${client.firstName} ${client.lastName}`, firstName: redacted ? "Redacted" : client.firstName, lastName: redacted ? "client" : client.lastName }, screening, goals, preferences: preferences ?? {}, performanceRecords, locations, currentProgramme: programmeData, programmeHistory, qualityChecks, recentWorkoutResults: results.map((result) => ({ ...result, sets: resultSetsByResult.get(result.id) ?? [] })), privacy: { redacted, excluded: redacted ? ["client name", "date of birth"] : [] } };
   return NextResponse.json({ markdown: buildMarkdown(bundle, redacted), json: bundle, meta: { redacted, programmeVersion: programme?.version ?? null, programmeCount: programmeHistory.length, workoutResultCount: results.length, performanceRecordCount: performanceRecords.length } });

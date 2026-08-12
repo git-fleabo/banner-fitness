@@ -5,6 +5,7 @@ export function listText(value: unknown) {
 }
 
 export function remapSessionDays<T>(byDay: Record<string, T[]>, sourceDays: number[], targetDays: number[]) {
+  if (sourceDays.length !== targetDays.length) throw new Error("Source and target session days must have the same length");
   return Object.fromEntries(targetDays.map((day, index) => [String(day), byDay[String(sourceDays[index])] ?? []]));
 }
 

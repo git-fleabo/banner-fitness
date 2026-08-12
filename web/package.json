@@ -2,6 +2,7 @@
   "name": "pt-learning-lab",
   "version": "0.1.0",
   "private": true,
+  "engines": { "node": ">=20 <23" },
   "scripts": {
     "sync:pt-prompt-skill": "node scripts/sync-pt-prompt-skill.mjs",
     "dev": "next dev",

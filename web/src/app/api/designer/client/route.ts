@@ -1,17 +1,19 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getAccountAccess } from "@/lib/authorization/server";
+import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { getCurrentProgrammeQuality } from "@/lib/pt-quality-server";
 import { buildClientTimeline } from "@/lib/pt-client-timeline";
+import { readAssessmentNotes } from "@/lib/pt-data";
 import { ptAssessments, ptClientPerformanceRecords, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const access = await getAccountAccess();
-  if (access.state !== "active" || access.account.role !== "owner") return NextResponse.json({ error: "PT owner access required" }, { status: 403 });
+  const owner = await requireOwner();
+  if (!isActiveOwner(owner)) return owner;
+  const access = { state: "active" as const, account: owner };
   const clientId = request.nextUrl.searchParams.get("clientId");
   if (!clientId) return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   const db = getDb();
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   const assessmentRows = await db.select({ id: ptAssessments.id, clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, responses: ptAssessments.responses, reviewDate: ptAssessments.reviewDate, assessmentDate: ptAssessments.assessmentDate, ptNotes: ptAssessments.ptNotes, createdAt: ptAssessments.createdAt, updatedAt: ptAssessments.updatedAt }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate), desc(ptAssessments.updatedAt));
   const [assessmentRow] = assessmentRows;
-  const assessment = assessmentRow ? { ...assessmentRow, injuryNotes: assessmentRow.responses && typeof assessmentRow.responses === "object" && !Array.isArray(assessmentRow.responses) ? String((assessmentRow.responses as Record<string, unknown>).injuryNotes ?? "") || null : null, contraindicationNotes: assessmentRow.responses && typeof assessmentRow.responses === "object" && !Array.isArray(assessmentRow.responses) ? String((assessmentRow.responses as Record<string, unknown>).contraindicationNotes ?? "") || null : null } : null;
+  const assessment = assessmentRow ? { ...assessmentRow, ...readAssessmentNotes(assessmentRow.responses) } : null;
   const goalRows = await db.select({ id: ptGoals.id, goalType: ptGoals.goalType, priority: ptGoals.priority, target: ptGoals.target, metric: ptGoals.metric, createdAt: ptGoals.createdAt, updatedAt: ptGoals.updatedAt }).from(ptGoals).where(eq(ptGoals.clientId, client.id)).orderBy(desc(ptGoals.updatedAt));
   const [goal] = goalRows.filter((item) => item.priority === "primary");
   const locationRows = await db.select({ id: ptLocations.id, name: ptLocations.name, locationType: ptLocations.locationType, equipment: ptLocations.equipment, createdAt: ptLocations.createdAt, updatedAt: ptLocations.updatedAt }).from(ptLocations).where(eq(ptLocations.clientId, client.id)).orderBy(desc(ptLocations.updatedAt));

@@ -60,18 +60,29 @@ export async function transitionLessonReview(formData: FormData) {
   const publishedAt = values.targetStatus === "published" ? now : null;
   const rationale = values.rationale?.trim() || (values.targetStatus === "in_review" ? "Submitted for owner review." : "Published after approved owner review.");
 
-  await db.transaction(async (tx) => {
-    if (objectIds.length > 0) await tx.update(learningObjectVersions).set({ status: values.targetStatus, publishedAt, updatedAt: now }).where(inArray(learningObjectVersions.id, objectIds));
-    if (questionIds.length > 0) await tx.update(questionVersions).set({ status: values.targetStatus, publishedAt, updatedAt: now }).where(inArray(questionVersions.id, questionIds));
-    const [updatedLesson] = await tx.update(lessonVersions).set({ status: values.targetStatus, publishedAt, updatedAt: now }).where(and(eq(lessonVersions.id, item.lessonVersionId), eq(lessonVersions.status, item.status))).returning({ id: lessonVersions.id });
+  const [oldObjects, oldQuestions, oldLesson] = await Promise.all([
+    objectIds.length ? db.select().from(learningObjectVersions).where(inArray(learningObjectVersions.id, objectIds)) : Promise.resolve([]),
+    questionIds.length ? db.select().from(questionVersions).where(inArray(questionVersions.id, questionIds)) : Promise.resolve([]),
+    db.select().from(lessonVersions).where(eq(lessonVersions.id, item.lessonVersionId)),
+  ]);
+  try {
+    if (objectIds.length > 0) await db.update(learningObjectVersions).set({ status: values.targetStatus, publishedAt, updatedAt: now }).where(inArray(learningObjectVersions.id, objectIds));
+    if (questionIds.length > 0) await db.update(questionVersions).set({ status: values.targetStatus, publishedAt, updatedAt: now }).where(inArray(questionVersions.id, questionIds));
+    const [updatedLesson] = await db.update(lessonVersions).set({ status: values.targetStatus, publishedAt, updatedAt: now }).where(and(eq(lessonVersions.id, item.lessonVersionId), eq(lessonVersions.status, item.status))).returning({ id: lessonVersions.id });
     if (!updatedLesson) throw new Error("The lesson changed while it was being reviewed. Refresh and try again.");
 
-    await tx.insert(reviewDecisions).values([
+    await db.insert(reviewDecisions).values([
       { targetType: "lesson_version", lessonVersionId: item.lessonVersionId, decision: values.targetStatus, rationale, reviewedBy: access.account.authUserId },
       ...objectIds.map((id) => ({ targetType: "learning_object_version" as const, learningObjectVersionId: id, decision: values.targetStatus, rationale, reviewedBy: access.account.authUserId })),
       ...questionIds.map((id) => ({ targetType: "question_version" as const, questionVersionId: id, decision: values.targetStatus, rationale, reviewedBy: access.account.authUserId })),
     ]);
-  });
+  } catch (error) {
+    for (const row of oldObjects) await db.update(learningObjectVersions).set({ status: row.status, publishedAt: row.publishedAt, updatedAt: row.updatedAt }).where(eq(learningObjectVersions.id, row.id));
+    for (const row of oldQuestions) await db.update(questionVersions).set({ status: row.status, publishedAt: row.publishedAt, updatedAt: row.updatedAt }).where(eq(questionVersions.id, row.id));
+    const previousLesson = oldLesson[0];
+    if (previousLesson) await db.update(lessonVersions).set({ status: previousLesson.status, publishedAt: previousLesson.publishedAt, updatedAt: previousLesson.updatedAt }).where(eq(lessonVersions.id, previousLesson.id));
+    throw error;
+  }
 
   revalidatePath("/owner/review");
   revalidatePath("/learn");

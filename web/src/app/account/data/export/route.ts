@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
@@ -6,7 +7,7 @@ import { bookmarks, lessonProgress, practiceAttempts, reviewQueue } from "@/lib/
 
 export async function GET() {
   const access = await getAccountAccess();
-  if (access.state !== "active") return Response.json({ error: "An active account is required." }, { status: 401 });
+  if (access.state !== "active") return NextResponse.json({ error: "An active account is required." }, { status: 401 });
   const learnerId = access.account.authUserId;
   const db = getDb();
   const [progress, attempts, reviews, savedBookmarks] = await Promise.all([
@@ -23,7 +24,7 @@ export async function GET() {
     reviewQueue: reviews,
     bookmarks: savedBookmarks,
   }, null, 2);
-  return new Response(body, {
+  return new NextResponse(body, {
     headers: {
       "content-type": "application/json; charset=utf-8",
       "content-disposition": `attachment; filename="pt-learning-lab-data-${new Date().toISOString().slice(0, 10)}.json"`,

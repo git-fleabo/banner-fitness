@@ -13,7 +13,7 @@ export default defineConfig({
     { name: "phone-chromium", use: { ...devices["Pixel 5"] } },
   ],
   webServer: {
-    command: "npm run dev",
+    command: "pnpm dev",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
   },

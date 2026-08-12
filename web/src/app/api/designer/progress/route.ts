@@ -1,26 +1,26 @@
 import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getAccountAccess } from "@/lib/authorization/server";
+import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { ptClients, ptExercisePrescriptions, ptExercises, ptWorkoutResultSets, ptWorkoutResults, ptSessions } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const access = await getAccountAccess();
-  if (access.state !== "active" || access.account.role !== "owner") return NextResponse.json({ error: "PT owner access required" }, { status: 403 });
+  const owner = await requireOwner();
+  if (!isActiveOwner(owner)) return owner;
   const clientId = request.nextUrl.searchParams.get("clientId");
   if (!clientId) return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   const db = getDb();
   const fromDate = request.nextUrl.searchParams.get("from");
   const toDate = request.nextUrl.searchParams.get("to");
   const dateFilters = [fromDate ? gte(ptWorkoutResults.scheduledDate, fromDate) : undefined, toDate ? lte(ptWorkoutResults.scheduledDate, toDate) : undefined].filter((filter): filter is ReturnType<typeof gte> => Boolean(filter));
-  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, access.account.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
 
-  const results = await db.select({ id: ptWorkoutResults.id, scheduledDate: ptWorkoutResults.scheduledDate, sessionName: ptSessions.name, status: ptWorkoutResults.status, sessionRpe: ptWorkoutResults.sessionRpe, energy: ptWorkoutResults.energy, painReported: ptWorkoutResults.painReported, durationMinutes: ptWorkoutResults.durationMinutes, volumeLoadKg: ptWorkoutResults.volumeLoadKg, repetitionLoad: ptWorkoutResults.repetitionLoad, averageRpe: ptWorkoutResults.averageRpe, averageRir: ptWorkoutResults.averageRir, notes: ptWorkoutResults.notes }).from(ptWorkoutResults).leftJoin(ptSessions, eq(ptSessions.id, ptWorkoutResults.sessionId)).where(and(eq(ptWorkoutResults.clientId, client.id), eq(ptWorkoutResults.ownerProfileId, access.account.authUserId), ...dateFilters)).orderBy(desc(ptWorkoutResults.scheduledDate), desc(ptWorkoutResults.createdAt)).limit(100);
-  const setRows = await db.select({ scheduledDate: ptWorkoutResults.scheduledDate, exerciseName: ptExercises.name, pattern: ptExercises.movementPattern, actualReps: ptWorkoutResultSets.actualReps, actualLoadKg: ptWorkoutResultSets.actualLoadKg, actualRpe: ptWorkoutResultSets.actualRpe, actualRir: ptWorkoutResultSets.actualRir }).from(ptWorkoutResultSets).innerJoin(ptWorkoutResults, eq(ptWorkoutResults.id, ptWorkoutResultSets.workoutResultId)).innerJoin(ptExercisePrescriptions, eq(ptExercisePrescriptions.id, ptWorkoutResultSets.prescriptionId)).innerJoin(ptExercises, eq(ptExercises.id, ptExercisePrescriptions.exerciseId)).where(and(eq(ptWorkoutResults.clientId, client.id), eq(ptWorkoutResults.ownerProfileId, access.account.authUserId), ...dateFilters)).orderBy(asc(ptWorkoutResults.scheduledDate));
+  const results = await db.select({ id: ptWorkoutResults.id, scheduledDate: ptWorkoutResults.scheduledDate, sessionName: ptSessions.name, status: ptWorkoutResults.status, sessionRpe: ptWorkoutResults.sessionRpe, energy: ptWorkoutResults.energy, painReported: ptWorkoutResults.painReported, durationMinutes: ptWorkoutResults.durationMinutes, volumeLoadKg: ptWorkoutResults.volumeLoadKg, repetitionLoad: ptWorkoutResults.repetitionLoad, averageRpe: ptWorkoutResults.averageRpe, averageRir: ptWorkoutResults.averageRir, notes: ptWorkoutResults.notes }).from(ptWorkoutResults).leftJoin(ptSessions, eq(ptSessions.id, ptWorkoutResults.sessionId)).where(and(eq(ptWorkoutResults.clientId, client.id), eq(ptWorkoutResults.ownerProfileId, owner.authUserId), ...dateFilters)).orderBy(desc(ptWorkoutResults.scheduledDate), desc(ptWorkoutResults.createdAt)).limit(100);
+  const setRows = await db.select({ scheduledDate: ptWorkoutResults.scheduledDate, exerciseName: ptExercises.name, pattern: ptExercises.movementPattern, actualReps: ptWorkoutResultSets.actualReps, actualLoadKg: ptWorkoutResultSets.actualLoadKg, actualRpe: ptWorkoutResultSets.actualRpe, actualRir: ptWorkoutResultSets.actualRir }).from(ptWorkoutResultSets).innerJoin(ptWorkoutResults, eq(ptWorkoutResults.id, ptWorkoutResultSets.workoutResultId)).innerJoin(ptExercisePrescriptions, eq(ptExercisePrescriptions.id, ptWorkoutResultSets.prescriptionId)).innerJoin(ptExercises, eq(ptExercises.id, ptExercisePrescriptions.exerciseId)).where(and(eq(ptWorkoutResults.clientId, client.id), eq(ptWorkoutResults.ownerProfileId, owner.authUserId), ...dateFilters)).orderBy(asc(ptWorkoutResults.scheduledDate));
 
   const exerciseMap = new Map<string, { exerciseName: string; pattern: string; sessions: Set<string>; totalReps: number; volumeLoadKg: number; bestLoadKg: number; latestLoadKg: number; latestDate: string | null; trend: Map<string, { reps: number; volumeLoadKg: number; bestLoadKg: number }> }>();
   for (const row of setRows) {

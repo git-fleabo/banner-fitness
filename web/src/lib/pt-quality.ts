@@ -177,7 +177,7 @@ function normaliseEquipment(value: string) {
 function equipmentState(context: QualityContext, required: string) {
   const available = list(context.location?.equipment).map(normaliseEquipment);
   const requiredValue = normaliseEquipment(required);
-  if (!available.length || !requiredValue) return "unknown" as const;
+  if (!requiredValue) return "unknown" as const;
   if (available.includes(requiredValue)) return "available" as const;
   const closedLocation = /home|minimal|outdoor/i.test(asText(context.location?.locationType));
   return closedLocation ? "unavailable" as const : "unknown" as const;
