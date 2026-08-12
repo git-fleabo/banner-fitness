@@ -35,7 +35,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   const [copyTargetDay, setCopyTargetDay] = useState(initialState.days[1] ?? initialState.days[0] ?? 1);
   const [previewOpen, setPreviewOpen] = useState(false);
   const currentExercises = sessions[String(activeDay)] ?? [];
-  const recommendedTemplates = useMemo(() => filterProgrammeLibraryTemplates(programmeLibrarySeed, { goal: effectiveGoal }).slice(0, 5), [effectiveGoal]);
+  const recommendedTemplates = useMemo(() => filterProgrammeLibraryTemplates(programmeLibrarySeed, { goal: effectiveGoal }).sort((a, b) => (a.difficultyLevel ?? 1) - (b.difficultyLevel ?? 1)).slice(0, 5), [effectiveGoal]);
   const starterProgrammeTemplates = [...recommendedTemplates, ...baseStarterProgrammeTemplates];
   const preview = buildWeekPreview({ days: sessionDays, sessions, names });
   const resolvedCopyTargetDay = sessionDays.includes(copyTargetDay) && copyTargetDay !== activeDay ? copyTargetDay : sessionDays.find((day) => day !== activeDay) ?? activeDay;

@@ -442,7 +442,12 @@ const fatLossCoverageSeed: ProgrammeTemplateDefinition[] = [
   return source ? [{ ...source, id, label, goal: "Fat loss + muscle retention", description: `${source.description} Adapt the volume, conditioning and weekly schedule to support a sustainable fat-loss phase.` }] : [];
 });
 
-export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed, ...fatLossCoverageSeed].map((template) => ({ ...template, goal: normalizePtGoal(template.goal), ...catalogueMetadata[template.id] }));
+const levelForExperience = (experienceLevel?: string): 1 | 2 | 3 => experienceLevel === "Experienced" || experienceLevel === "Advanced" ? 3 : experienceLevel === "Intermediate" ? 2 : 1;
+export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed, ...fatLossCoverageSeed].map((template) => {
+  const metadata = catalogueMetadata[template.id];
+  const experienceLevel = metadata?.experienceLevel ?? template.experienceLevel;
+  return { ...template, goal: normalizePtGoal(template.goal), ...metadata, difficultyLevel: template.difficultyLevel ?? levelForExperience(experienceLevel), variantGroup: template.variantGroup ?? `${normalizePtGoal(template.goal)} · ${template.sessions.length}-day` };
+});
 
 export type ProgrammeLibraryFilters = { query?: string; goal?: string; frequency?: number | "all"; equipment?: string; experienceLevel?: string; frameworkType?: string };
 

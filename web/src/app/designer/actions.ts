@@ -14,6 +14,7 @@ import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings 
 import { findingCanBeAcknowledged, getCurrentProgrammeQuality, refreshClientProgrammeQuality, refreshOwnerProgrammeQuality, refreshProgrammeQuality } from "@/lib/pt-quality-server";
 import { defaultEffortForExperience, listText, performanceBaselineText, remapSessionDays } from "@/lib/pt-performance";
 import { normalizePtGoal } from "@/lib/pt-goals";
+import type { ProgrammeTemplateDefinition } from "@/lib/programme-editor";
 
 const clientInputSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -392,11 +393,15 @@ export async function getDesignerSettingsAction() {
   return normalizeQualitySettings(settings?.qualityRules ?? defaultQualitySettings);
 }
 
-export async function listProgrammeTemplatesAction() {
+export async function listProgrammeTemplatesAction(): Promise<ProgrammeTemplateDefinition[]> {
   const owner = await requireDesignerAccess();
   const db = getDb();
   const templates = await db.select({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name, description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, experienceLevel: ptProgrammeTemplates.experienceLevel, frameworkType: ptProgrammeTemplates.frameworkType, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId)).orderBy(desc(ptProgrammeTemplates.updatedAt)).limit(50);
-  return templates.map((template) => ({ id: template.id, label: template.name, description: template.description ?? "", goal: normalizePtGoal(template.goalSummary), sessionDurationMinutes: template.sessionDurationMinutes, experienceLevel: template.experienceLevel, frameworkType: template.frameworkType, sessions: programmeTemplateSessionSchema.array().parse(template.sessions) }));
+  return templates.map((template) => {
+    const sessions = programmeTemplateSessionSchema.array().parse(template.sessions);
+    const difficultyLevel: 1 | 2 | 3 = template.experienceLevel === "Experienced" || template.experienceLevel === "Advanced" ? 3 : template.experienceLevel === "Intermediate" ? 2 : 1;
+    return { id: template.id, label: template.name, description: template.description ?? "", goal: normalizePtGoal(template.goalSummary), sessionDurationMinutes: template.sessionDurationMinutes, experienceLevel: template.experienceLevel, frameworkType: template.frameworkType, difficultyLevel, variantGroup: `${normalizePtGoal(template.goalSummary)} · ${sessions.length}-day`, sessions };
+  });
 }
 
 export async function saveProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateSchema>) {
