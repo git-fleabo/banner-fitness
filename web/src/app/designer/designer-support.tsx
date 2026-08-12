@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Icon } from "./semantic-icon";
 
 import { deleteProgrammeTemplateAction, listProgrammeTemplatesAction, saveProgrammeAction, saveProgrammeTemplateAction, updateProgrammeTemplateAction } from "./actions";
-import { buildEditorSessionState, buildProgrammeTemplateState, buildWeekPreview, copySessionToDay, starterProgrammeTemplates, weekdayLabels, type EditorExercise, type ProgrammeTemplateDefinition, type SavedSession } from "@/lib/programme-editor";
+import { buildEditorSessionState, buildProgrammeTemplateState, buildWeekPreview, copySessionToDay, starterProgrammeTemplates as baseStarterProgrammeTemplates, weekdayLabels, type EditorExercise, type ProgrammeTemplateDefinition, type SavedSession } from "@/lib/programme-editor";
 import type { AiProgrammeImportApproval } from "@/lib/pt-ai-import";
 import { filterProgrammeLibraryTemplates, programmeLibrarySeed } from "@/lib/programme-library";
 
@@ -36,6 +36,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   const [previewOpen, setPreviewOpen] = useState(false);
   const currentExercises = sessions[String(activeDay)] ?? [];
   const recommendedTemplates = useMemo(() => filterProgrammeLibraryTemplates(programmeLibrarySeed, { goal: effectiveGoal }).slice(0, 5), [effectiveGoal]);
+  const starterProgrammeTemplates = [...recommendedTemplates, ...baseStarterProgrammeTemplates];
   const preview = buildWeekPreview({ days: sessionDays, sessions, names });
   const resolvedCopyTargetDay = sessionDays.includes(copyTargetDay) && copyTargetDay !== activeDay ? copyTargetDay : sessionDays.find((day) => day !== activeDay) ?? activeDay;
   function applyTemplate(templateId: string) {
