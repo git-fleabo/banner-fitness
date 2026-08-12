@@ -8,8 +8,10 @@ type Preferences = { likedExercises?: unknown; dislikedExercises?: unknown; pref
 const list = (value: unknown) => Array.isArray(value) ? value.map(String).join(", ") : "";
 const values = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
 
-export function ClientPreferencesLauncher({ clientId, notify }: { clientId: string; notify: (message: string) => void }) {
-  const [open, setOpen] = useState(false);
+export function ClientPreferencesLauncher({ clientId, notify, open: controlledOpen, onOpenChange }: { clientId: string; notify: (message: string) => void; open?: boolean; onOpenChange?: (open: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  function setOpen(next: boolean) { setInternalOpen(next); onOpenChange?.(next); }
   return <>{open && <ClientPreferences clientId={clientId} onClose={() => setOpen(false)} notify={notify} />}<button className="client-preferences-floating" onClick={() => setOpen(true)}>Client preferences</button></>;
 }
 
