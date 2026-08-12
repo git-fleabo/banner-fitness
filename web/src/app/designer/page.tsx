@@ -341,6 +341,13 @@ function ClientWorkspace({clientId,name,goal,days,preferredDays,setGoal,setDays,
     manageButton.addEventListener("click", openBuilder, true);
     return () => manageButton.removeEventListener("click", openBuilder, true);
   }, [programme, loading, onEditSessions]);
+  useEffect(() => {
+    const drawer = document.querySelector<HTMLElement>(".workspace-drawer");
+    if (!drawer) return;
+    const colour = clientColor(name);
+    drawer.classList.add(colour);
+    return () => drawer.classList.remove(colour);
+  }, [name]);
   function scrollToSection(id: string, section: "overview" | "assessment" | "programme" | "history" = "overview") {
     onWorkspaceSectionChange(section);
     window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
