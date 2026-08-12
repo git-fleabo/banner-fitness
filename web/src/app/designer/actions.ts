@@ -519,7 +519,9 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   }
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version, contextCapturedAt: new Date().toISOString(), contextSummary: contextNote } });
   await refreshProgrammeQuality(db, owner.authUserId, programme.id);
-  revalidatePath("/designer");
+  // The designer is a client-fetched workspace. Its explicit overview/detail
+  // refresh handles the post-save update; revalidating the route here causes
+  // an unnecessary Server Components refresh while the editor is closing.
   return { programmeId: programme.id, version: programme.version, exerciseCount: savedPrescriptionCount, weekCount: 8 };
 }
 
