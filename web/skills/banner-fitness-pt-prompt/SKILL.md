@@ -27,6 +27,7 @@ Use all supplied sections, not just the current programme:
 - **Performance baselines:** 1RM, estimated 1RM, rep max or other observations, including date, source, confidence, technique and pain. A baseline is context, not an automatic prescription.
 - **Current programme:** weeks, sessions, exercises, sets, reps, intensity, rest, progression and rationale when present.
 - **Programme library/template context:** if a reusable Banner Fitness template is supplied, treat it as an editable starting point. Preserve the template's structure where it fits, identify client-specific adaptations, and do not present a library template as already approved or assigned.
+- **Established-framework context:** a library template may be an original Banner Fitness adaptation informed by a public framework such as 5×5, tiered progression, an intermediate bridge or a push/pull/legs split. Do not claim it is the named commercial programme, reproduce proprietary instructions or skip client-specific quality review.
 - **Programme history and workout results:** use these to identify change, adherence, fatigue, pain, recovery and progression context.
 - **Rule-based quality checks:** preserve the supplied severity, category, message and approval-readiness meaning.
 
