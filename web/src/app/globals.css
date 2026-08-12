@@ -307,6 +307,33 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 980px) { .designer-content > .dashboard-roster { width:calc(100% - 50px); margin-left:auto; margin-right:auto; } }
 @media (max-width: 680px) { .designer-content > .dashboard-roster { width:auto; margin:0 16px 16px; }.dashboard-roster-header,.dashboard-client-row { min-width:900px; } }
 
+/* UI review: keep the roster readable on narrow screens. */
+@media (max-width: 680px) {
+  .dashboard-roster-table { overflow:visible; }
+  .dashboard-roster-header { display:none; }
+  .dashboard-client-row { min-width:0; width:100%; display:grid; grid-template-columns:1fr auto; gap:10px; text-align:left; padding:13px 0; }
+  .dashboard-client-row > span { min-width:0; }
+  .dashboard-client-programme,.dashboard-client-last,.dashboard-client-adherence,.dashboard-client-next { grid-column:1 / -1; display:flex; justify-content:space-between; gap:10px; }
+  .dashboard-client-status { grid-column:2; grid-row:1; }
+}
+
+/* Quality findings use a clear urgency ladder rather than border colour alone. */
+.quality-finding { position:relative; border-left-width:4px; border-left-style:solid; border-radius:7px; padding:12px 12px 12px 42px; }
+.quality-finding::before { position:absolute; left:13px; top:12px; display:grid; place-items:center; width:20px; height:20px; border-radius:50%; font-weight:800; font-size:11px; }
+.quality-blocking { background:#fff0ed; border-color:#a75b55; }.quality-blocking::before { content:"!"; background:#a75b55; color:#fff; }
+.quality-significant { background:#fff7ed; border-color:#b8794f; }.quality-significant::before { content:"!"; background:#e6b17d; color:#fff; }
+.quality-advisory { background:#f3f8ef; border-color:#7c9f75; }.quality-advisory::before { content:"i"; background:#a8c99d; color:#fff; }
+.quality-info { background:#f3f6f4; border-color:#8a9b91; }.quality-info::before { content:"i"; background:#b5c2bb; color:#fff; }
+
+/* Shared presentation tokens for designer controls and mobile viewport-safe modals. */
+.designer-shell { --designer-accent:#1e5d57; --designer-accent-soft:#e4f0e6; --designer-text-muted:#7e8987; --designer-radius:6px; --designer-shadow:0 12px 40px #17363338; }
+.secondary-button,.outline-button { border-radius:var(--designer-radius); }
+.primary-button,.assign-button,.first-programme-button,.client-start-button { border-radius:var(--designer-radius); background:var(--designer-accent); color:#fff; }
+.delete-confirm-button,.client-row-delete,.template-delete-button { border:1px solid #b45c52; background:#fff0ed; color:#9f443b; }
+.help-launcher { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--designer-line); border-radius:999px; background:#fff; color:#385250; padding:6px 10px; cursor:pointer; font:700 10px inherit; }
+.modal-backdrop > section { max-height:calc(100dvh - 40px); }
+@media (max-width:680px) { .modal-backdrop > section { max-height:calc(100dvh - 20px); } .quality-finding { padding-left:38px; } }
+
 /* Workspace navigation and PT tools: keep the destination obvious and the controls on one visual rhythm. */
 .workspace-tabs button { border-bottom:2px solid transparent; padding:14px 0 12px; font:700 12px/1.2 inherit; }
 .workspace-section { scroll-margin-top:18px; border-radius:8px; transition:box-shadow .18s ease, outline-color .18s ease; }

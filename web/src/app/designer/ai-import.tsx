@@ -12,7 +12,8 @@ type ExistingSession = { dayOfWeek: number; name: string; exercises: Array<{ nam
 function errorMessage(error: unknown) {
   if (!error || typeof error !== "object" || !("issues" in error)) return error instanceof Error ? error.message : "The AI response could not be validated.";
   const issues = (error as { issues: Array<{ path: (string | number)[]; message: string }> }).issues;
-  return issues.slice(0, 5).map((issue) => `${issue.path.length ? `${issue.path.join(".")}: ` : ""}${issue.message}`).join("\n");
+  const labels: Record<string, string> = { programme: "programme details", sessions: "sessions", exercises: "exercises", name: "name", pattern: "movement pattern", sets: "sets", repsMin: "minimum reps", repsMax: "maximum reps", intensityValue: "effort target", dayOfWeek: "training day" };
+  return issues.slice(0, 5).map((issue) => { const path = issue.path.map((part) => typeof part === "number" ? `session ${part + 1}` : labels[part] ?? part).join(" → "); const message = issue.message.toLowerCase().includes("required") ? "is missing" : issue.message.toLowerCase().includes("invalid") ? "is not in the expected format" : issue.message; return `${path || "The response"} ${message}`; }).join("\n");
 }
 
 function dayLabel(day: number) {
