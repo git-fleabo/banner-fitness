@@ -36,7 +36,7 @@ export default async function LearnPage() {
   let reviewItems: Awaited<ReturnType<typeof listReviewItems>>;
   try {
     [lessons, reviewItems] = await Promise.all([
-      listLessonSummaries(access.account.role, access.account.authUserId),
+      listLessonSummaries(access.account.role === "owner" ? "owner" : "learner", access.account.authUserId),
       listReviewItems(access.account.authUserId),
     ]);
   } catch (error) {

@@ -17,7 +17,7 @@ export default async function LessonPage({ params, searchParams }: {
 
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const [lesson, resumeState] = await Promise.all([
-    getLessonBySlug(slug, access.account.role),
+    getLessonBySlug(slug, access.account.role === "owner" ? "owner" : "learner"),
     getLessonResumeState(slug, access.account.authUserId),
   ]);
   if (!lesson) notFound();

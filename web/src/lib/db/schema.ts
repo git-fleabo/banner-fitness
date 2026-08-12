@@ -17,7 +17,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const accountRole = pgEnum("account_role", ["owner", "learner"]);
+export const accountRole = pgEnum("account_role", ["owner", "pt", "learner"]);
 export const accountStatus = pgEnum("account_status", ["invited", "active", "blocked"]);
 export const mappingStatus = pgEnum("mapping_status", ["confirmed", "provisional", "needs_confirmation"]);
 export const contentStatus = pgEnum("content_status", ["draft", "in_review", "approved", "published", "retired"]);

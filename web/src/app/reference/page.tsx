@@ -15,7 +15,7 @@ export default async function ReferencePage({ searchParams }: { searchParams: Pr
   const query = await searchParams;
   const search = typeof query.q === "string" ? query.q : "";
   const selectedSlug = typeof query.term === "string" ? query.term : undefined;
-  const terms = await listGlossaryTerms(access.account.role);
+  const terms = await listGlossaryTerms(access.account.role === "owner" ? "owner" : "learner");
 
   return <ReferenceIndex terms={terms} query={search} selectedSlug={selectedSlug} ownerPreview={access.account.role === "owner"} />;
 }

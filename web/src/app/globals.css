@@ -426,3 +426,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .workspace-support-programme > .workspace-support-grid > .programme-history-panel { display:none; }
 .client-timeline-controls { display:flex; align-items:center; gap:12px; }
 .client-timeline-panel.is-collapsed { padding-bottom:12px; }
+
+/* Designer UI contract: one UI face, one editorial heading face, and restrained semantic colour. */
+.designer-shell { --designer-ui-font:"Avenir Next", Avenir, "Segoe UI", sans-serif; --designer-heading-font:Georgia, "Times New Roman", serif; --designer-ink:#203b3a; --designer-muted:#71827b; --designer-line:#dfe7e0; --designer-green:#2f7054; --designer-green-soft:#eaf5eb; font-family:var(--designer-ui-font); color:var(--designer-ink); }
+.designer-shell button,.designer-shell input,.designer-shell select,.designer-shell textarea { font-family:var(--designer-ui-font); }
+.designer-shell h1,.designer-shell h2,.designer-shell h3,.designer-shell h4 { font-family:var(--designer-heading-font); }
+.designer-shell label { font-family:var(--designer-ui-font); }
+.calendar-session { display:block; width:100%; border:1px solid #d7e5d9; border-radius:7px; background:#f7fbf7; color:#385850; padding:10px; text-align:left; cursor:pointer; transition:background .15s,border-color .15s,transform .15s; }
+.calendar-session:hover,.calendar-session:focus-visible { border-color:#78a984; background:#eaf5eb; outline:none; transform:translateY(-1px); }
+.calendar-session span,.calendar-session strong,.calendar-session small,.calendar-session em { display:block; }
+.calendar-session span { color:#6f8279; font-size:9px; font-weight:700; }
+.calendar-session strong { margin-top:3px; color:var(--designer-ink); font-size:11px; }
+.calendar-session small { margin-top:4px; color:#7e8e86; font-size:9px; }
+.calendar-session em { margin-top:8px; color:var(--designer-green); font-size:9px; font-style:normal; font-weight:700; }
+.dashboard-roster { scroll-margin-top:24px; }

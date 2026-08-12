@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const clientId = request.nextUrl.searchParams.get("clientId");
   if (!clientId) return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   const db = getDb();
-  const client = await getOwnedClient(clientId, owner.authUserId);
+  const client = await getOwnedClient(clientId, owner.authUserId, owner);
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   const [programme] = await db.select({ id: ptProgrammes.id, version: ptProgrammes.version, currentWeek: ptProgrammes.currentWeek }).from(ptProgrammes).where(and(eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).orderBy(desc(ptProgrammes.updatedAt)).limit(1);
   if (!programme) return NextResponse.json({ client, programme: null, decisions: [] });

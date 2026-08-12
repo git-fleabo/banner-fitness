@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
+import { designerOwnership, isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { ptClients, ptExercises, ptLocations } from "@/lib/db/schema";
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const exerciseId = request.nextUrl.searchParams.get("exerciseId");
   if (!clientId || !exerciseId) return NextResponse.json({ error: "clientId and exerciseId are required" }, { status: 400 });
   const db = getDb();
-  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, clientId), designerOwnership(ptClients.ownerProfileId, owner))).limit(1);
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
   const [source] = await db.select({ id: ptExercises.id, name: ptExercises.name, pattern: ptExercises.movementPattern, target: ptExercises.primaryMuscles, difficulty: ptExercises.difficulty, equipment: ptExercises.equipment }).from(ptExercises).where(and(eq(ptExercises.id, exerciseId), or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId)))).limit(1);
   if (!source) return NextResponse.json({ error: "Exercise not found" }, { status: 404 });

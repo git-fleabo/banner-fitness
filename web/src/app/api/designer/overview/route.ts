@@ -1,7 +1,7 @@
 import { and, count, desc, eq, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
+import { designerOwnership, isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { hasRecordedScreeningReview } from "@/lib/pt-programming";
 import { ptAssessments, ptClients, ptGoals, ptLocations, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
@@ -13,14 +13,14 @@ export async function GET() {
   if (!isActiveOwner(owner)) return owner;
   const access = { account: owner };
   const db = getDb();
-  const [clientCount] = await db.select({ value: count() }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.status, "active")));
-  const [programmeCount] = await db.select({ value: count() }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, access.account.authUserId), eq(ptProgrammes.status, "draft")));
+  const [clientCount] = await db.select({ value: count() }).from(ptClients).where(and(designerOwnership(ptClients.ownerProfileId, owner), eq(ptClients.status, "active")));
+  const [programmeCount] = await db.select({ value: count() }).from(ptProgrammes).where(and(designerOwnership(ptProgrammes.ownerProfileId, owner), eq(ptProgrammes.status, "draft")));
   const since = new Date(); since.setDate(since.getDate() - 30);
-  const resultCounts = await db.select({ status: ptWorkoutResults.status, value: count() }).from(ptWorkoutResults).where(and(eq(ptWorkoutResults.ownerProfileId, access.account.authUserId), gte(ptWorkoutResults.scheduledDate, since.toISOString().slice(0, 10)))).groupBy(ptWorkoutResults.status);
+  const resultCounts = await db.select({ status: ptWorkoutResults.status, value: count() }).from(ptWorkoutResults).where(and(designerOwnership(ptWorkoutResults.ownerProfileId, owner), gte(ptWorkoutResults.scheduledDate, since.toISOString().slice(0, 10)))).groupBy(ptWorkoutResults.status);
   const totalResults = resultCounts.reduce((sum, row) => sum + Number(row.value), 0);
   const completedResults = resultCounts.filter((row) => row.status === "completed" || row.status === "partial").reduce((sum, row) => sum + Number(row.value), 0);
-  const clients = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, status: ptClients.status, trainingExperience: ptClients.trainingExperience, sessionDurationMinutes: ptClients.sessionDurationMinutes, updatedAt: ptClients.updatedAt }).from(ptClients).where(eq(ptClients.ownerProfileId, access.account.authUserId)).orderBy(desc(ptClients.updatedAt)).limit(100);
-  const programmes = await db.select({ id: ptProgrammes.id, clientId: ptProgrammes.clientId, name: ptProgrammes.name, goalSummary: ptProgrammes.goalSummary, status: ptProgrammes.status, currentWeek: ptProgrammes.currentWeek, durationWeeks: ptProgrammes.durationWeeks, version: ptProgrammes.version, updatedAt: ptProgrammes.updatedAt }).from(ptProgrammes).where(eq(ptProgrammes.ownerProfileId, access.account.authUserId)).orderBy(desc(ptProgrammes.updatedAt)).limit(100);
+  const clients = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, status: ptClients.status, trainingExperience: ptClients.trainingExperience, sessionDurationMinutes: ptClients.sessionDurationMinutes, updatedAt: ptClients.updatedAt }).from(ptClients).where(designerOwnership(ptClients.ownerProfileId, owner)).orderBy(desc(ptClients.updatedAt)).limit(100);
+  const programmes = await db.select({ id: ptProgrammes.id, clientId: ptProgrammes.clientId, name: ptProgrammes.name, goalSummary: ptProgrammes.goalSummary, status: ptProgrammes.status, currentWeek: ptProgrammes.currentWeek, durationWeeks: ptProgrammes.durationWeeks, version: ptProgrammes.version, updatedAt: ptProgrammes.updatedAt }).from(ptProgrammes).where(designerOwnership(ptProgrammes.ownerProfileId, owner)).orderBy(desc(ptProgrammes.updatedAt)).limit(100);
   const qualityReviews = await db.select({ programmeId: ptProgrammeQualityReviews.programmeId, score: ptProgrammeQualityReviews.score, approvalReadiness: ptProgrammeQualityReviews.approvalReadiness, blockingCount: ptProgrammeQualityReviews.blockingCount, significantCount: ptProgrammeQualityReviews.significantCount, advisoryCount: ptProgrammeQualityReviews.advisoryCount, evaluatedAt: ptProgrammeQualityReviews.evaluatedAt }).from(ptProgrammeQualityReviews).innerJoin(ptProgrammes, eq(ptProgrammeQualityReviews.programmeId, ptProgrammes.id)).where(eq(ptProgrammes.ownerProfileId, access.account.authUserId));
   const assessments = await db.select({ clientId: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, reviewDate: ptAssessments.reviewDate, clearanceRequired: ptAssessments.clearanceRequired, riskFlags: ptAssessments.riskFlags, ptNotes: ptAssessments.ptNotes, assessmentDate: ptAssessments.assessmentDate }).from(ptAssessments).innerJoin(ptClients, eq(ptAssessments.clientId, ptClients.id)).where(eq(ptClients.ownerProfileId, access.account.authUserId)).orderBy(desc(ptAssessments.assessmentDate)).limit(100);
   const latestAssessments = new Map<string, typeof assessments[number]>();

@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
+import { designerOwnership, isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { ptClients, ptExercisePrescriptions, ptExercises, ptWorkoutResultSets, ptWorkoutResults, ptSessions } from "@/lib/db/schema";
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const fromDate = request.nextUrl.searchParams.get("from");
   const toDate = request.nextUrl.searchParams.get("to");
   const dateFilters = [fromDate ? gte(ptWorkoutResults.scheduledDate, fromDate) : undefined, toDate ? lte(ptWorkoutResults.scheduledDate, toDate) : undefined].filter((filter): filter is ReturnType<typeof gte> => Boolean(filter));
-  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName }).from(ptClients).where(and(eq(ptClients.id, clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName }).from(ptClients).where(and(eq(ptClients.id, clientId), designerOwnership(ptClients.ownerProfileId, owner))).limit(1);
   if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
 
   const results = await db.select({ id: ptWorkoutResults.id, scheduledDate: ptWorkoutResults.scheduledDate, sessionName: ptSessions.name, status: ptWorkoutResults.status, sessionRpe: ptWorkoutResults.sessionRpe, energy: ptWorkoutResults.energy, painReported: ptWorkoutResults.painReported, durationMinutes: ptWorkoutResults.durationMinutes, volumeLoadKg: ptWorkoutResults.volumeLoadKg, repetitionLoad: ptWorkoutResults.repetitionLoad, averageRpe: ptWorkoutResults.averageRpe, averageRir: ptWorkoutResults.averageRir, notes: ptWorkoutResults.notes }).from(ptWorkoutResults).leftJoin(ptSessions, eq(ptSessions.id, ptWorkoutResults.sessionId)).where(and(eq(ptWorkoutResults.clientId, client.id), eq(ptWorkoutResults.ownerProfileId, owner.authUserId), ...dateFilters)).orderBy(desc(ptWorkoutResults.scheduledDate), desc(ptWorkoutResults.createdAt)).limit(100);

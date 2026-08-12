@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getAccountAccess } from "@/lib/authorization/server";
+import { designerOwnership } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { ptAssessments, ptClientPerformanceRecords, ptClients, ptDesignerSettings, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeQualityAcknowledgements, ptProgrammeTemplates, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
 import { getScreeningFlags, hasRecordedScreeningReview, screeningReviewMarker, type ScreeningAnswers } from "@/lib/pt-programming";
@@ -138,7 +139,7 @@ function normalizePreferredDays(raw: unknown, trainingDays: number) {
 
 async function requireDesignerAccess() {
   const access = await getAccountAccess();
-  if (access.state !== "active" || access.account.role !== "owner") throw new Error("A signed-in PT owner account is required.");
+  if (access.state !== "active" || !["owner", "pt"].includes(access.account.role)) throw new Error("A signed-in PT or owner account is required.");
   return access.account;
 }
 
@@ -196,7 +197,7 @@ export async function generateCaseStudyDraftAction(rawInput: z.input<typeof case
   const owner = await requireDesignerAccess();
   const input = caseStudyDraftSchema.parse(rawInput);
   const db = getDb();
-  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, notes: ptClients.notes, trainingExperience: ptClients.trainingExperience, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id, firstName: ptClients.firstName, lastName: ptClients.lastName, notes: ptClients.notes, trainingExperience: ptClients.trainingExperience, dailyActivity: ptClients.dailyActivity, sleepHours: ptClients.sleepHours, stressLevel: ptClients.stressLevel, sessionDurationMinutes: ptClients.sessionDurationMinutes, preferredDays: ptClients.preferredDays }).from(ptClients).where(and(eq(ptClients.id, input.clientId), designerOwnership(ptClients.ownerProfileId, owner))).limit(1);
   if (!client) throw new Error("Case-study client could not be found.");
   const slug = client.notes?.match(/CASE STUDY FIXTURE: ([a-z]+)/i)?.[1]?.toLowerCase();
   const [assessment] = await db.select({ responses: ptAssessments.responses, riskFlags: ptAssessments.riskFlags, clearanceRequired: ptAssessments.clearanceRequired, ptNotes: ptAssessments.ptNotes }).from(ptAssessments).where(eq(ptAssessments.clientId, client.id)).orderBy(desc(ptAssessments.assessmentDate)).limit(1);
@@ -307,7 +308,7 @@ export async function updateClientAction(rawInput: z.input<typeof clientUpdateSc
   const input = clientUpdateSchema.parse(rawInput);
   const preferredDays = normalizePreferredDays(rawInput.preferredDays, input.trainingDays);
   const db = getDb();
-  const [client] = await db.update(ptClients).set({ sessionDurationMinutes: input.sessionDurationMinutes, preferredDays, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
+  const [client] = await db.update(ptClients).set({ sessionDurationMinutes: input.sessionDurationMinutes, preferredDays, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), designerOwnership(ptClients.ownerProfileId, owner))).returning({ id: ptClients.id });
   if (!client) throw new Error("Client could not be updated.");
   const [goal] = await db.select({ id: ptGoals.id }).from(ptGoals).where(and(eq(ptGoals.clientId, client.id), eq(ptGoals.priority, "primary"))).limit(1);
   if (goal) await db.update(ptGoals).set({ goalType: input.goalType, updatedAt: new Date() }).where(eq(ptGoals.id, goal.id));
@@ -321,7 +322,7 @@ export async function updateClientProfileAction(rawInput: z.input<typeof clientP
   const owner = await requireDesignerAccess();
   const input = clientProfileUpdateSchema.parse(rawInput);
   const db = getDb();
-  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, trainingExperience: input.trainingExperience || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).returning({ id: ptClients.id });
+  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, trainingExperience: input.trainingExperience || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), designerOwnership(ptClients.ownerProfileId, owner))).returning({ id: ptClients.id });
   if (!client) throw new Error("Client profile could not be updated.");
   await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
@@ -332,9 +333,9 @@ export async function deleteClientAction(rawInput: z.input<typeof deleteClientSc
   const owner = await requireDesignerAccess();
   const input = deleteClientSchema.parse(rawInput);
   const db = getDb();
-  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), eq(ptClients.ownerProfileId, owner.authUserId))).limit(1);
+  const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.id, input.clientId), designerOwnership(ptClients.ownerProfileId, owner))).limit(1);
   if (!client) throw new Error("Client could not be found.");
-  await db.delete(ptClients).where(and(eq(ptClients.id, client.id), eq(ptClients.ownerProfileId, owner.authUserId)));
+  await db.delete(ptClients).where(and(eq(ptClients.id, client.id), designerOwnership(ptClients.ownerProfileId, owner)));
   revalidatePath("/designer");
   return { clientId: client.id };
 }
