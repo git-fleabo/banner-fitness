@@ -500,32 +500,65 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   const [programme] = await db.insert(ptProgrammes).values({ ownerProfileId: owner.authUserId, clientId: client.id, name: `${input.goalSummary} foundation`, goalSummary: input.goalSummary, durationWeeks: 8, methodology: input.methodology || "Full-body foundation with RIR-based double progression", status: "draft", version: (previousProgramme?.version ?? 0) + 1, rationale }).returning({ id: ptProgrammes.id, version: ptProgrammes.version });
   if (!programme) throw new Error("Programme could not be saved.");
   try {
-    for (let weekNumber = 1; weekNumber <= 8; weekNumber += 1) {
+    // Neon HTTP has a relatively high round-trip cost. Build the complete
+    // eight-week structure first, then persist each level in one statement so
+    // a save does not time out halfway through the programme.
+    const weekRows = Array.from({ length: 8 }, (_, index) => {
+      const weekNumber = index + 1;
       const weekPlan = input.weekPlans?.[weekNumber - 1];
-      const [week] = await db.insert(ptProgrammeWeeks).values({ programmeId: programme.id, weekNumber, focus: weekPlan?.focus || (weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review"), volumeTarget: weekPlan?.volumeTarget || (weekNumber <= 2 ? "Moderate" : "Moderate-high"), intensityTarget: weekPlan?.intensityTarget || "RIR 2–3" }).returning({ id: ptProgrammeWeeks.id });
-      if (!week) throw new Error("Programme week could not be saved.");
-      for (const dayOfWeek of sessionDays) {
+      return { programmeId: programme.id, weekNumber, focus: weekPlan?.focus || (weekNumber <= 2 ? "Foundation / familiarisation" : weekNumber <= 6 ? "Build / progressive overload" : "Consolidate / review"), volumeTarget: weekPlan?.volumeTarget || (weekNumber <= 2 ? "Moderate" : "Moderate-high"), intensityTarget: weekPlan?.intensityTarget || "RIR 2–3" };
+    });
+    const savedWeeks = await db.insert(ptProgrammeWeeks).values(weekRows).returning({ id: ptProgrammeWeeks.id, weekNumber: ptProgrammeWeeks.weekNumber });
+    if (savedWeeks.length !== weekRows.length) throw new Error("Programme weeks could not be saved.");
+    const weekIds = new Map(savedWeeks.map((week) => [week.weekNumber, week.id]));
+    const sessionRows = weekRows.flatMap((row) => {
+      const programmeWeekId = weekIds.get(row.weekNumber);
+      if (!programmeWeekId) throw new Error("Programme week could not be resolved.");
+      return sessionDays.map((dayOfWeek) => {
         const sessionName = input.sessionNames?.[String(dayOfWeek)] || `Day ${dayOfWeek} - Full body`;
-        const sessionType = /conditioning|interval|aerobic/i.test(sessionName) ? "conditioning" : /power|athletic/i.test(sessionName) ? "strength" : /strength/i.test(sessionName) ? "strength" : "mixed";
-        const [session] = await db.insert(ptSessions).values({ programmeWeekId: week.id, dayOfWeek, name: sessionName, sessionType, durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 }).returning({ id: ptSessions.id });
-        if (!session) throw new Error("Programme session could not be saved.");
-        const activeRowsByDay = rowsByWeek[String(weekNumber)] ?? rowsByDay;
-        const rowsForDay = activeRowsByDay[String(dayOfWeek)] ?? (dayOfWeek === 1 ? exerciseRows : []);
-        if (rowsForDay.length) {
-          const rows = rowsForDay.map((row) => ({ ...row, sessionId: session.id }));
-          await db.insert(ptExercisePrescriptions).values(rows);
-          savedPrescriptionCount += rows.length;
-        }
-      }
+        const sessionType: "conditioning" | "strength" | "mixed" = /conditioning|interval|aerobic/i.test(sessionName) ? "conditioning" : /power|athletic/i.test(sessionName) ? "strength" : /strength/i.test(sessionName) ? "strength" : "mixed";
+        return { programmeWeekId, weekNumber: row.weekNumber, dayOfWeek, name: sessionName, sessionType, durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 };
+      });
+    });
+    const savedSessions = await db.insert(ptSessions).values(sessionRows).returning({ id: ptSessions.id, programmeWeekId: ptSessions.programmeWeekId, dayOfWeek: ptSessions.dayOfWeek });
+    if (savedSessions.length !== sessionRows.length) throw new Error("Programme sessions could not be saved.");
+    const sessionIds = new Map(savedSessions.map((session) => {
+      const weekNumber = sessionRows.find((row) => row.programmeWeekId === session.programmeWeekId && row.dayOfWeek === session.dayOfWeek)?.weekNumber;
+      return [`${weekNumber}:${session.dayOfWeek}`, session.id] as const;
+    }));
+    const prescriptionRows = sessionRows.flatMap((row) => {
+      const sessionId = sessionIds.get(`${row.weekNumber}:${row.dayOfWeek}`);
+      if (!sessionId) throw new Error("Programme session could not be resolved.");
+      const activeRowsByDay = rowsByWeek[String(row.weekNumber)] ?? rowsByDay;
+      const rowsForDay = activeRowsByDay[String(row.dayOfWeek)] ?? (row.dayOfWeek === 1 ? exerciseRows : []);
+      return rowsForDay.map((exerciseRow) => ({ ...exerciseRow, sessionId }));
+    });
+    if (prescriptionRows.length) {
+      await db.insert(ptExercisePrescriptions).values(prescriptionRows);
+      savedPrescriptionCount = prescriptionRows.length;
     }
     await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version, contextCapturedAt: new Date().toISOString(), contextSummary: contextNote } });
   } catch (saveError) {
     // Neon HTTP does not provide Drizzle transactions. Remove the new root
     // record on failure so its cascading children cannot leave a partial version.
-    await db.delete(ptProgrammes).where(eq(ptProgrammes.id, programme.id));
+    try {
+      await db.delete(ptProgrammes).where(eq(ptProgrammes.id, programme.id));
+    } catch (cleanupError) {
+      // Preserve the original persistence error. A cleanup failure must not
+      // replace it with a generic Server Components error in the client.
+      console.error("Programme save cleanup failed", cleanupError);
+    }
+    console.error("Programme save failed", saveError);
     throw saveError;
   }
-  await refreshProgrammeQuality(db, owner.authUserId, programme.id);
+  try {
+    await refreshProgrammeQuality(db, owner.authUserId, programme.id);
+  } catch (qualityError) {
+    // The programme itself is validly persisted. Keep the save usable if a
+    // quality-review write is temporarily unavailable; the next client
+    // detail read recalculates the review from the same source data.
+    console.error("Programme quality refresh failed after save", qualityError);
+  }
   // The designer is a client-fetched workspace. Its explicit overview/detail
   // refresh handles the post-save update; revalidating the route here causes
   // an unnecessary Server Components refresh while the editor is closing.

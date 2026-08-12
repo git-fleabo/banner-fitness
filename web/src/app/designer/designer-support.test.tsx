@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -86,6 +86,6 @@ describe("programme editor schedule", () => {
     await user.click(screen.getByRole("button", { name: "Save as new version →" }));
 
     expect(saveProgrammeAction).toHaveBeenCalledTimes(1);
-    expect(lifecycle).toEqual(["close", "refresh"]);
+    await waitFor(() => expect(lifecycle).toEqual(["close", "refresh"]));
   });
 });
