@@ -1,6 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("./actions", () => ({
+  deleteProgrammeTemplateAction: vi.fn(),
+  listProgrammeTemplatesAction: vi.fn().mockResolvedValue([]),
+  saveProgrammeAction: vi.fn().mockResolvedValue({ version: 1 }),
+  saveProgrammeTemplateAction: vi.fn(),
+}));
 
 import { buildEditorSessionState, buildProgrammeTemplateState, buildStarterTemplateState, buildWeekPreview, copySessionToDay, getEditorSessionDays } from "@/lib/programme-editor";
+import { saveProgrammeAction } from "./actions";
+import { SessionEditorModal } from "./designer-support";
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+});
 
 const exercise = { name: "Squat", pattern: "Squat", prescription: "3 × 8–12", target: "Quads", equipment: "Dumbbells" };
 
@@ -56,5 +73,19 @@ describe("programme editor schedule", () => {
     expect(preview[0].exerciseCount).toBe(1);
     expect(preview[0].totalSets).toBe(3);
     expect(preview[1].exerciseCount).toBe(0);
+  });
+
+  it("closes before refreshing the parent after saving a draft", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ exercises: [] }) }));
+    const lifecycle: string[] = [];
+
+    render(<SessionEditorModal clientId="client-1" clientName="Test Client" goal="General strength" days={1} preferredDays={[1]} week={[exercise]} onClose={() => lifecycle.push("close")} onSaved={() => lifecycle.push("refresh")} notify={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Preview week & save →" }));
+    await user.click(screen.getByRole("button", { name: "Save as new version →" }));
+
+    expect(saveProgrammeAction).toHaveBeenCalledTimes(1);
+    expect(lifecycle).toEqual(["close", "refresh"]);
   });
 });
