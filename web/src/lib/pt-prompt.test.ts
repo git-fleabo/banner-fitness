@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildProgrammeTask, programmePromptFilename, programmePromptTitle, promptEvidenceInstruction } from "./pt-prompt";
+import { buildProgrammeTask, programmeImportInstruction, programmePromptFilename, programmePromptTitle, promptEvidenceInstruction } from "./pt-prompt";
 
 describe("PT AI prompt instructions", () => {
   it("uses Banner Fitness branding in generated bundles and downloads", () => {
@@ -22,5 +22,11 @@ describe("PT AI prompt instructions", () => {
     expect(promptEvidenceInstruction).toContain("2026 ACSM");
     expect(promptEvidenceInstruction).toContain("Do not enforce rigid rep brackets");
     expect(promptEvidenceInstruction).toContain("1RM test");
+  });
+
+  it("includes the validated Banner Fitness import contract", () => {
+    expect(programmeImportInstruction).toContain("banner-fitness-programme-draft");
+    expect(programmeImportInstruction).toContain("schemaVersion");
+    expect(programmeImportInstruction).toContain("complete multi-session draft");
   });
 });

@@ -15,6 +15,7 @@ Use this skill to turn a Banner Fitness client/programme bundle into a concise, 
 - Separate known facts, missing information, assumptions and PT options.
 - Treat the app's recorded quality findings as decision-support signals. Do not hide, downgrade or override them in the response.
 - Never imply that the programme has been saved, approved or assigned. The PT must apply and approve the final result in Banner Fitness.
+- When the PT wants to bring a proposed programme back into Banner Fitness, include a single fenced JSON object using the import contract below. The app validates this response and shows a diff before opening the normal editor; it does not save the AI response directly.
 
 ## Interpret the incoming bundle
 
@@ -127,6 +128,47 @@ When useful, append a compact machine-readable block using this shape. Do not in
 
 Treat this block as a PT-applied draft, not an instruction to write to the database.
 
+## Banner Fitness import contract
+
+When returning a complete draft that the PT may import, use this exact top-level shape:
+
+```json
+{
+  "format": "banner-fitness-programme-draft",
+  "schemaVersion": "1",
+  "source": { "tool": "", "responseId": "", "generatedAt": "" },
+  "programme": {
+    "goalSummary": "",
+    "sessionDurationMinutes": 45,
+    "methodology": "",
+    "rationale": "",
+    "sessions": [
+      {
+        "dayOfWeek": 1,
+        "name": "",
+        "exercises": [
+          {
+            "name": "Exact Banner Fitness library name",
+            "pattern": "",
+            "target": "",
+            "equipment": "",
+            "sets": 3,
+            "repsMin": 8,
+            "repsMax": 12,
+            "intensityValue": "2 RIR",
+            "restSeconds": 90,
+            "tempo": "",
+            "progressionRule": ""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`format` and `schemaVersion` must be present. Use one unique `dayOfWeek` from 1–7 per session, and include at least one exercise overall. Exercise names should match the supplied library exactly; do not invent IDs. A response that is not valid against this contract should be explained as a recommendation for manual entry rather than presented as import-ready.
+
 ## Quality and safety interpretation
 
 Prioritise findings in this order:
@@ -177,6 +219,7 @@ Update this skill in the same change whenever an app enhancement changes any of 
 - Quality categories, severity, approval readiness, evidence version or finding language
 - Exercise-library movement patterns, prescription fields or programme-editor capabilities
 - Programme Library fields, reusable template behaviour, preview/edit/duplicate workflow or apply-to-client behaviour
+- AI import contract, validation, diff preview, PT approval gate or programme-event provenance
 - Banner Fitness's professional-scope boundaries or the supported AI response format
 
 Before updating, inspect the current implementations and tests, especially:

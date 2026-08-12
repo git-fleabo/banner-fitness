@@ -5,7 +5,7 @@ import { getAccountAccess } from "@/lib/authorization/server";
 import { getDb } from "@/lib/db/client";
 import { getCurrentProgrammeQuality } from "@/lib/pt-quality-server";
 import { ptAssessments, ptClientPerformanceRecords, ptClients, ptExercisePrescriptions, ptExercises, ptGoals, ptLocations, ptPreferences, ptProgrammeEvents, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResultSets, ptWorkoutResults } from "@/lib/db/schema";
-import { buildProgrammeTask, programmePromptTitle, promptEvidenceInstruction } from "@/lib/pt-prompt";
+import { buildProgrammeTask, programmeImportInstruction, programmePromptTitle, promptEvidenceInstruction } from "@/lib/pt-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +122,9 @@ function buildMarkdown(bundle: Record<string, unknown>, redacted: boolean) {
     ]),
     "",
     "Return recommendations with reasoning, confidence/uncertainty and practical alternatives. Keep the PT in control of every final decision.",
+    "",
+    "## Optional Banner Fitness import response",
+    programmeImportInstruction,
   ];
   return lines.join("\n");
 }

@@ -106,6 +106,7 @@ const programmeInputSchema = z.object({
   methodology: z.string().trim().max(300).optional(),
   rationale: z.string().trim().max(2000).optional(),
   weekPlans: z.array(weekPlanSchema).length(8).optional(),
+  importAudit: z.object({ source: z.literal("ai_import"), schemaVersion: z.string().trim().min(1).max(20), tool: z.string().trim().max(100).optional(), responseId: z.string().trim().max(160).optional(), generatedAt: z.string().trim().max(80).optional() }).optional(),
 });
 const programmeTemplateExerciseSchema = exerciseDraftSchema.extend({ prescription: z.string().trim().max(80).default("3 × 8–12"), target: z.string().trim().max(200).default(""), equipment: z.string().trim().max(120).default(""), note: z.string().trim().max(500).optional() });
 const programmeTemplateSessionSchema = z.object({ name: z.string().trim().min(1).max(120), exercises: z.array(programmeTemplateExerciseSchema).max(100) });
@@ -506,6 +507,14 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
   const rationale = `${input.rationale || "Draft saved for PT review. Finalise only after screening, equipment and quality checks have been reviewed."}\n\n${contextNote}`;
   const [previousProgramme] = await db.select({ version: ptProgrammes.version }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, owner.authUserId), eq(ptProgrammes.clientId, client.id))).orderBy(desc(ptProgrammes.version)).limit(1);
   const allExercises = await db.select({ id: ptExercises.id, name: ptExercises.name }).from(ptExercises).where(or(isNull(ptExercises.ownerProfileId), eq(ptExercises.ownerProfileId, owner.authUserId))).orderBy(asc(ptExercises.name));
+  const requestedExerciseNames = [
+    ...input.exercises,
+    ...Object.values(input.sessionExercises ?? {}).flat(),
+    ...Object.values(input.sessionExercisesByWeek ?? {}).flatMap((byDay) => Object.values(byDay).flat()),
+  ].map((exercise) => exercise.name);
+  const exerciseNames = new Set(allExercises.map((exercise) => exercise.name.toLowerCase()));
+  const unknownExerciseNames = Array.from(new Set(requestedExerciseNames.filter((name) => !exerciseNames.has(name.toLowerCase()))));
+  if (unknownExerciseNames.length) throw new Error(`Exercise not found in the Banner Fitness library: ${unknownExerciseNames.join(", ")}. Choose an exact library exercise name or add it to the library first.`);
   const toExerciseRows = (exercises: z.infer<typeof exerciseDraftSchema>[]) => exercises.map((exercise, index) => {
     const match = allExercises.find((candidate) => candidate.name.toLowerCase() === exercise.name.toLowerCase());
     return match ? { exerciseId: match.id, orderIndex: index, sets: exercise.sets, repsMin: exercise.repsMin ?? null, repsMax: exercise.repsMax ?? null, intensityType: "rir" as const, intensityValue: exercise.intensityValue, restSeconds: exercise.restSeconds ?? null, tempo: exercise.tempo || null, technique: exercise.technique || null, notes: exercise.notes || null, groupKey: exercise.groupKey || null, progressionRule: exercise.progressionRule || "When all sets reach the top of the range at target RIR with acceptable technique, add a small load increment." } : null;
@@ -562,7 +571,8 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
       await db.insert(ptExercisePrescriptions).values(prescriptionRows);
       savedPrescriptionCount = prescriptionRows.length;
     }
-    await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version, contextCapturedAt: new Date().toISOString(), contextSummary: contextNote } });
+    const savedAt = new Date().toISOString();
+    await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "draft_saved", details: { exerciseCount: savedPrescriptionCount, weekCount: 8, version: programme.version, contextCapturedAt: savedAt, contextSummary: contextNote, ...(input.importAudit ? { import: { ...input.importAudit, ptDecision: "approved_and_saved", approvedAt: savedAt } } : {}) } });
   } catch (saveError) {
     // Neon HTTP does not provide Drizzle transactions. Remove the new root
     // record on failure so its cascading children cannot leave a partial version.
