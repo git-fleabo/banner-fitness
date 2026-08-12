@@ -146,6 +146,10 @@ export default function DesignerPage() {
         [".calendar-session span", ".calendar-session"],
       ] as const;
       selectors.forEach(([nameSelector, targetSelector]) => document.querySelectorAll<HTMLElement>(nameSelector).forEach((nameNode) => nameNode.closest<HTMLElement>(targetSelector)?.classList.add(clientColor(nameNode.textContent ?? "client"))));
+      document.querySelectorAll<HTMLElement>(".dashboard-client-row").forEach((row) => {
+        const name = row.querySelector<HTMLElement>(".dashboard-client-name strong")?.textContent ?? "client";
+        row.classList.add(clientColor(name));
+      });
       const drawer = document.querySelector<HTMLElement>(".workspace-drawer");
       if (drawer && client) drawer.classList.add(clientColor(client));
     };
