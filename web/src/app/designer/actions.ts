@@ -109,7 +109,7 @@ const programmeInputSchema = z.object({
 });
 const programmeTemplateExerciseSchema = exerciseDraftSchema.extend({ prescription: z.string().trim().max(80).default("3 × 8–12"), target: z.string().trim().max(200).default(""), equipment: z.string().trim().max(120).default(""), note: z.string().trim().max(500).optional() });
 const programmeTemplateSessionSchema = z.object({ name: z.string().trim().min(1).max(120), exercises: z.array(programmeTemplateExerciseSchema).max(100) });
-const programmeTemplateSchema = z.object({ name: z.string().trim().min(1).max(120), description: z.string().trim().max(500).optional(), goalSummary: z.string().trim().min(1).max(200), sessionDurationMinutes: z.number().int().min(15).max(180), sessions: z.array(programmeTemplateSessionSchema).min(1).max(7) }).superRefine((input, context) => { if (!input.sessions.some((session) => session.exercises.length > 0)) context.addIssue({ code: "custom", path: ["sessions"], message: "Add at least one exercise before saving a programme template." }); });
+const programmeTemplateSchema = z.object({ name: z.string().trim().min(1).max(120), description: z.string().trim().max(500).optional(), goalSummary: z.string().trim().min(1).max(200), sessionDurationMinutes: z.number().int().min(15).max(180), experienceLevel: z.string().trim().max(80).optional(), frameworkType: z.string().trim().max(100).optional(), sessions: z.array(programmeTemplateSessionSchema).min(1).max(7) }).superRefine((input, context) => { if (!input.sessions.some((session) => session.exercises.length > 0)) context.addIssue({ code: "custom", path: ["sessions"], message: "Add at least one exercise before saving a programme template." }); });
 const programmeTemplateDeleteSchema = z.object({ templateId: z.string().uuid() });
 const programmeTemplateUpdateSchema = programmeTemplateSchema.and(z.object({ templateId: z.string().uuid() }));
 const programmeTemplateDuplicateSchema = z.object({ templateId: z.string().uuid(), name: z.string().trim().min(1).max(120) });
@@ -392,15 +392,15 @@ export async function getDesignerSettingsAction() {
 export async function listProgrammeTemplatesAction() {
   const owner = await requireDesignerAccess();
   const db = getDb();
-  const templates = await db.select({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name, description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId)).orderBy(desc(ptProgrammeTemplates.updatedAt)).limit(50);
-  return templates.map((template) => ({ id: template.id, label: template.name, description: template.description ?? "", goal: template.goalSummary, sessionDurationMinutes: template.sessionDurationMinutes, sessions: programmeTemplateSessionSchema.array().parse(template.sessions) }));
+  const templates = await db.select({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name, description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, experienceLevel: ptProgrammeTemplates.experienceLevel, frameworkType: ptProgrammeTemplates.frameworkType, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId)).orderBy(desc(ptProgrammeTemplates.updatedAt)).limit(50);
+  return templates.map((template) => ({ id: template.id, label: template.name, description: template.description ?? "", goal: template.goalSummary, sessionDurationMinutes: template.sessionDurationMinutes, experienceLevel: template.experienceLevel, frameworkType: template.frameworkType, sessions: programmeTemplateSessionSchema.array().parse(template.sessions) }));
 }
 
 export async function saveProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateSchema>) {
   const owner = await requireDesignerAccess();
   const input = programmeTemplateSchema.parse(rawInput);
   const db = getDb();
-  const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, sessions: input.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
+  const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, experienceLevel: input.experienceLevel ?? "varied", frameworkType: input.frameworkType ?? "custom", sessions: input.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
   if (!template) throw new Error("Programme template could not be saved.");
   revalidatePath("/designer");
   return { templateId: template.id, name: template.name };
@@ -410,7 +410,7 @@ export async function deleteProgrammeTemplateAction(rawInput: z.input<typeof pro
   const owner = await requireDesignerAccess();
   const input = programmeTemplateDeleteSchema.parse(rawInput);
   const db = getDb();
-  const [template] = await db.select({ id: ptProgrammeTemplates.id }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
+  const [template] = await db.select({ id: ptProgrammeTemplates.id, experienceLevel: ptProgrammeTemplates.experienceLevel, frameworkType: ptProgrammeTemplates.frameworkType }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
   if (!template) throw new Error("Programme template could not be found.");
   await db.delete(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.id, template.id));
   revalidatePath("/designer");
@@ -421,9 +421,9 @@ export async function updateProgrammeTemplateAction(rawInput: z.input<typeof pro
   const owner = await requireDesignerAccess();
   const input = programmeTemplateUpdateSchema.parse(rawInput);
   const db = getDb();
-  const [template] = await db.select({ id: ptProgrammeTemplates.id }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
+  const [template] = await db.select({ id: ptProgrammeTemplates.id, experienceLevel: ptProgrammeTemplates.experienceLevel, frameworkType: ptProgrammeTemplates.frameworkType }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
   if (!template) throw new Error("Programme template could not be found.");
-  await db.update(ptProgrammeTemplates).set({ name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, sessions: input.sessions, updatedAt: new Date() }).where(eq(ptProgrammeTemplates.id, template.id));
+  await db.update(ptProgrammeTemplates).set({ name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, experienceLevel: input.experienceLevel ?? template.experienceLevel, frameworkType: input.frameworkType ?? template.frameworkType, sessions: input.sessions, updatedAt: new Date() }).where(eq(ptProgrammeTemplates.id, template.id));
   revalidatePath("/designer");
   return { templateId: template.id, name: input.name };
 }
@@ -432,9 +432,9 @@ export async function duplicateProgrammeTemplateAction(rawInput: z.input<typeof 
   const owner = await requireDesignerAccess();
   const input = programmeTemplateDuplicateSchema.parse(rawInput);
   const db = getDb();
-  const [source] = await db.select({ description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
+  const [source] = await db.select({ description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, experienceLevel: ptProgrammeTemplates.experienceLevel, frameworkType: ptProgrammeTemplates.frameworkType, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.id, input.templateId), eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId))).limit(1);
   if (!source) throw new Error("Programme template could not be found.");
-  const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: source.description, goalSummary: source.goalSummary, sessionDurationMinutes: source.sessionDurationMinutes, sessions: source.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
+  const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: source.description, goalSummary: source.goalSummary, sessionDurationMinutes: source.sessionDurationMinutes, experienceLevel: source.experienceLevel, frameworkType: source.frameworkType, sessions: source.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
   if (!template) throw new Error("Programme template could not be duplicated.");
   revalidatePath("/designer");
   return { templateId: template.id, name: template.name };

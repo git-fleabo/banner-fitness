@@ -134,6 +134,13 @@
       "when": 1786451500000,
       "tag": "0018_complete_exercise_catalogue_double",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786536000000,
+      "tag": "0019_programme_template_metadata",
+      "breakpoints": true
     }
   ]
 }

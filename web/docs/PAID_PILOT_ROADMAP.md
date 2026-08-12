@@ -73,6 +73,7 @@ This is a repository and deployed-application capability audit. It does not clai
 - The seed is idempotent and owner-scoped: `pnpm db:seed-programme-library` adds missing library templates for each active owner without overwriting PT-created or previously edited templates.
 - The maintained AI contract now explicitly explains how to treat a reusable template as an editable starting point rather than an approved client programme.
 - Applying a library template now opens the client-specific editor and maps sessions to the client's preferred days when the frequency matches; a different frequency uses a complete weekday fallback for PT review.
+- Added catalogue filters for frequency, exact equipment categories, experience level and framework type. Frequency and equipment are derived from the template sessions; experience/framework are explicit metadata so filtering does not depend on programme names.
 - The narrow desktop sidebar now centres the Banner Fitness logo within its actual box, and the unused workspace collapse glyph has been removed rather than presenting a non-functional control.
 
 ## P2 — expansion after evidence of demand

@@ -25,6 +25,7 @@ The dedicated Programme Library is available from the designer navigation. It cu
 - owner-scoped seeded catalogue content;
 - search by name, goal or description;
 - goal filtering;
+- filters for frequency, equipment, experience level and framework type;
 - session/exercise count and duration metadata;
 - session-level preview;
 - duplicate as a separate owner template;
@@ -46,7 +47,7 @@ The current seeded catalogue contains 30 templates:
 
 The additional 20 templates cover 5×5/linear/tiered/intermediate strength adaptations, beginner express and machine/dumbbell options, full-body and push/pull/legs hypertrophy, upper/lower emphasis, barbell minimalist, bodyweight, travel bands, suspension/rings, concurrent conditioning, running support and field-sport power. Sources and adaptation boundaries are recorded in `docs/PROGRAMME_LIBRARY_SOURCES.md`.
 
-The seed definition is shared in `src/lib/programme-library.ts`; `scripts/seed-programme-library.ts` applies it idempotently to each active owner. It does not overwrite an existing template with the same name. Applying a template maps to recorded preferred days when the session frequency matches; mismatched frequency uses a complete weekday fallback so the PT can review the schedule explicitly.
+The seed definition is shared in `src/lib/programme-library.ts`; `scripts/seed-programme-library.ts` applies it idempotently to each active owner. It does not overwrite an existing template's sessions or description with the same name, but it backfills the catalogue metadata used by filters. Applying a template maps to recorded preferred days when the session frequency matches; mismatched frequency uses a complete weekday fallback so the PT can review the schedule explicitly.
 
 ## Exercise catalogue status
 
@@ -67,7 +68,7 @@ pnpm build
 pnpm deploy
 ```
 
-The current database migration ledger includes `0016_expand_exercise_catalogue_again`, `0017_add_exercise_catalogue_complement` and `0018_complete_exercise_catalogue_double`. The programme template table remains compatible with the earlier template migration; the shared seed script intentionally uses the existing owner-scoped fields to avoid duplicating programme state.
+The current database migration ledger includes `0016_expand_exercise_catalogue_again`, `0017_add_exercise_catalogue_complement`, `0018_complete_exercise_catalogue_double` and `0019_programme_template_metadata`. The programme template table now stores explicit experience and framework metadata alongside the reusable sessions; frequency and equipment remain derived from the sessions.
 
 ## Verification and handoff boundaries
 

@@ -1,6 +1,6 @@
 export type EditorExercise = { name: string; pattern: string; prescription: string; target: string; equipment: string; sets?: number; repsMin?: number; repsMax?: number; intensityValue?: string; restSeconds?: number; tempo?: string; progressionRule?: string; note?: string };
 export type SavedSession = { dayOfWeek: number; name: string; exercises: EditorExercise[] };
-export type ProgrammeTemplateDefinition = { id: string; label: string; description: string; goal: string; sessionDurationMinutes?: number; sessions: Array<{ name: string; exercises: EditorExercise[] }> };
+export type ProgrammeTemplateDefinition = { id: string; label: string; description: string; goal: string; sessionDurationMinutes?: number; experienceLevel?: string; frameworkType?: string; sessions: Array<{ name: string; exercises: EditorExercise[] }> };
 export type StarterProgrammeTemplate = ProgrammeTemplateDefinition;
 
 export const weekdayLabels = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];

@@ -22,6 +22,7 @@ async function main() {
     for (const template of programmeLibrarySeed) {
       const [existing] = await db.select({ id: ptProgrammeTemplates.id }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.ownerProfileId, owner.id), eq(ptProgrammeTemplates.name, template.label))).limit(1);
       if (existing) {
+        await db.update(ptProgrammeTemplates).set({ experienceLevel: template.experienceLevel ?? "varied", frameworkType: template.frameworkType ?? "original" }).where(eq(ptProgrammeTemplates.id, existing.id));
         alreadyPresent += 1;
         continue;
       }
@@ -31,6 +32,8 @@ async function main() {
         description: template.description,
         goalSummary: template.goal,
         sessionDurationMinutes: template.sessionDurationMinutes ?? 45,
+        experienceLevel: template.experienceLevel ?? "varied",
+        frameworkType: template.frameworkType ?? "original",
         sessions: template.sessions,
       });
       inserted += 1;

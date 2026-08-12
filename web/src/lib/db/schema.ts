@@ -122,6 +122,8 @@ export const ptProgrammeTemplates = pgTable("pt_programme_templates", {
   description: text("description"),
   goalSummary: text("goal_summary").notNull(),
   sessionDurationMinutes: smallint("session_duration_minutes").default(45).notNull(),
+  experienceLevel: text("experience_level").default("varied").notNull(),
+  frameworkType: text("framework_type").default("original").notNull(),
   sessions: jsonb("sessions").default([]).notNull(),
   ...timestamps,
 }, (table) => [index("pt_programme_templates_owner_updated_idx").on(table.ownerProfileId, table.updatedAt)]);

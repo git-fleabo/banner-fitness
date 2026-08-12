@@ -396,7 +396,54 @@ const additionalProgrammeLibrarySeed: ProgrammeTemplateDefinition[] = [
   },
 ];
 
-export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed];
+const catalogueMetadata: Record<string, { experienceLevel: string; frameworkType: string }> = {
+  "library-foundation-strength-2-day": { experienceLevel: "Beginner", frameworkType: "Full body" },
+  "library-full-body-strength-3-day": { experienceLevel: "Varied", frameworkType: "Full body" },
+  "library-upper-lower-hypertrophy-4-day": { experienceLevel: "Intermediate", frameworkType: "Hypertrophy split" },
+  "library-home-dumbbell-3-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
+  "library-minimal-equipment-2-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
+  "library-suspension-rings-3-day": { experienceLevel: "Varied", frameworkType: "Equipment-specific" },
+  "library-kettlebell-conditioning-3-day": { experienceLevel: "Varied", frameworkType: "Concurrent" },
+  "library-power-foundation-2-day": { experienceLevel: "Varied", frameworkType: "Power" },
+  "library-climbing-support-2-day": { experienceLevel: "Varied", frameworkType: "Supplementary strength" },
+  "library-general-fitness-3-day": { experienceLevel: "Beginner", frameworkType: "Concurrent" },
+  "library-5x5-strength-3-day": { experienceLevel: "Beginner", frameworkType: "5×5 / linear" },
+  "library-main-lift-wave-4-day": { experienceLevel: "Intermediate", frameworkType: "Main-lift wave" },
+  "library-novice-linear-strength-3-day": { experienceLevel: "Beginner", frameworkType: "5×5 / linear" },
+  "library-intermediate-full-body-wave-3-day": { experienceLevel: "Intermediate", frameworkType: "Intermediate wave" },
+  "library-tiered-strength-progression-3-day": { experienceLevel: "Intermediate", frameworkType: "Tiered progression" },
+  "library-bridge-to-intermediate-3-day": { experienceLevel: "Intermediate", frameworkType: "Intermediate wave" },
+  "library-beginner-strength-conditioning-3-day": { experienceLevel: "Beginner", frameworkType: "Concurrent" },
+  "library-beginner-express-2-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
+  "library-machine-dumbbell-foundation-3-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
+  "library-full-body-hypertrophy-volume-3-day": { experienceLevel: "Intermediate", frameworkType: "Full body" },
+  "library-push-pull-legs-3-day": { experienceLevel: "Intermediate", frameworkType: "Hypertrophy split" },
+  "library-push-pull-legs-6-day": { experienceLevel: "Experienced", frameworkType: "Hypertrophy split" },
+  "library-upper-body-emphasis-3-day": { experienceLevel: "Intermediate", frameworkType: "Hypertrophy split" },
+  "library-barbell-minimalist-3-day": { experienceLevel: "Varied", frameworkType: "Equipment-specific" },
+  "library-bodyweight-progression-3-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
+  "library-travel-bands-bodyweight-3-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
+  "library-suspension-rings-mixed-2-day": { experienceLevel: "Varied", frameworkType: "Equipment-specific" },
+  "library-concurrent-strength-conditioning-4-day": { experienceLevel: "Intermediate", frameworkType: "Concurrent" },
+  "library-running-support-strength-2-day": { experienceLevel: "Varied", frameworkType: "Sport support" },
+  "library-field-sport-power-3-day": { experienceLevel: "Intermediate", frameworkType: "Sport support" },
+};
+
+export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed].map((template) => ({ ...template, ...catalogueMetadata[template.id] }));
+
+export type ProgrammeLibraryFilters = { query?: string; goal?: string; frequency?: number | "all"; equipment?: string; experienceLevel?: string; frameworkType?: string };
+
+export function programmeTemplateUsesEquipment(template: Pick<ProgrammeTemplateDefinition, "sessions">, equipment: string) {
+  return template.sessions.some((session) => session.exercises.some((exercise) => exercise.equipment.toLowerCase().includes(equipment.toLowerCase())));
+}
+
+export function filterProgrammeLibraryTemplates<T extends ProgrammeTemplateDefinition>(templates: T[], filters: ProgrammeLibraryFilters) {
+  const query = filters.query?.trim().toLowerCase() ?? "";
+  return templates.filter((template) => {
+    const haystack = `${template.label} ${template.goal} ${template.description} ${template.experienceLevel ?? ""} ${template.frameworkType ?? ""}`.toLowerCase();
+    return (!query || haystack.includes(query)) && (!filters.goal || filters.goal === "all" || template.goal === filters.goal) && (!filters.frequency || filters.frequency === "all" || template.sessions.length === filters.frequency) && (!filters.equipment || filters.equipment === "all" || programmeTemplateUsesEquipment(template, filters.equipment)) && (!filters.experienceLevel || filters.experienceLevel === "all" || template.experienceLevel === filters.experienceLevel) && (!filters.frameworkType || filters.frameworkType === "all" || template.frameworkType === filters.frameworkType);
+  });
+}
 
 export function mapLibraryTemplateToClientSessions(template: ProgrammeTemplateDefinition, preferredDays: number[]): SavedSession[] {
   const days = preferredDays.length === template.sessions.length ? preferredDays : template.sessions.map((_, index) => index + 1);
