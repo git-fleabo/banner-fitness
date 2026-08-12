@@ -26,6 +26,7 @@ Use all supplied sections, not just the current programme:
 - **Locations and equipment:** use exact recorded equipment. A broad label does not prove a specific item is available.
 - **Performance baselines:** 1RM, estimated 1RM, rep max or other observations, including date, source, confidence, technique and pain. A baseline is context, not an automatic prescription.
 - **Current programme:** weeks, sessions, exercises, sets, reps, intensity, rest, progression and rationale when present.
+- **Programme library/template context:** if a reusable Banner Fitness template is supplied, treat it as an editable starting point. Preserve the template's structure where it fits, identify client-specific adaptations, and do not present a library template as already approved or assigned.
 - **Programme history and workout results:** use these to identify change, adherence, fatigue, pain, recovery and progression context.
 - **Rule-based quality checks:** preserve the supplied severity, category, message and approval-readiness meaning.
 
@@ -174,6 +175,7 @@ Update this skill in the same change whenever an app enhancement changes any of 
 - Client, screening, performance, equipment, programme/version or workout-result fields
 - Quality categories, severity, approval readiness, evidence version or finding language
 - Exercise-library movement patterns, prescription fields or programme-editor capabilities
+- Programme Library fields, reusable template behaviour, preview/edit/duplicate workflow or apply-to-client behaviour
 - Banner Fitness's professional-scope boundaries or the supported AI response format
 
 Before updating, inspect the current implementations and tests, especially:

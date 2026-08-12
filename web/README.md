@@ -37,3 +37,7 @@ requires a provisioned application profile and published content; all five
 prototype topics remain draft-only. The private read-only draft preview is
 available separately for content inspection, while authenticated production
 smoke testing remains account-dependent.
+
+## Banner Fitness PT workspace handoff
+
+The current product state, deployed URL, database/catalogue changes, verification boundaries and next steps are maintained in [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md). The PT prompt contract is maintained in [`skills/banner-fitness-pt-prompt/SKILL.md`](skills/banner-fitness-pt-prompt/SKILL.md) and mirrored to `public/banner-fitness-pt-prompt-skill.md` during builds.

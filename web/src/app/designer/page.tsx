@@ -9,6 +9,7 @@ import { createClientAction, deleteClientAction, logWorkoutResultAction, recordP
 import { MobileNav, SessionEditorModal } from "./designer-support";
 import { DesignerSettings } from "./designer-settings";
 import { ExerciseLibrary } from "./exercise-library";
+import { ProgrammeLibrary } from "./programme-library";
 import { PromptBuilderLauncher } from "./prompt-builder";
 import { ClientPreferencesLauncher } from "./client-preferences";
 import { ClientPerformanceLauncher } from "./client-performance";
@@ -92,6 +93,7 @@ export default function DesignerPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showClients, setShowClients] = useState(false);
   const [showProgrammes, setShowProgrammes] = useState(false);
+  const [showProgrammeLibrary, setShowProgrammeLibrary] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showSessionEditor, setShowSessionEditor] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -202,9 +204,9 @@ export default function DesignerPage() {
         <div className="brand-mark"><img src="/banner-fitness-logo.png" alt="Banner Fitness" /></div>
         <div className="workspace-label">WORKSPACE <span>⌄</span></div>
         <nav className="designer-nav" aria-label="Main navigation">
-          {["Overview", "Clients", "Programmes", "Exercise library"].map((item, index) => (
-              <button key={item} className={activeNav === item ? "active" : ""} onClick={() => { setActiveNav(item); setShowLibrary(item === "Exercise library"); setShowClients(item === "Clients"); setShowProgrammes(item === "Programmes"); }}>
-              <Icon name={(["overview", "clients", "programmes", "library"] as SemanticIconName[])[index]} />{item}
+          {["Overview", "Clients", "Programmes", "Programme library", "Exercise library"].map((item, index) => (
+              <button key={item} className={activeNav === item ? "active" : ""} onClick={() => { setActiveNav(item); setShowLibrary(item === "Exercise library"); setShowClients(item === "Clients"); setShowProgrammes(item === "Programmes"); setShowProgrammeLibrary(item === "Programme library"); }}>
+              <Icon name={(["overview", "clients", "programmes", "programmes", "library"] as SemanticIconName[])[index]} />{item}
               {item === "Clients" && <em>{overview ? overview.counts.clients : "—"}</em>}
             </button>
           ))}
@@ -218,7 +220,7 @@ export default function DesignerPage() {
       <section className="designer-content">
         <header className="designer-header"><div className="mobile-brand"><img src="/banner-fitness-logo.png" alt="Banner Fitness" /></div><form className="header-search" onSubmit={searchWorkspace}><Icon name="search" /><input ref={searchInputRef} id="workspace-search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search clients, programmes..." aria-label="Search clients and programmes" /><kbd>⌘ K</kbd></form><div className="header-actions"><button className="icon-button" onClick={() => setShowHelp(true)} aria-label="Help and app instructions"><Icon name="help" /></button><div className="mini-avatar">NO</div></div></header>
 
-        {showLibrary ? <ExerciseLibrary onClose={() => { setShowLibrary(false); setActiveNav("Overview"); }} /> : showProgrammes ? <ProgrammeList programmes={overview?.programmes ?? []} clients={overview?.clients ?? []} onClose={() => { setShowProgrammes(false); setActiveNav("Overview"); }} onOpen={(id, name) => { setProgrammeWeek(null); setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowProgrammes(false); setActiveNav("Overview"); setShowClient(true); }} /> : showClients ? <><ClientList onClose={() => { setShowClients(false); setActiveNav("Overview"); }} onNew={() => setShowOnboarding(true)} onOpen={(id, name) => { setProgrammeWeek(null); setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowClients(false); setActiveNav("Overview"); setShowClient(true); }} /><CaseStudySeedPanel notify={notify} /></> : <>
+        {showLibrary ? <ExerciseLibrary onClose={() => { setShowLibrary(false); setActiveNav("Overview"); }} /> : showProgrammeLibrary ? <ProgrammeLibrary onClose={() => { setShowProgrammeLibrary(false); setActiveNav("Overview"); }} notify={notify} /> : showProgrammes ? <ProgrammeList programmes={overview?.programmes ?? []} clients={overview?.clients ?? []} onClose={() => { setShowProgrammes(false); setActiveNav("Overview"); }} onOpen={(id, name) => { setProgrammeWeek(null); setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowProgrammes(false); setActiveNav("Overview"); setShowClient(true); }} /> : showClients ? <><ClientList onClose={() => { setShowClients(false); setActiveNav("Overview"); }} onNew={() => setShowOnboarding(true)} onOpen={(id, name) => { setProgrammeWeek(null); setClientId(id); setClientDetail(null); setDetailError(""); setClient(name); setShowClients(false); setActiveNav("Overview"); setShowClient(true); }} /><CaseStudySeedPanel notify={notify} /></> : <>
           <div className="page-heading"><div><p className="eyebrow">{new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date()).toUpperCase()}</p><h1>Your workspace <span>✦</span></h1><p className="subheading">Clients, programmes and reviews in one place.</p></div><button className="primary-button" onClick={() => setShowOnboarding(true)}>+ New client</button></div>
 
           <div className="stat-grid">
@@ -247,7 +249,7 @@ export default function DesignerPage() {
       {showSettings && <DesignerSettings onClose={() => setShowSettings(false)} onSaved={(settings) => { setQualitySettings(settings); notify("Quality settings saved"); }} />}
       {showHelp && <DesignerHelp onClose={() => setShowHelp(false)} />}
       <button className="mobile-menu-launcher" onClick={() => setMobileMenuOpen(true)} aria-label="Open navigation">☰</button>
-      {mobileMenuOpen && <MobileNav onClose={() => setMobileMenuOpen(false)} onLibrary={() => { setMobileMenuOpen(false); setShowLibrary(true); setActiveNav("Exercise library"); }} onClients={() => { setMobileMenuOpen(false); setShowClients(true); setActiveNav("Clients"); }} onProgrammes={() => { setMobileMenuOpen(false); setShowProgrammes(true); setActiveNav("Programmes"); }} onSettings={() => { setMobileMenuOpen(false); setShowSettings(true); }} onOverview={() => { setMobileMenuOpen(false); setShowClients(false); setShowLibrary(false); setShowProgrammes(false); setActiveNav("Overview"); }} />}
+      {mobileMenuOpen && <MobileNav onClose={() => setMobileMenuOpen(false)} onProgrammeLibrary={() => { setMobileMenuOpen(false); setShowProgrammeLibrary(true); setActiveNav("Programme library"); }} onLibrary={() => { setMobileMenuOpen(false); setShowLibrary(true); setActiveNav("Exercise library"); }} onClients={() => { setMobileMenuOpen(false); setShowClients(true); setActiveNav("Clients"); }} onProgrammes={() => { setMobileMenuOpen(false); setShowProgrammes(true); setActiveNav("Programmes"); }} onSettings={() => { setMobileMenuOpen(false); setShowSettings(true); }} onOverview={() => { setMobileMenuOpen(false); setShowClients(false); setShowLibrary(false); setShowProgrammes(false); setShowProgrammeLibrary(false); setActiveNav("Overview"); }} />}
       {toast && <div className="toast">✓ {toast}</div>}
     </main>
   );

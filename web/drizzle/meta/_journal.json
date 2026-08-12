@@ -113,6 +113,27 @@
       "when": 1786451200000,
       "tag": "0015_programme_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786451300000,
+      "tag": "0016_expand_exercise_catalogue_again",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1786451400000,
+      "tag": "0017_add_exercise_catalogue_complement",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786451500000,
+      "tag": "0018_complete_exercise_catalogue_double",
+      "breakpoints": true
     }
   ]
 }

@@ -4,17 +4,17 @@ import { useEffect, useState } from "react";
 
 import { Icon } from "./semantic-icon";
 
-import { deleteProgrammeTemplateAction, listProgrammeTemplatesAction, saveProgrammeAction, saveProgrammeTemplateAction } from "./actions";
+import { deleteProgrammeTemplateAction, listProgrammeTemplatesAction, saveProgrammeAction, saveProgrammeTemplateAction, updateProgrammeTemplateAction } from "./actions";
 import { buildEditorSessionState, buildProgrammeTemplateState, buildWeekPreview, copySessionToDay, starterProgrammeTemplates, weekdayLabels, type EditorExercise, type ProgrammeTemplateDefinition, type SavedSession } from "@/lib/programme-editor";
 
 export type { EditorExercise } from "@/lib/programme-editor";
 type LibraryExercise = { name: string; pattern: string; target: string; equipment: string };
 
-export function MobileNav({ onClose, onOverview, onClients, onProgrammes, onLibrary, onSettings }: { onClose: () => void; onOverview: () => void; onClients: () => void; onProgrammes: () => void; onLibrary: () => void; onSettings: () => void }) {
-  return <div className="mobile-nav-backdrop" onClick={onClose}><nav className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}><div className="brand-mark"><img src="/banner-fitness-logo.png" alt="Banner Fitness" /></div><button className="close-button" onClick={onClose}>×</button><button onClick={onOverview}><Icon name="overview" /> Overview</button><button onClick={onClients}><Icon name="clients" /> Clients</button><button onClick={onProgrammes}><Icon name="programmes" /> Programmes</button><button onClick={onLibrary}><Icon name="library" /> Exercise library</button><button onClick={onSettings}><Icon name="settings" /> Settings</button><small className="mobile-nav-user">Noaman · Personal trainer</small></nav></div>;
+export function MobileNav({ onClose, onOverview, onClients, onProgrammes, onProgrammeLibrary, onLibrary, onSettings }: { onClose: () => void; onOverview: () => void; onClients: () => void; onProgrammes: () => void; onProgrammeLibrary: () => void; onLibrary: () => void; onSettings: () => void }) {
+  return <div className="mobile-nav-backdrop" onClick={onClose}><nav className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}><div className="brand-mark"><img src="/banner-fitness-logo.png" alt="Banner Fitness" /></div><button className="close-button" onClick={onClose}>×</button><button onClick={onOverview}><Icon name="overview" /> Overview</button><button onClick={onClients}><Icon name="clients" /> Clients</button><button onClick={onProgrammes}><Icon name="programmes" /> Programmes</button><button onClick={onProgrammeLibrary}><Icon name="programmes" /> Programme library</button><button onClick={onLibrary}><Icon name="library" /> Exercise library</button><button onClick={onSettings}><Icon name="settings" /> Settings</button><small className="mobile-nav-user">Noaman · Personal trainer</small></nav></div>;
 }
 
-export function SessionEditorModal({ clientId, clientName, goal, days, preferredDays, sessionDurationMinutes, week, savedSessions, onClose, onSaved, notify }: { clientId?: string; clientName: string; goal: string; days: number; preferredDays?: number[]; sessionDurationMinutes?: number; week: EditorExercise[]; savedSessions?: SavedSession[]; onClose: () => void; onSaved?: () => void; notify: (message: string) => void }) {
+export function SessionEditorModal({ clientId, clientName, goal, days, preferredDays, sessionDurationMinutes, week, savedSessions, templateId, onClose, onSaved, onTemplateSaved, notify }: { clientId?: string; clientName: string; goal: string; days: number; preferredDays?: number[]; sessionDurationMinutes?: number; week: EditorExercise[]; savedSessions?: SavedSession[]; templateId?: string; onClose: () => void; onSaved?: () => void; onTemplateSaved?: () => void; notify: (message: string) => void }) {
   const initialState = buildEditorSessionState({ preferredDays, trainingDays: days, week, savedSessions });
   const [sessionDays, setSessionDays] = useState(initialState.days);
   const [activeDay, setActiveDay] = useState(initialState.days[0] ?? 1);
@@ -26,7 +26,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   const [library, setLibrary] = useState<LibraryExercise[]>([]);
   const [customTemplates, setCustomTemplates] = useState<ProgrammeTemplateDefinition[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [templateName, setTemplateName] = useState("");
+  const [templateName, setTemplateName] = useState(templateId ? clientName : "");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [copyTargetDay, setCopyTargetDay] = useState(initialState.days[1] ?? initialState.days[0] ?? 1);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -44,6 +44,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     setSessions(next.sessions);
   }
   async function saveAsTemplate() {
+    if (templateId) { await saveTemplateChanges(); return; }
     if (!templateName.trim()) { setError("Enter a name for this programme template first."); return; }
     setSavingTemplate(true); setError("");
     try {
@@ -55,6 +56,17 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
       setTemplateName("");
       notify(`Saved ${result.name} to your programme templates`);
     } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Programme template could not be saved"); } finally { setSavingTemplate(false); }
+  }
+  async function saveTemplateChanges() {
+    if (!templateId || !templateName.trim()) { setError("Enter a name for this programme template first."); return; }
+    setSavingTemplate(true); setError("");
+    try {
+      const templateSessions = sessionDays.map((day) => ({ name: names[String(day)]?.trim() || `${weekdayLabels[day]} session`, exercises: sessionsForTemplate(sessions[String(day)] ?? []) }));
+      const result = await updateProgrammeTemplateAction({ templateId, name: templateName.trim(), description: `${templateSessions.length} editable session${templateSessions.length === 1 ? "" : "s"} for ${goal}.`, goalSummary: goal, sessionDurationMinutes: sessionDurationMinutes ?? 45, sessions: templateSessions });
+      notify(`Updated ${result.name}`);
+      onClose();
+      queueMicrotask(() => onTemplateSaved?.());
+    } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Programme template could not be updated"); } finally { setSavingTemplate(false); }
   }
   async function deleteSelectedTemplate() {
     const selected = customTemplates.find((template) => template.id === selectedTemplateId);
@@ -77,6 +89,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   useEffect(() => { fetch("/api/designer/exercises", { credentials: "same-origin", cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<{ exercises: Array<{ name: string; pattern: string; target: unknown; equipment: unknown }> }> : Promise.reject(new Error("Exercise library unavailable"))).then((data) => setLibrary(data.exercises.map((exercise) => ({ name: exercise.name, pattern: exercise.pattern, target: Array.isArray(exercise.target) ? exercise.target.join(" · ") : String(exercise.target ?? ""), equipment: Array.isArray(exercise.equipment) ? exercise.equipment.join(", ") : String(exercise.equipment ?? "") })))).catch(() => undefined); if (!savedSessions?.length) void listProgrammeTemplatesAction().then(setCustomTemplates).catch(() => undefined); }, [savedSessions?.length]);
   const availableLibrary = library.filter((exercise) => !currentExercises.some((current) => current.name === exercise.name) && `${exercise.name} ${exercise.pattern} ${exercise.target}`.toLowerCase().includes(libraryQuery.toLowerCase())).slice(0, 8);
   async function save() {
+    if (templateId) { await saveTemplateChanges(); return; }
     setSaving(true); setError("");
     let saved = false;
     try {

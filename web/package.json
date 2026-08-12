@@ -23,6 +23,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "db:seed": "tsx scripts/seed-prototype.ts",
+    "db:seed-programme-library": "tsx scripts/seed-programme-library.ts",
     "db:verify-content": "tsx scripts/verify-prototype.ts",
     "db:verify-learning-loop": "tsx scripts/verify-learning-loop.ts"
   },
