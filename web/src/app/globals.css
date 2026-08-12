@@ -99,6 +99,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .programme-library-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
 .programme-library-actions .primary-button { padding:8px 10px; font-size:10px; }
+.programme-library-presets { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:0 44px 22px; }.programme-library-presets>span { color:#9aa7a0; font-size:9px; font-weight:800; letter-spacing:.1em; margin-right:3px; }.preset-button { border:1px solid #dce8dd; border-radius:14px; background:#f7fbf7; color:#3d6c60; padding:7px 10px; font:600 10px inherit; cursor:pointer; }.preset-button:hover,.preset-button:focus-visible { border-color:#87ae92; background:#edf7ee; color:#1e5d57; }
 .small-modal label select { display:block; width:100%; margin-top:7px; border:1px solid var(--designer-line); border-radius:5px; padding:10px; background:#fff; font:12px inherit; color:var(--navy); }
 .apply-template-summary { display:grid; gap:4px; margin:0 0 18px; padding:12px; border:1px solid #dce8dd; border-radius:7px; background:#f6fbf6; }
 .apply-template-summary strong { color:var(--navy); font:600 14px Georgia,serif; }

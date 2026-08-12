@@ -26,6 +26,7 @@ The dedicated Programme Library is available from the designer navigation. It cu
 - search by name, goal or description;
 - goal filtering;
 - filters for frequency, equipment, experience level and framework type;
+- quick views for beginner/minimal equipment, strength/barbell, hypertrophy and sport-support use cases;
 - session/exercise count and duration metadata;
 - session-level preview;
 - duplicate as a separate owner template;

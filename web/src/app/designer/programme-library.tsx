@@ -11,6 +11,12 @@ export type ProgrammeLibraryTemplate = Awaited<ReturnType<typeof listProgrammeTe
 type ProgrammeTemplate = ProgrammeLibraryTemplate;
 type ProgrammeLibraryClient = { id: string; firstName: string; lastName: string };
 const equipmentFilters = [{ value: "Barbell", label: "Barbell" }, { value: "Dumbbells", label: "Dumbbells" }, { value: "Machines", label: "Machines" }, { value: "Cable", label: "Cable" }, { value: "Bodyweight", label: "Bodyweight" }, { value: "Kettlebell", label: "Kettlebell" }, { value: "TRX", label: "TRX" }, { value: "Gymnastic rings", label: "Rings" }, { value: "Resistance band", label: "Bands" }];
+const filterPresets = [
+  { id: "beginner-2-day-minimal", label: "Beginner · 2 days · minimal equipment", goal: "all", frequency: "2", equipment: "all", experience: "Beginner", framework: "all" },
+  { id: "strength-3-day-barbell", label: "Strength · 3 days · barbell", goal: "General strength", frequency: "3", equipment: "Barbell", experience: "all", framework: "all" },
+  { id: "hypertrophy-4-day", label: "Hypertrophy · 4 days", goal: "Hypertrophy", frequency: "4", equipment: "all", experience: "all", framework: "all" },
+  { id: "sport-support", label: "Sport support", goal: "all", frequency: "all", equipment: "all", experience: "all", framework: "Sport support" },
+] as const;
 
 export function ProgrammeLibrary({ clients, onClose, onApply, notify }: { clients: ProgrammeLibraryClient[]; onClose: () => void; onApply: (template: ProgrammeTemplate, client: ProgrammeLibraryClient) => void; notify: (message: string) => void }) {
   const [templates, setTemplates] = useState<ProgrammeTemplate[]>([]);
@@ -57,6 +63,15 @@ export function ProgrammeLibrary({ clients, onClose, onApply, notify }: { client
     setFrameworkFilter("all");
   }
 
+  function applyPreset(preset: typeof filterPresets[number]) {
+    setQuery("");
+    setGoalFilter(preset.goal);
+    setFrequencyFilter(preset.frequency);
+    setEquipmentFilter(preset.equipment);
+    setExperienceFilter(preset.experience);
+    setFrameworkFilter(preset.framework);
+  }
+
   async function duplicate() {
     if (!duplicateSource || !duplicateName.trim()) return;
     setSaving(true);
@@ -82,6 +97,7 @@ export function ProgrammeLibrary({ clients, onClose, onApply, notify }: { client
   return <div className="programme-library-view">
     <div className="page-heading"><div><p className="eyebrow">REUSABLE PROGRAMMES</p><h1>Programme library</h1><p className="subheading">Reusable PT-owned starting points. Adapt each template to the client, then save and quality-check a client-specific version.</p></div><button className="primary-button" onClick={onClose}>← Dashboard</button></div>
     <div className="programme-library-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search programme templates…" aria-label="Search programme templates" /><select value={goalFilter} onChange={(event) => setGoalFilter(event.target.value)} aria-label="Filter programme templates by goal"><option value="all">All goals</option>{goals.map((goal) => <option key={goal} value={goal}>{goal}</option>)}</select><select value={frequencyFilter} onChange={(event) => setFrequencyFilter(event.target.value)} aria-label="Filter programme templates by frequency"><option value="all">Any frequency</option>{[2, 3, 4, 5, 6].map((frequency) => <option key={frequency} value={frequency}>{frequency} days / week</option>)}</select><select value={equipmentFilter} onChange={(event) => setEquipmentFilter(event.target.value)} aria-label="Filter programme templates by equipment"><option value="all">Any equipment</option>{equipmentFilters.map((equipment) => <option key={equipment.value} value={equipment.value}>{equipment.label}</option>)}</select><select value={experienceFilter} onChange={(event) => setExperienceFilter(event.target.value)} aria-label="Filter programme templates by experience level"><option value="all">Any experience</option>{experienceLevels.map((level) => <option key={level} value={level}>{level}</option>)}</select><select value={frameworkFilter} onChange={(event) => setFrameworkFilter(event.target.value)} aria-label="Filter programme templates by framework"><option value="all">Any framework</option>{frameworkTypes.map((framework) => <option key={framework} value={framework}>{framework}</option>)}</select><button className="secondary-button" onClick={resetFilters}>Reset</button><button className="secondary-button" onClick={() => void load()}>Refresh</button></div>
+    <div className="programme-library-presets" aria-label="Saved programme filters"><span>QUICK VIEWS</span>{filterPresets.map((preset) => <button key={preset.id} className="preset-button" onClick={() => applyPreset(preset)}>{preset.label}</button>)}</div>
     {error && <p className="form-error programme-library-error" role="alert">{error}</p>}
     {loading ? <p className="library-empty">Loading the programme library…</p> : filtered.length ? <div className="programme-library-grid">{filtered.map((template) => <article className="programme-library-card" key={template.id}><div className="programme-library-card-heading"><div><p className="eyebrow">{template.goal}</p><h2>{template.label}</h2></div><span>{template.sessions.length} sessions</span></div><p>{template.description || "Reusable starting point for PT adaptation."}</p><div className="programme-library-meta"><span>{template.sessionDurationMinutes} min</span><span>{template.sessions.reduce((sum, session) => sum + session.exercises.length, 0)} exercises</span><span>{template.experienceLevel ?? "Varied"}</span><span>{template.frameworkType ?? "Custom"}</span></div><div className="programme-library-actions"><button className="primary-button" onClick={() => { setApplySource(template); setApplyClientId(clients[0]?.id ?? ""); }}>Apply to client →</button><button className="text-button" onClick={() => setPreview(template)}>Preview →</button><button className="text-button" onClick={() => { setDuplicateSource(template); setDuplicateName(`${template.label} copy`); }}>Duplicate</button><button className="text-button" onClick={() => setEditing(template)}>Edit →</button></div></article>)}</div> : <div className="empty-client-state"><h3>No programme templates match</h3><p>Try another combination of goal, frequency, equipment, experience or framework.</p><button className="secondary-button" onClick={resetFilters}>Reset filters</button></div>}
     {preview && <ProgrammeTemplatePreview template={preview} onClose={() => setPreview(null)} />}
