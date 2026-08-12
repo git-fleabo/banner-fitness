@@ -347,7 +347,7 @@ function ClientWorkspace({clientId,name,goal,days,preferredDays,setGoal,setDays,
     const colour = clientColor(name);
     drawer.classList.add(colour);
     return () => drawer.classList.remove(colour);
-  }, [name]);
+  }, [name, loading]);
   function scrollToSection(id: string, section: "overview" | "assessment" | "programme" | "history" = "overview") {
     onWorkspaceSectionChange(section);
     window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
