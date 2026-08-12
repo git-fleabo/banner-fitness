@@ -49,6 +49,12 @@ type OverviewData = { counts: { clients: number; draftProgrammes: number; adhere
 type PerformanceRecord = { id: string; exerciseId: string | null; exerciseName: string | null; metricType: string; metricName: string | null; performanceDate: string; value: string | number; unit: string; repetitions: number | null; loadKg: string | number | null; source: string; confidence: string | null; techniqueAcceptable: boolean; painReported: boolean; notes: string | null };
 type ClientDetail = { client: { id: string; firstName: string; lastName: string; dateOfBirth: string | null; sexOrGender: string | null; trainingExperience: string | null; heightCm: number | null; weightKg: number | null; occupation: string | null; dailyActivity: string | null; sessionDurationMinutes: number | null; preferredDays: unknown; sleepHours: string | null; stressLevel: string | null; notes: string | null; createdAt?: string; updatedAt?: string }; assessment: { clearanceRequired: boolean; riskFlags: unknown; responses: unknown; reviewDate: string | null; assessmentDate: string; ptNotes: string | null; injuryNotes: string | null; contraindicationNotes: string | null } | null; goal: { goalType: string; target: string | null; metric: string | null } | null; location: { name: string; locationType: string; equipment: unknown } | null; preferences: { likedExercises?: unknown; dislikedExercises?: unknown; preferredStyle?: string | null; preferredStructure?: string | null; preferredEquipment?: unknown; cardioModalities?: unknown; varietyPreference?: string | null; confidenceNotes?: string | null } | null; performanceRecords: PerformanceRecord[]; programmeHistory: Array<{ id: string; name: string; goalSummary: string; status: string; version: number; updatedAt: string; createdAt?: string }>; timeline: ClientTimelineItem[]; quality: QualityReview | null; programme: { id: string; name: string; goalSummary: string; status: string; currentWeek: number; durationWeeks: number; version: number; rationale: string | null; week: { id: string; weekNumber: number; focus: string; volumeTarget: string | null; intensityTarget: string | null } | null; weekOptions: Array<{ weekNumber: number; focus: string; volumeTarget: string | null; intensityTarget: string | null }>; sessions: Array<{ id: string; dayOfWeek: number; name: string; sessionType: string; durationMinutes: number; exercises: Exercise[] }>; events: Array<{ id: string; action: string; details: unknown; createdAt: string }> } | null };
 
+function clientColor(value: string) {
+  let hash = 0;
+  for (const character of value) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  return `client-color-${Math.abs(hash) % 6}`;
+}
+
 function hasUnresolvedScreening(assessment: ClientDetail["assessment"]) {
   if (!assessment || hasRecordedScreeningReview(assessment.ptNotes)) return false;
   return Boolean(assessment.clearanceRequired || assessment.injuryNotes || assessment.contraindicationNotes || (Array.isArray(assessment.riskFlags) && assessment.riskFlags.length));
@@ -126,6 +132,22 @@ export default function DesignerPage() {
   const refreshOverview = () => {
     void fetch("/api/designer/overview", { credentials: "same-origin", cache: "no-store" }).then(async (response) => { if (response.ok) setOverview(await response.json() as OverviewData); }).catch(() => undefined);
   };
+
+  useEffect(() => {
+    const applyClientColours = () => {
+      const selectors = [
+        [".dashboard-client-row .dashboard-client-name strong", ".dashboard-client-row"],
+        [".attention-row .attention-copy strong", ".attention-row"],
+        [".schedule-card strong", ".schedule-card"],
+        [".calendar-session span", ".calendar-session"],
+      ] as const;
+      selectors.forEach(([nameSelector, targetSelector]) => document.querySelectorAll<HTMLElement>(nameSelector).forEach((nameNode) => nameNode.closest<HTMLElement>(targetSelector)?.classList.add(clientColor(nameNode.textContent ?? "client"))));
+      const drawer = document.querySelector<HTMLElement>(".workspace-drawer");
+      if (drawer && client) drawer.classList.add(clientColor(client));
+    };
+    const frame = window.requestAnimationFrame(applyClientColours);
+    return () => window.cancelAnimationFrame(frame);
+  }, [overview, showCalendar, showClient, client]);
 
   useEffect(() => {
     if (!showClient || !clientId) return;
@@ -309,6 +331,16 @@ function ClientWorkspace({clientId,name,goal,days,preferredDays,setGoal,setDays,
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const selectedSession = programme?.sessions.find((session) => session.id === selectedSessionId) ?? programme?.sessions[0];
   const selectedExercises = selectedSession?.exercises ?? week;
+  useEffect(() => {
+    if (programme || loading) return;
+    const manageButton = document.querySelector<HTMLButtonElement>(".workspace-drawer .plan-header .more-button");
+    if (!manageButton) return;
+    manageButton.textContent = "Build programme";
+    manageButton.setAttribute("aria-label", "Build programme");
+    const openBuilder = (event: Event) => { event.preventDefault(); event.stopImmediatePropagation(); onEditSessions(); };
+    manageButton.addEventListener("click", openBuilder, true);
+    return () => manageButton.removeEventListener("click", openBuilder, true);
+  }, [programme, loading, onEditSessions]);
   function scrollToSection(id: string, section: "overview" | "assessment" | "programme" | "history" = "overview") {
     onWorkspaceSectionChange(section);
     window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
@@ -359,6 +391,10 @@ function WorkspaceSupportPortal({clientId,name,goal,days,detail,programme,screen
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTarget(document.querySelector<HTMLElement>(".workspace-drawer"));
   }, []);
+  useEffect(() => {
+    if (!preferencesOpen) return;
+    window.setTimeout(() => document.querySelector<HTMLElement>(".client-preferences-modal input")?.focus(), 0);
+  }, [preferencesOpen]);
   if (!target || !detail) return null;
   const initialPreferredDays = preferredDayValues(detail.client.preferredDays);
   const currentStage = GUIDED_ONBOARDING_STAGES[guidedStep];
@@ -371,6 +407,7 @@ function WorkspaceSupportPortal({clientId,name,goal,days,detail,programme,screen
       setPreferencesOpen(true);
     } else if (guidedStep === 3) {
       document.getElementById("client-location")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => document.querySelector<HTMLElement>("#client-location input")?.focus(), 250);
     } else if (guidedStep === 4) {
       onEditSessions();
     } else {

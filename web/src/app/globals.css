@@ -440,3 +440,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .calendar-session small { margin-top:4px; color:#7e8e86; font-size:9px; }
 .calendar-session em { margin-top:8px; color:var(--designer-green); font-size:9px; font-style:normal; font-weight:700; }
 .dashboard-roster { scroll-margin-top:24px; }
+.client-color-0 { --client-accent:#4c8a78; --client-accent-soft:#e8f3ee; }
+.client-color-1 { --client-accent:#6f82aa; --client-accent-soft:#edf1f8; }
+.client-color-2 { --client-accent:#9a7657; --client-accent-soft:#f6eee6; }
+.client-color-3 { --client-accent:#8b6f9e; --client-accent-soft:#f1ebf5; }
+.client-color-4 { --client-accent:#b06d61; --client-accent-soft:#faeeeb; }
+.client-color-5 { --client-accent:#6b8b59; --client-accent-soft:#edf4e9; }
+.dashboard-client-row[class*="client-color-"],.attention-row[class*="client-color-"] { box-shadow:inset 3px 0 var(--client-accent); }
+.dashboard-client-row[class*="client-color-"]:hover,.dashboard-client-row[class*="client-color-"]:focus-visible,.attention-row[class*="client-color-"]:hover { background:var(--client-accent-soft); }
+.schedule-card[class*="client-color-"],.calendar-session[class*="client-color-"] { border-left:3px solid var(--client-accent); }
+.workspace-drawer[class*="client-color-"] .large-avatar { background:var(--client-accent-soft); color:var(--client-accent); border-color:var(--client-accent); }
+.workspace-drawer[class*="client-color-"] .workspace-tabs button.active { border-bottom-color:var(--client-accent); color:var(--client-accent); }
