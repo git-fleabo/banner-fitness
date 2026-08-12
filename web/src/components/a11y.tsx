@@ -13,3 +13,11 @@ export function VisuallyHidden({ children }: { children: ReactNode }) {
 export function LiveStatus({ children }: { children: ReactNode }) {
   return <p className={styles.visuallyHidden} role="status" aria-live="polite">{children}</p>;
 }
+
+export function LoadingState({ children = "Loading…" }: { children?: ReactNode }) {
+  return <div className="prompt-builder-loading" role="status" aria-live="polite">{children}</div>;
+}
+
+export function ErrorAlert({ children }: { children: ReactNode }) {
+  return <p className="form-error" role="alert" aria-live="assertive">{children}</p>;
+}
