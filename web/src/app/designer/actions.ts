@@ -12,6 +12,7 @@ import { caseStudyFixtures, type CaseStudySlug } from "@/lib/case-study-fixtures
 import { defaultQualitySettings, normalizeQualitySettings, type QualitySettings } from "@/lib/pt-quality";
 import { findingCanBeAcknowledged, getCurrentProgrammeQuality, refreshClientProgrammeQuality, refreshOwnerProgrammeQuality, refreshProgrammeQuality } from "@/lib/pt-quality-server";
 import { defaultEffortForExperience, listText, performanceBaselineText, remapSessionDays } from "@/lib/pt-performance";
+import { normalizePtGoal } from "@/lib/pt-goals";
 
 const clientInputSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -394,7 +395,7 @@ export async function listProgrammeTemplatesAction() {
   const owner = await requireDesignerAccess();
   const db = getDb();
   const templates = await db.select({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name, description: ptProgrammeTemplates.description, goalSummary: ptProgrammeTemplates.goalSummary, sessionDurationMinutes: ptProgrammeTemplates.sessionDurationMinutes, experienceLevel: ptProgrammeTemplates.experienceLevel, frameworkType: ptProgrammeTemplates.frameworkType, sessions: ptProgrammeTemplates.sessions }).from(ptProgrammeTemplates).where(eq(ptProgrammeTemplates.ownerProfileId, owner.authUserId)).orderBy(desc(ptProgrammeTemplates.updatedAt)).limit(50);
-  return templates.map((template) => ({ id: template.id, label: template.name, description: template.description ?? "", goal: template.goalSummary, sessionDurationMinutes: template.sessionDurationMinutes, experienceLevel: template.experienceLevel, frameworkType: template.frameworkType, sessions: programmeTemplateSessionSchema.array().parse(template.sessions) }));
+  return templates.map((template) => ({ id: template.id, label: template.name, description: template.description ?? "", goal: normalizePtGoal(template.goalSummary), sessionDurationMinutes: template.sessionDurationMinutes, experienceLevel: template.experienceLevel, frameworkType: template.frameworkType, sessions: programmeTemplateSessionSchema.array().parse(template.sessions) }));
 }
 
 export async function saveProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateSchema>) {

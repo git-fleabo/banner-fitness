@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Icon } from "./semantic-icon";
 
 import { deleteProgrammeTemplateAction, listProgrammeTemplatesAction, saveProgrammeAction, saveProgrammeTemplateAction, updateProgrammeTemplateAction } from "./actions";
 import { buildEditorSessionState, buildProgrammeTemplateState, buildWeekPreview, copySessionToDay, starterProgrammeTemplates, weekdayLabels, type EditorExercise, type ProgrammeTemplateDefinition, type SavedSession } from "@/lib/programme-editor";
 import type { AiProgrammeImportApproval } from "@/lib/pt-ai-import";
+import { filterProgrammeLibraryTemplates, programmeLibrarySeed } from "@/lib/programme-library";
 
 export type { EditorExercise } from "@/lib/programme-editor";
 type LibraryExercise = { name: string; pattern: string; target: string; equipment: string };
@@ -34,10 +35,11 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   const [copyTargetDay, setCopyTargetDay] = useState(initialState.days[1] ?? initialState.days[0] ?? 1);
   const [previewOpen, setPreviewOpen] = useState(false);
   const currentExercises = sessions[String(activeDay)] ?? [];
+  const recommendedTemplates = useMemo(() => filterProgrammeLibraryTemplates(programmeLibrarySeed, { goal: effectiveGoal }).slice(0, 5), [effectiveGoal]);
   const preview = buildWeekPreview({ days: sessionDays, sessions, names });
   const resolvedCopyTargetDay = sessionDays.includes(copyTargetDay) && copyTargetDay !== activeDay ? copyTargetDay : sessionDays.find((day) => day !== activeDay) ?? activeDay;
   function applyTemplate(templateId: string) {
-    const template = [...starterProgrammeTemplates, ...customTemplates].find((candidate) => candidate.id === templateId);
+    const template = [...recommendedTemplates, ...starterProgrammeTemplates, ...customTemplates].find((candidate) => candidate.id === templateId);
     const next = template ? buildProgrammeTemplateState(template, preferredDays, days) : null;
     if (!next) { setSelectedTemplateId(""); return; }
     const hasUnsavedExercises = sessionDays.some((day) => (sessions[String(day)] ?? []).length > 0);
@@ -92,7 +94,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     setActiveDay(resolvedCopyTargetDay);
     notify(`Copied ${names[String(activeDay)] || "session"} to ${weekdayLabels[resolvedCopyTargetDay]}`);
   }
-  useEffect(() => { fetch("/api/designer/exercises", { credentials: "same-origin", cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<{ exercises: Array<{ name: string; pattern: string; target: unknown; equipment: unknown }> }> : Promise.reject(new Error("Exercise library unavailable"))).then((data) => setLibrary(data.exercises.map((exercise) => ({ name: exercise.name, pattern: exercise.pattern, target: Array.isArray(exercise.target) ? exercise.target.join(" · ") : String(exercise.target ?? ""), equipment: Array.isArray(exercise.equipment) ? exercise.equipment.join(", ") : String(exercise.equipment ?? "") })))).catch(() => undefined); if (!savedSessions?.length) void listProgrammeTemplatesAction().then(setCustomTemplates).catch(() => undefined); }, [savedSessions?.length]);
+  useEffect(() => { fetch("/api/designer/exercises", { credentials: "same-origin", cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<{ exercises: Array<{ name: string; pattern: string; target: unknown; equipment: unknown }> }> : Promise.reject(new Error("Exercise library unavailable"))).then((data) => setLibrary(data.exercises.map((exercise) => ({ name: exercise.name, pattern: exercise.pattern, target: Array.isArray(exercise.target) ? exercise.target.join(" · ") : String(exercise.target ?? ""), equipment: Array.isArray(exercise.equipment) ? exercise.equipment.join(", ") : String(exercise.equipment ?? "") })))).catch(() => undefined); if (!savedSessions?.length) void listProgrammeTemplatesAction().then((templates) => setCustomTemplates([...recommendedTemplates, ...templates])).catch(() => setCustomTemplates(recommendedTemplates)); }, [savedSessions?.length, recommendedTemplates]);
   const availableLibrary = library.filter((exercise) => !currentExercises.some((current) => current.name === exercise.name) && `${exercise.name} ${exercise.pattern} ${exercise.target}`.toLowerCase().includes(libraryQuery.toLowerCase())).slice(0, 8);
   async function save() {
     if (templateId) { await saveTemplateChanges(); return; }

@@ -418,3 +418,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .onboarding-guide-choice strong { color:#2f6048; font-size:11px; }
 .onboarding-guide-choice small { margin-top:4px; color:#71827b; font-size:10px; line-height:1.45; }
 @media (max-width: 760px) { .guided-onboarding-progress { grid-template-columns:repeat(3,1fr); }.guided-onboarding-stage { align-items:flex-start; flex-direction:column; }.guided-onboarding-actions { justify-content:flex-start; } }
+.workspace-support-overview > .assessment-panel,.workspace-support-overview > .client-timeline-panel,.workspace-support-overview > .workspace-support-grid,.workspace-support-overview > .rationale-panel,.workspace-support-overview > .client-progress-panel { display:none; }
+.workspace-support-assessment > :not(.guided-onboarding-panel):not(.assessment-panel) { display:none; }
+.workspace-support-programme > .assessment-panel,.workspace-support-programme > .client-timeline-panel,.workspace-support-programme > .workspace-actions-row,.workspace-support-programme > .training-days-panel,.workspace-support-programme > .location-equipment-panel,.workspace-support-programme > .pt-tools-panel,.workspace-support-programme > .client-progress-panel { display:none; }
+.workspace-support-history > .assessment-panel,.workspace-support-history > .workspace-actions-row,.workspace-support-history > .training-days-panel,.workspace-support-history > .location-equipment-panel,.workspace-support-history > .pt-tools-panel,.workspace-support-history > .rationale-panel,.workspace-support-history > .client-progress-panel { display:none; }
+.workspace-support-history > .workspace-support-grid > :not(.programme-history-panel) { display:none; }
+.workspace-support-programme > .workspace-support-grid > .programme-history-panel { display:none; }
+.client-timeline-controls { display:flex; align-items:center; gap:12px; }
+.client-timeline-panel.is-collapsed { padding-bottom:12px; }

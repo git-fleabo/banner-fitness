@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { filterProgrammeLibraryTemplates, mapLibraryTemplateToClientSessions, programmeLibrarySeed } from "./programme-library";
+import { PT_GOALS } from "./pt-goals";
 
 describe("programme library", () => {
   it("ships a varied reusable catalogue", () => {
-    expect(programmeLibrarySeed).toHaveLength(30);
-    expect(new Set(programmeLibrarySeed.map((template) => template.goal)).size).toBeGreaterThanOrEqual(5);
+    expect(programmeLibrarySeed).toHaveLength(33);
+    expect(new Set(programmeLibrarySeed.map((template) => template.goal)).size).toBe(PT_GOALS.length);
+    for (const goal of PT_GOALS) expect(programmeLibrarySeed.filter((template) => template.goal === goal).length).toBeGreaterThanOrEqual(3);
     expect(programmeLibrarySeed.every((template) => template.sessions.every((session) => session.exercises.length > 0))).toBe(true);
     expect(programmeLibrarySeed.some((template) => template.id === "library-5x5-strength-3-day")).toBe(true);
     expect(programmeLibrarySeed.some((template) => template.id === "library-concurrent-strength-conditioning-4-day")).toBe(true);

@@ -1,4 +1,5 @@
 import type { EditorExercise, ProgrammeTemplateDefinition, SavedSession } from "./programme-editor";
+import { normalizePtGoal } from "./pt-goals";
 
 const exercise = (
   name: string,
@@ -397,6 +398,9 @@ const additionalProgrammeLibrarySeed: ProgrammeTemplateDefinition[] = [
 ];
 
 const catalogueMetadata: Record<string, { experienceLevel: string; frameworkType: string }> = {
+  "library-fat-loss-foundation-2-day": { experienceLevel: "Beginner", frameworkType: "Full body" },
+  "library-fat-loss-concurrent-3-day": { experienceLevel: "Varied", frameworkType: "Concurrent" },
+  "library-fat-loss-home-3-day": { experienceLevel: "Beginner", frameworkType: "Equipment-specific" },
   "library-foundation-strength-2-day": { experienceLevel: "Beginner", frameworkType: "Full body" },
   "library-full-body-strength-3-day": { experienceLevel: "Varied", frameworkType: "Full body" },
   "library-upper-lower-hypertrophy-4-day": { experienceLevel: "Intermediate", frameworkType: "Hypertrophy split" },
@@ -429,7 +433,16 @@ const catalogueMetadata: Record<string, { experienceLevel: string; frameworkType
   "library-field-sport-power-3-day": { experienceLevel: "Intermediate", frameworkType: "Sport support" },
 };
 
-export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed].map((template) => ({ ...template, ...catalogueMetadata[template.id] }));
+const fatLossCoverageSeed: ProgrammeTemplateDefinition[] = [
+  ["library-general-fitness-3-day", "library-fat-loss-foundation-2-day", "Fat loss foundation · 2 day"],
+  ["library-beginner-strength-conditioning-3-day", "library-fat-loss-concurrent-3-day", "Fat loss and conditioning · 3 day"],
+  ["library-travel-bands-bodyweight-3-day", "library-fat-loss-home-3-day", "Fat loss home training · 3 day"],
+].flatMap(([sourceId, id, label]) => {
+  const source = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed].find((template) => template.id === sourceId);
+  return source ? [{ ...source, id, label, goal: "Fat loss + muscle retention", description: `${source.description} Adapt the volume, conditioning and weekly schedule to support a sustainable fat-loss phase.` }] : [];
+});
+
+export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgrammeLibrarySeed, ...additionalProgrammeLibrarySeed, ...fatLossCoverageSeed].map((template) => ({ ...template, goal: normalizePtGoal(template.goal), ...catalogueMetadata[template.id] }));
 
 export type ProgrammeLibraryFilters = { query?: string; goal?: string; frequency?: number | "all"; equipment?: string; experienceLevel?: string; frameworkType?: string };
 
@@ -441,7 +454,7 @@ export function filterProgrammeLibraryTemplates<T extends ProgrammeTemplateDefin
   const query = filters.query?.trim().toLowerCase() ?? "";
   return templates.filter((template) => {
     const haystack = `${template.label} ${template.goal} ${template.description} ${template.experienceLevel ?? ""} ${template.frameworkType ?? ""}`.toLowerCase();
-    return (!query || haystack.includes(query)) && (!filters.goal || filters.goal === "all" || template.goal === filters.goal) && (!filters.frequency || filters.frequency === "all" || template.sessions.length === filters.frequency) && (!filters.equipment || filters.equipment === "all" || programmeTemplateUsesEquipment(template, filters.equipment)) && (!filters.experienceLevel || filters.experienceLevel === "all" || template.experienceLevel === filters.experienceLevel) && (!filters.frameworkType || filters.frameworkType === "all" || template.frameworkType === filters.frameworkType);
+    return (!query || haystack.includes(query)) && (!filters.goal || filters.goal === "all" || normalizePtGoal(template.goal) === normalizePtGoal(filters.goal)) && (!filters.frequency || filters.frequency === "all" || template.sessions.length === filters.frequency) && (!filters.equipment || filters.equipment === "all" || programmeTemplateUsesEquipment(template, filters.equipment)) && (!filters.experienceLevel || filters.experienceLevel === "all" || template.experienceLevel === filters.experienceLevel) && (!filters.frameworkType || filters.frameworkType === "all" || template.frameworkType === filters.frameworkType);
   });
 }
 

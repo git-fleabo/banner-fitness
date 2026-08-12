@@ -22,7 +22,7 @@ async function main() {
     for (const template of programmeLibrarySeed) {
       const [existing] = await db.select({ id: ptProgrammeTemplates.id }).from(ptProgrammeTemplates).where(and(eq(ptProgrammeTemplates.ownerProfileId, owner.id), eq(ptProgrammeTemplates.name, template.label))).limit(1);
       if (existing) {
-        await db.update(ptProgrammeTemplates).set({ experienceLevel: template.experienceLevel ?? "varied", frameworkType: template.frameworkType ?? "original" }).where(eq(ptProgrammeTemplates.id, existing.id));
+        await db.update(ptProgrammeTemplates).set({ goalSummary: template.goal, experienceLevel: template.experienceLevel ?? "varied", frameworkType: template.frameworkType ?? "original" }).where(eq(ptProgrammeTemplates.id, existing.id));
         alreadyPresent += 1;
         continue;
       }
