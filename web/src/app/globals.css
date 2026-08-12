@@ -250,6 +250,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .dashboard-client-status { color:#4c8a60; font-size:10px; font-weight:800; white-space:nowrap; }
 .dashboard-client-status.attention { color:#bd7047; }
 .dashboard-client-status b { margin-left:5px; font-size:12px; }
+.designer-content > .dashboard-roster { width:auto; margin-left:44px; margin-right:44px; }
+.dashboard-roster-header,.dashboard-client-row { --dashboard-roster-columns:minmax(205px,1.45fr) minmax(145px,1.2fr) minmax(120px,1fr) minmax(82px,.7fr) minmax(115px,1fr) minmax(100px,.7fr); min-width:0; }
+.dashboard-roster-header > span:first-child { padding-left:39px; }
 .starter-template-picker { display:flex; align-items:flex-end; gap:12px; margin:0 0 16px; padding:12px; border:1px solid #dce8dd; border-radius:6px; background:#f6fbf6; }
 .starter-template-picker label { display:block; flex:0 1 330px; color:#7b8b83; font-size:9px; font-weight:800; letter-spacing:.1em; }
 .starter-template-picker select { display:block; width:100%; margin-top:6px; border:1px solid #cedfd0; border-radius:5px; background:#fff; color:#425f57; padding:9px; font:11px inherit; }
@@ -281,3 +284,5 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 @media (max-width: 980px) { .dashboard-roster { margin-left:25px; margin-right:25px; }.dashboard-roster-toolbar { align-items:stretch; flex-direction:column; }.dashboard-roster-filters { justify-content:flex-end; } }
 @media (max-width: 680px) { .dashboard-roster { margin:0 16px 16px; padding:17px; }.dashboard-roster-heading .text-button { display:none; }.dashboard-view-tabs { margin-right:-17px; padding-right:17px; }.dashboard-roster-filters { width:100%; }.dashboard-roster-filters input,.dashboard-roster-filters select { flex:1; min-width:0; width:auto; }.starter-template-picker { align-items:stretch; flex-direction:column; gap:8px; }.starter-template-picker label { flex-basis:auto; }.template-save-row { align-items:stretch; flex-direction:column; }.template-save-row .secondary-button { align-self:flex-start; }.equipment-groups { gap:9px; } }
+@media (max-width: 980px) { .designer-content > .dashboard-roster { margin-left:25px; margin-right:25px; } }
+@media (max-width: 680px) { .designer-content > .dashboard-roster { margin:0 16px 16px; }.dashboard-roster-header,.dashboard-client-row { min-width:900px; } }
