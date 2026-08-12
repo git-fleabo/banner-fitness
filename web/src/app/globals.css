@@ -295,7 +295,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .location-equipment-panel { padding:20px; }
 .location-equipment-panel .inner-heading { margin-bottom:20px; }
 .location-equipment-panel .onboarding-fields { gap:16px; margin-bottom:18px; }
-.location-equipment-panel .onboarding-fields label { margin-bottom:0; }
+.location-equipment-panel .onboarding-fields label { display:flex; flex-direction:column; gap:8px; margin-bottom:0; }
+.location-equipment-panel .onboarding-fields input,.location-equipment-panel .onboarding-fields select { margin-top:0; }
 .location-equipment-panel .equipment-help { margin:0 0 18px; max-width:620px; }
 .location-equipment-panel .equipment-groups { gap:18px; margin-top:0; }
 .location-equipment-panel .equipment-group { padding-top:14px; }
