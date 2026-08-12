@@ -1,7 +1,7 @@
 import { and, count, desc, eq, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { getAccountAccess } from "@/lib/authorization/server";
+import { isActiveOwner, requireOwner } from "@/lib/authorization/require-owner";
 import { getDb } from "@/lib/db/client";
 import { hasRecordedScreeningReview } from "@/lib/pt-programming";
 import { ptAssessments, ptClients, ptGoals, ptLocations, ptProgrammeQualityReviews, ptProgrammeWeeks, ptProgrammes, ptSessions, ptWorkoutResults } from "@/lib/db/schema";
@@ -9,10 +9,11 @@ import { ptAssessments, ptClients, ptGoals, ptLocations, ptProgrammeQualityRevie
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const access = await getAccountAccess();
-  if (access.state !== "active" || access.account.role !== "owner") return NextResponse.json({ error: "PT owner access required" }, { status: 403 });
+  const owner = await requireOwner();
+  if (!isActiveOwner(owner)) return owner;
+  const access = { account: owner };
   const db = getDb();
-  const [clientCount] = await db.select({ value: count() }).from(ptClients).where(and(eq(ptClients.ownerProfileId, access.account.authUserId), eq(ptClients.status, "active")));
+  const [clientCount] = await db.select({ value: count() }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.status, "active")));
   const [programmeCount] = await db.select({ value: count() }).from(ptProgrammes).where(and(eq(ptProgrammes.ownerProfileId, access.account.authUserId), eq(ptProgrammes.status, "draft")));
   const since = new Date(); since.setDate(since.getDate() - 30);
   const resultCounts = await db.select({ status: ptWorkoutResults.status, value: count() }).from(ptWorkoutResults).where(and(eq(ptWorkoutResults.ownerProfileId, access.account.authUserId), gte(ptWorkoutResults.scheduledDate, since.toISOString().slice(0, 10)))).groupBy(ptWorkoutResults.status);
