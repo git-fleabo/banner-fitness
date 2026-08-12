@@ -99,9 +99,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .programme-library-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
 .programme-library-actions .primary-button { padding:8px 10px; font-size:10px; }
+.programme-library-grid { align-items:stretch; }
+.programme-library-card { display:flex; flex-direction:column; height:100%; }
+.programme-library-card-heading { min-height:56px; }
+.programme-library-card>p { min-height:50px; }
+.programme-library-meta { min-height:50px; align-content:flex-start; }
+.programme-library-actions { margin-top:auto; min-height:68px; align-content:flex-end; }
 .programme-library-presets { display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding:0 44px 22px; }.programme-library-presets>span { color:#9aa7a0; font-size:9px; font-weight:800; letter-spacing:.1em; margin-right:3px; }.preset-button { border:1px solid #dce8dd; border-radius:14px; background:#f7fbf7; color:#3d6c60; padding:7px 10px; font:600 10px inherit; cursor:pointer; }.preset-button:hover,.preset-button:focus-visible,.preset-button.active { border-color:#78a888; background:#e2f1e4; color:#1b5b56; box-shadow:0 0 0 2px #d5ead8; }.preset-button.active { font-weight:800; }
 @media (max-width: 980px) { .programme-library-filter-row { grid-template-columns:repeat(3,minmax(0,1fr)) auto; } }
 @media (max-width: 680px) { .programme-library-search-row { flex-direction:column; align-items:stretch; }.programme-library-filter-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.programme-library-filter-row .secondary-button { grid-column:1 / -1; }.programme-library-presets { padding-left:16px; padding-right:16px; } }
+@media (max-width: 680px) { .programme-library-card-heading,.programme-library-card>p,.programme-library-meta { min-height:0; }.programme-library-actions { min-height:0; } }
 .small-modal label select { display:block; width:100%; margin-top:7px; border:1px solid var(--designer-line); border-radius:5px; padding:10px; background:#fff; font:12px inherit; color:var(--navy); }
 .apply-template-summary { display:grid; gap:4px; margin:0 0 18px; padding:12px; border:1px solid #dce8dd; border-radius:7px; background:#f6fbf6; }
 .apply-template-summary strong { color:var(--navy); font:600 14px Georgia,serif; }
