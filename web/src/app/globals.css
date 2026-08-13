@@ -157,7 +157,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 .designer-shell .primary-button,.designer-shell .assign-button { background:var(--emerald); border-color:var(--emerald); }
 .designer-shell .primary-button:hover,.designer-shell .assign-button:hover { background:#125342; }
-.designer-shell .designer-nav button.active,.designer-shell .designer-nav button:hover { background:var(--violet); }
+.designer-shell .designer-nav button.active,.designer-shell .designer-nav button:hover { background:var(--emerald); }
 .designer-shell .purple { background:var(--violet-light); color:var(--violet); }
 .designer-shell .rationale-link,.designer-shell .sparkle { color:var(--violet); }
 .designer-shell .status-pill,.designer-shell .status-pill.status-active { background:#e2f2ea; color:var(--emerald); }
@@ -521,3 +521,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .designer-shell .designer-nav button.active,.designer-shell .designer-nav button:hover { background:var(--violet); }
 .designer-shell .dashboard-view-tabs button.active { background:var(--violet-light); border-color:#c9a9e2; color:var(--violet); }
 .designer-shell .dashboard-view-tabs button:hover,.designer-shell .dashboard-view-tabs button:focus-visible { border-color:#c9a9e2; color:var(--violet); }
+.designer-shell .designer-nav button.active,.designer-shell .designer-nav button:hover,
+.mobile-nav-panel>button:not(.close-button):hover { background:var(--emerald); }
+.designer-shell .brand-mark img,.mobile-nav-panel .brand-mark img,.mobile-brand img { mix-blend-mode:normal; }
+.calendar-session[class*="client-color-"] { background:var(--client-accent-soft); border-color:color-mix(in srgb, var(--client-accent) 45%, white); color:var(--client-accent); }
+.calendar-session[class*="client-color-"] span,.calendar-session[class*="client-color-"] strong,.calendar-session[class*="client-color-"] em { color:var(--client-accent); }
+.calendar-session[class*="client-color-"]:hover,.calendar-session[class*="client-color-"]:focus-visible { background:var(--client-accent-soft); border-color:var(--client-accent); }
