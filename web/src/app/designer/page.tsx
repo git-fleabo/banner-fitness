@@ -30,7 +30,7 @@ import { ClientPreferencesLauncher } from "./client-preferences";
 import { ClientPerformanceLauncher } from "./client-performance";
 import { ProgressionReviewLauncher } from "./progression-review";
 import { SubstitutionReviewLauncher } from "./substitution-review";
-import { ClientProgressLauncher, ClientProgressPanel } from "./client-progress";
+import { ClientProgressLauncher } from "./client-progress";
 import { DesignerHelp } from "./designer-help";
 import { Icon, type SemanticIconName } from "./semantic-icon";
 import { hasRecordedScreeningReview } from "@/lib/pt-programming";
@@ -1378,6 +1378,15 @@ function DashboardClientRoster({
     );
   });
   const label = (value: string) => value.replaceAll("_", " ");
+  const attentionReason = (client: DashboardClient) => client.dataGaps.length
+    ? `Missing ${client.dataGaps.join(" · ")}`
+    : client.lastWorkout?.painReported
+      ? "Pain reported in latest workout"
+      : client.quality && client.quality.approvalReadiness !== "ready"
+        ? `Quality ${label(client.quality.approvalReadiness)}`
+        : client.programme?.status === "draft"
+          ? "Draft programme awaiting review"
+          : "Review client record";
   function selectView(nextView: typeof view) {
     onViewChange(nextView);
   }
@@ -1482,7 +1491,9 @@ function DashboardClientRoster({
                   <strong>
                     {client.firstName} {client.lastName}
                   </strong>
-                  {client.dataGaps.length ? (
+                  {client.needsAttention ? (
+                    <small>{attentionReason(client)}</small>
+                  ) : client.dataGaps.length ? (
                     <small>Missing {client.dataGaps.join(" · ")}</small>
                   ) : client.goal ? (
                     <small>{client.goal.goalType}</small>
@@ -1556,7 +1567,7 @@ function DashboardClientRoster({
               <span
                 className={`dashboard-client-status ${client.needsAttention ? "attention" : "on-track"}`}
               >
-                {client.needsAttention ? "Review" : "On track"}
+                {client.needsAttention ? attentionReason(client) : "On track"}
                 <b>→</b>
               </span>
             </button>
@@ -2515,13 +2526,6 @@ function ClientWorkspace({
                 </section>
               </div>
             )}
-            {activeWorkspaceSection === "quality" && (
-              <aside className="quality-tab-shell workspace-section workspace-section-selected" id="client-quality-tab">
-                <p className="eyebrow">PROGRAMME QUALITY</p>
-                <h2>Quality check</h2>
-                <p>Review the current findings, then update the underlying client, location or programme information from the relevant workspace section.</p>
-              </aside>
-            )}
             {activeWorkspaceSection === "programme" && (
               <aside
                 className="plan-column workspace-section workspace-section-selected"
@@ -3170,7 +3174,6 @@ function WorkspaceSupportPortal({
           </button>
         </section>
       )}
-      <ClientProgressPanel clientId={clientId} />
       {showAssessment && (
         <ClientAssessmentDialog
           clientId={clientId}
@@ -4598,14 +4601,14 @@ function ProgrammeLifecycleControls({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const available = options[programme.status] ?? [];
-  async function changeStatus() {
-    if (!target) return;
+  async function changeStatus(nextTarget = target) {
+    if (!nextTarget) return;
     setSaving(true);
     setError("");
     try {
       await transitionProgrammeAction({
         programmeId: programme.id,
-        status: target as
+        status: nextTarget as
           | "draft"
           | "reviewed"
           | "assigned"
@@ -4615,7 +4618,7 @@ function ProgrammeLifecycleControls({
           | "archived",
         reason,
       });
-      notify(`Programme moved to ${target}`);
+      notify(`Programme moved to ${nextTarget}`);
       onChanged();
     } catch (transitionError) {
       setError(
@@ -4643,9 +4646,15 @@ function ProgrammeLifecycleControls({
         </button>
       </div>
       {collapsed ? (
-        <p className="lifecycle-summary">
-          Draft → Reviewed → Assigned → Active
-        </p>
+        <div className="lifecycle-quick-actions">
+          <p className="lifecycle-summary">Draft → Reviewed → Assigned → Active</p>
+          {available.filter((status) => status !== "archived" && status !== "paused").map((status) => (
+            <button key={status} type="button" onClick={() => changeStatus(status)} disabled={saving}>
+              {saving ? "Saving…" : `Move to ${status}`}
+            </button>
+          ))}
+          <button type="button" className="lifecycle-collapse-button" onClick={() => setCollapsed(false)}>More options</button>
+        </div>
       ) : (
         <>
           <p className="lifecycle-description">
@@ -4682,7 +4691,7 @@ function ProgrammeLifecycleControls({
                 />
               )}
               <button
-                onClick={changeStatus}
+                onClick={() => changeStatus()}
                 disabled={
                   saving ||
                   !target ||
