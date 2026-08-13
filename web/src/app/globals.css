@@ -161,6 +161,27 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .designer-shell .purple { background:var(--violet-light); color:var(--violet); }
 .designer-shell .rationale-link,.designer-shell .sparkle { color:var(--violet); }
 .designer-shell .status-pill,.designer-shell .status-pill.status-active { background:#e2f2ea; color:var(--emerald); }
+
+/* Keep navigation visible while the workspace carries the page scroll. */
+.designer-shell { height:100vh; overflow:hidden; }
+.designer-sidebar { height:100vh; overflow-y:auto; }
+.designer-content { height:100vh; overflow-y:auto; }
+
+/* The generated logo contains a dark matte; screen blending removes that matte
+   against the teal sidebar while preserving the light mark and wordmark. */
+.designer-sidebar .brand-mark img,.mobile-nav-panel .brand-mark img,.mobile-brand img { mix-blend-mode:screen; border-radius:0; }
+
+/* Give each client a visible, repeatable identity across roster and workspace. */
+.dashboard-client-row[class*="client-color-"] .dashboard-client-programme strong,
+.dashboard-client-row[class*="client-color-"] .dashboard-client-next strong,
+.client-table-row[class*="client-color-"] strong { color:var(--client-accent); }
+.client-table-row[class*="client-color-"] { box-shadow:inset 4px 0 var(--client-accent); }
+.client-table-row[class*="client-color-"] .avatar { background:var(--client-accent-soft); color:var(--client-accent); border:1px solid color-mix(in srgb, var(--client-accent) 45%, white); }
+.client-table-row[class*="client-color-"]:hover,.client-table-row[class*="client-color-"]:focus-visible { background:var(--client-accent-soft); }
+.workspace-drawer[class*="client-color-"] .workspace-header { border-top:4px solid var(--client-accent); }
+.workspace-drawer[class*="client-color-"] .inner-panel,
+.workspace-drawer[class*="client-color-"] .plan-column { border-color:color-mix(in srgb, var(--client-accent) 28%, var(--designer-line)); }
+.workspace-drawer[class*="client-color-"] .quality-card { border-color:color-mix(in srgb, var(--client-accent) 35%, #fff); background:var(--client-accent-soft); }
 .inner-panel label,.onboarding-fields label,.wide-field,.session-name-label { line-height:1.25; }
 .location-equipment-panel .onboarding-fields label { color:#536a64; font-size:10px; letter-spacing:.04em; }
 @media (max-width: 680px) { .first-client-guide { margin:0 16px 20px; padding:17px; }.first-client-guide-steps { grid-template-columns:1fr; }.first-client-guide-steps small { min-height:0; }.client-timeline-panel { margin:0 15px 16px; padding:16px; } }
@@ -459,12 +480,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .calendar-session small { margin-top:4px; color:#7e8e86; font-size:9px; }
 .calendar-session em { margin-top:8px; color:var(--designer-green); font-size:9px; font-style:normal; font-weight:700; }
 .dashboard-roster { scroll-margin-top:24px; }
-.client-color-0 { --client-accent:#4c8a78; --client-accent-soft:#e8f3ee; }
-.client-color-1 { --client-accent:#6f82aa; --client-accent-soft:#edf1f8; }
-.client-color-2 { --client-accent:#9a7657; --client-accent-soft:#f6eee6; }
-.client-color-3 { --client-accent:#8b6f9e; --client-accent-soft:#f1ebf5; }
-.client-color-4 { --client-accent:#b06d61; --client-accent-soft:#faeeeb; }
-.client-color-5 { --client-accent:#6b8b59; --client-accent-soft:#edf4e9; }
+.client-color-0 { --client-accent:#168267; --client-accent-soft:#dff5eb; }
+.client-color-1 { --client-accent:#687fd1; --client-accent-soft:#e8edff; }
+.client-color-2 { --client-accent:#c27b32; --client-accent-soft:#fff0d8; }
+.client-color-3 { --client-accent:#6f2da8; --client-accent-soft:#eee2f8; }
+.client-color-4 { --client-accent:#c45165; --client-accent-soft:#fde7ec; }
+.client-color-5 { --client-accent:#6c9f32; --client-accent-soft:#edf7dc; }
 .dashboard-client-row[class*="client-color-"],.attention-row[class*="client-color-"] { box-shadow:inset 4px 0 var(--client-accent); }
 .dashboard-client-row[class*="client-color-"] .dashboard-client-name .avatar,.attention-row[class*="client-color-"] .avatar { background:var(--client-accent-soft); color:var(--client-accent); border:1px solid color-mix(in srgb, var(--client-accent) 45%, white); }
 .dashboard-client-row[class*="client-color-"]:hover,.dashboard-client-row[class*="client-color-"]:focus-visible,.attention-row[class*="client-color-"]:hover { background:var(--client-accent-soft); }
@@ -493,3 +514,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .team-invite small,.team-member-row small,.team-client-row small { display:block; color:#89958f; font-size:9px; line-height:1.4; margin-top:3px; }
 .team-client-row select { min-width:220px; border:1px solid var(--designer-line); border-radius:5px; background:#fff; color:#455a58; padding:9px; font:10px var(--designer-ui-font, sans-serif); }
 @media (max-width: 620px) { .team-invite-row,.team-client-row { align-items:stretch; flex-direction:column; }.team-client-row select { min-width:0; width:100%; } }
+
+/* Final designer tokens: keep the approved modern type and make the colour system visible. */
+.designer-shell { --designer-ui-font:"Manrope", "Avenir Next", Avenir, "Segoe UI", sans-serif; --designer-heading-font:"Manrope", "Avenir Next", Avenir, "Segoe UI", sans-serif; }
+.designer-shell h1,.designer-shell h2,.designer-shell h3,.designer-shell h4 { font-family:var(--designer-heading-font); }
+.designer-shell .designer-nav button.active,.designer-shell .designer-nav button:hover { background:var(--violet); }
+.designer-shell .dashboard-view-tabs button.active { background:var(--violet-light); border-color:#c9a9e2; color:var(--violet); }
+.designer-shell .dashboard-view-tabs button:hover,.designer-shell .dashboard-view-tabs button:focus-visible { border-color:#c9a9e2; color:var(--violet); }
