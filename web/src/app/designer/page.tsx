@@ -1076,6 +1076,7 @@ export default function DesignerPage() {
           screening={screening}
           qualitySettings={qualitySettings}
           activeWorkspaceSection={activeWorkspaceSection}
+          onWorkspaceSectionChange={setActiveWorkspaceSection}
           guidedOnboarding={guidedOnboarding}
           onFinishGuidedOnboarding={() => setGuidedOnboarding(false)}
           onEditSessions={() => {
@@ -1621,6 +1622,7 @@ function Schedule({
   time,
   name,
   type,
+  status,
 }: {
   time: string;
   name: string;
@@ -2804,6 +2806,7 @@ function WorkspaceSupportPortal({
   screening,
   qualitySettings,
   activeWorkspaceSection,
+  onWorkspaceSectionChange,
   guidedOnboarding,
   onFinishGuidedOnboarding,
   onEditSessions,
@@ -2822,6 +2825,9 @@ function WorkspaceSupportPortal({
   screening: boolean;
   qualitySettings: QualitySettings;
   activeWorkspaceSection: "overview" | "assessment" | "programme" | "quality" | "history";
+  onWorkspaceSectionChange: (
+    section: "overview" | "assessment" | "programme" | "quality" | "history",
+  ) => void;
   guidedOnboarding: boolean;
   onFinishGuidedOnboarding: () => void;
   onEditSessions: () => void;
@@ -3053,6 +3059,7 @@ function WorkspaceSupportPortal({
             programme={programme}
             quality={detail.quality}
             onChanged={onProgrammeChanged}
+            onOpenSection={onWorkspaceSectionChange}
           />
         )}
         <ProgrammeHistoryPanelV2
@@ -3552,10 +3559,12 @@ function ProgrammeQualityCardV3({
   programme,
   quality,
   onChanged,
+  onOpenSection,
 }: {
   programme: NonNullable<ClientDetail["programme"]>;
   quality: QualityReview | null;
   onChanged: () => void;
+  onOpenSection: (section: "overview" | "assessment" | "programme" | "quality" | "history") => void;
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const [showOverride, setShowOverride] = useState(false);
@@ -3654,6 +3663,11 @@ function ProgrammeQualityCardV3({
                     <p>{item.message}</p>
                     <small>Why it matters: {item.rationale}</small>
                     <small>Consider: {item.suggestedActions.join(" ")}</small>
+                    {(item.ruleId === "missing-training-experience" || item.category === "equipment") && (
+                      <button type="button" className="quality-finding-link" onClick={() => onOpenSection("overview")}>
+                        {item.category === "equipment" ? "Update location & equipment" : "Open client details →"}
+                      </button>
+                    )}
                     {item.evidence && (
                       <small>
                         Evidence: {item.evidence.source}{" "}
