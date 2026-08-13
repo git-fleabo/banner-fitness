@@ -154,6 +154,53 @@ const coreProgrammeLibrarySeed: ProgrammeTemplateDefinition[] = [
 
 const additionalProgrammeLibrarySeed: ProgrammeTemplateDefinition[] = [
   {
+    id: "library-10k-runner-foundation-3-day",
+    label: "10K runner foundation · 3 day",
+    description: "A running-first 10K pathway with easy aerobic work, a controlled quality session and a longer run. The PT should set the starting volume from current running history and recovery.",
+    goal: "Cardiovascular fitness",
+    sessionDurationMinutes: 55,
+    experienceLevel: "Beginner",
+    frameworkType: "10K running progression",
+    difficultyLevel: 1,
+    sessions: [
+      session("10K · Easy run", [exercise("Easy Run", "Locomotion", "Aerobic endurance", "Running", 25, 35, 1, "Conversational pace")]),
+      session("10K · Quality", [exercise("Run-Walk Intervals", "Conditioning", "Aerobic capacity", "Running", 20, 30, 1, "Controlled repeatable effort")]),
+      session("10K · Long run", [exercise("Long Easy Run", "Locomotion", "Aerobic endurance", "Running", 40, 60, 1, "Conversational pace")]),
+    ],
+  },
+  {
+    id: "library-10k-runner-progression-4-day",
+    label: "10K runner progression · 4 day",
+    description: "A progression-oriented 10K structure with easy running, threshold practice, a long run and optional low-impact cross-training. Adjust volume and intensity around the runner's current tolerance.",
+    goal: "Cardiovascular fitness",
+    sessionDurationMinutes: 60,
+    experienceLevel: "Intermediate",
+    frameworkType: "10K running progression",
+    difficultyLevel: 2,
+    sessions: [
+      session("10K · Recovery", [exercise("Recovery Run", "Locomotion", "Aerobic endurance", "Running", 20, 35, 1, "Easy conversational pace")]),
+      session("10K · Threshold", [exercise("Tempo Run", "Conditioning", "Threshold endurance", "Running", 20, 35, 1, "Comfortably hard, controlled")]),
+      session("10K · Cross-train", [exercise("Bike Endurance", "Conditioning", "Aerobic endurance", "Bike", 30, 45, 1, "Steady sustainable pace")]),
+      session("10K · Long run", [exercise("Long Easy Run", "Locomotion", "Aerobic endurance", "Running", 50, 75, 1, "Conversational pace")]),
+    ],
+  },
+  {
+    id: "library-half-marathon-foundation-4-day",
+    label: "Half-marathon foundation · 4 day",
+    description: "A half-marathon base-building pathway centred on consistent easy mileage, a measured quality session and a progressive long run. Keep progression conservative and review pain, fatigue and recovery.",
+    goal: "Cardiovascular fitness",
+    sessionDurationMinutes: 65,
+    experienceLevel: "Intermediate",
+    frameworkType: "Half-marathon running progression",
+    difficultyLevel: 2,
+    sessions: [
+      session("Half-marathon · Easy", [exercise("Easy Run", "Locomotion", "Aerobic endurance", "Running", 30, 45, 1, "Conversational pace")]),
+      session("Half-marathon · Quality", [exercise("Tempo Run", "Conditioning", "Threshold endurance", "Running", 25, 40, 1, "Comfortably hard, controlled")]),
+      session("Half-marathon · Recovery", [exercise("Recovery Run", "Locomotion", "Aerobic endurance", "Running", 20, 35, 1, "Easy conversational pace")]),
+      session("Half-marathon · Long run", [exercise("Long Easy Run", "Locomotion", "Aerobic endurance", "Running", 60, 100, 1, "Conversational pace")]),
+    ],
+  },
+  {
     id: "library-5x5-strength-3-day",
     label: "5×5 novice strength · 3 day",
     description: "A PT-owned adaptation of the classic full-body 5×5 framework, with client-specific load and progression decisions still required.",
@@ -449,7 +496,7 @@ export const programmeLibrarySeed: ProgrammeTemplateDefinition[] = [...coreProgr
   return { ...template, goal: normalizePtGoal(template.goal), ...metadata, difficultyLevel: template.difficultyLevel ?? levelForExperience(experienceLevel), variantGroup: template.variantGroup ?? `${normalizePtGoal(template.goal)} · ${template.sessions.length}-day` };
 });
 
-export type ProgrammeLibraryFilters = { query?: string; goal?: string; frequency?: number | "all"; equipment?: string; experienceLevel?: string; frameworkType?: string };
+export type ProgrammeLibraryFilters = { query?: string; goal?: string; frequency?: number | "all"; equipment?: string; experienceLevel?: string; frameworkType?: string; difficultyLevel?: 1 | 2 | 3 | "all" };
 
 export function programmeTemplateUsesEquipment(template: Pick<ProgrammeTemplateDefinition, "sessions">, equipment: string) {
   return template.sessions.some((session) => session.exercises.some((exercise) => exercise.equipment.toLowerCase().includes(equipment.toLowerCase())));
@@ -459,7 +506,7 @@ export function filterProgrammeLibraryTemplates<T extends ProgrammeTemplateDefin
   const query = filters.query?.trim().toLowerCase() ?? "";
   return templates.filter((template) => {
     const haystack = `${template.label} ${template.goal} ${template.description} ${template.experienceLevel ?? ""} ${template.frameworkType ?? ""}`.toLowerCase();
-    return (!query || haystack.includes(query)) && (!filters.goal || filters.goal === "all" || normalizePtGoal(template.goal) === normalizePtGoal(filters.goal)) && (!filters.frequency || filters.frequency === "all" || template.sessions.length === filters.frequency) && (!filters.equipment || filters.equipment === "all" || programmeTemplateUsesEquipment(template, filters.equipment)) && (!filters.experienceLevel || filters.experienceLevel === "all" || template.experienceLevel === filters.experienceLevel) && (!filters.frameworkType || filters.frameworkType === "all" || template.frameworkType === filters.frameworkType);
+    return (!query || haystack.includes(query)) && (!filters.goal || filters.goal === "all" || normalizePtGoal(template.goal) === normalizePtGoal(filters.goal)) && (!filters.frequency || filters.frequency === "all" || template.sessions.length === filters.frequency) && (!filters.equipment || filters.equipment === "all" || programmeTemplateUsesEquipment(template, filters.equipment)) && (!filters.experienceLevel || filters.experienceLevel === "all" || template.experienceLevel === filters.experienceLevel) && (!filters.frameworkType || filters.frameworkType === "all" || template.frameworkType === filters.frameworkType) && (!filters.difficultyLevel || filters.difficultyLevel === "all" || template.difficultyLevel === filters.difficultyLevel);
   });
 }
 

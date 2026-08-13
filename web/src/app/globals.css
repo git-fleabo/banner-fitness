@@ -527,3 +527,4 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .calendar-session[class*="client-color-"] { background:var(--client-accent-soft); border-color:color-mix(in srgb, var(--client-accent) 45%, white); color:var(--client-accent); }
 .calendar-session[class*="client-color-"] span,.calendar-session[class*="client-color-"] strong,.calendar-session[class*="client-color-"] em { color:var(--client-accent); }
 .calendar-session[class*="client-color-"]:hover,.calendar-session[class*="client-color-"]:focus-visible { background:var(--client-accent-soft); border-color:var(--client-accent); }
+.programme-difficulty { display:inline-flex; align-items:center; border:1px solid #d6bce8; border-radius:999px; background:#f0e5f8; color:var(--violet); padding:5px 8px; font-size:9px; font-weight:800; white-space:nowrap; }
