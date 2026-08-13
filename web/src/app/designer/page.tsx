@@ -268,7 +268,7 @@ function clientColor(value: string) {
   let hash = 0;
   for (const character of value)
     hash = (hash * 31 + character.charCodeAt(0)) | 0;
-  return `client-color-${Math.abs(hash) % 6}`;
+  return `client-color-${Math.abs(hash) % 12}`;
 }
 
 function hasUnresolvedScreening(assessment: ClientDetail["assessment"]) {
@@ -818,7 +818,7 @@ export default function DesignerPage() {
                     .format(new Date())
                     .toUpperCase()}
                 </p>
-                <h1>Your workspace</h1>
+                <h1>Overview</h1>
               </div>
               <button
                 className="primary-button"
@@ -904,97 +904,21 @@ export default function DesignerPage() {
               }}
             />
 
-            <div className="dashboard-grid">
-              <section className="panel attention-panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">ACTION REQUIRED</p>
-                    <h2>Needs your attention</h2>
-                  </div>
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setDashboardRosterView("needs_attention");
-                      setShowClients(false);
-                      setActiveNav("Overview");
-                      window.setTimeout(
-                        () =>
-                          document
-                            .querySelector(".dashboard-roster")
-                            ?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            }),
-                        0,
-                      );
-                    }}
-                  >
-                    View all →
-                  </button>
-                </div>
-                {overview?.attention.length ? (
-                  overview.attention.slice(0, 3).map((item) => (
-                    <Attention
-                      key={item.id}
-                      name={item.name}
-                      text={item.text}
-                      tag={item.tag}
-                      tone={item.tone}
-                      initials={item.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                      onClick={() => {
-                        setProgrammeWeek(null);
-                        setClientId(item.clientId);
-                        setClientDetail(null);
-                        setDetailError("");
-                        setClient(item.name);
-                        setShowClient(true);
-                      }}
-                    />
-                  ))
-                ) : (
-                  <div className="dashboard-empty">
-                    No screening flags or programme reviews are currently
-                    waiting.
-                  </div>
-                )}
-              </section>
-              <section className="panel schedule-panel">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">ACTIVE PROGRAMME SESSIONS</p>
-                    <h2>This week&apos;s plan</h2>
-                  </div>
-                  <button
-                    className="text-button"
-                    onClick={() => setShowCalendar(true)}
-                  >
-                    Full calendar →
-                  </button>
-                </div>
-                {overview?.schedule.length ? (
-                  overview.schedule
-                    .slice(0, 4)
-                    .map((item) => (
-                      <Schedule
-                        key={item.id}
-                        time={item.day.slice(0, 3)}
-                        name={item.clientName}
-                        type={`${item.name} · ${item.durationMinutes} min`}
-                        status={item.status}
-                      />
-                    ))
-                ) : (
-                  <div className="dashboard-empty">
-                    No active programme sessions yet. Reviewed and draft
-                    versions stay out of the calendar until activated.
-                  </div>
-                )}
-              </section>
-            </div>
+            <ProgrammeCalendar
+              inline
+              remainingOnly
+              schedule={overview?.schedule ?? []}
+              onClose={() => setShowCalendar(false)}
+              onOpen={(id, name) => {
+                setProgrammeWeek(null);
+                setClientId(id);
+                setClientDetail(null);
+                setDetailError("");
+                setClient(name);
+                setActiveWorkspaceSection("programme");
+                setShowClient(true);
+              }}
+            />
           </>
         )}
       </section>
@@ -1192,9 +1116,10 @@ export default function DesignerPage() {
           onCreated={(name, riskCount, createdClientId, guideNext) => {
             refreshOverview();
             setClientId(createdClientId);
-            setClient(name);
-            setScreening(riskCount > 0);
-            setGuidedOnboarding(guideNext);
+              setClient(name);
+              setScreening(riskCount > 0);
+              setActiveWorkspaceSection("overview");
+              setGuidedOnboarding(guideNext);
             setShowOnboarding(false);
             setShowClient(true);
             notify(
@@ -1829,7 +1754,7 @@ function ProgrammeList({
             {sorted.map((programme) => (
               <button
                 key={programme.id}
-                className="client-table-row"
+                className={`client-table-row ${clientColor(clientNames.get(programme.clientId) ?? "Client")}`}
                 onClick={() =>
                   onOpen(
                     programme.clientId,
@@ -2863,14 +2788,18 @@ function WorkspaceSupportPortal({
   const currentStage = GUIDED_ONBOARDING_STAGES[guidedStep];
   function openGuidedStage() {
     if (guidedStep === 0) {
+      onWorkspaceSectionChange("overview");
       document
         .getElementById("client-overview")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     } else if (guidedStep === 1) {
+      onWorkspaceSectionChange("assessment");
       setShowAssessment(true);
     } else if (guidedStep === 2) {
+      onWorkspaceSectionChange("overview");
       setPreferencesOpen(true);
     } else if (guidedStep === 3) {
+      onWorkspaceSectionChange("overview");
       document
         .getElementById("client-location")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2882,8 +2811,10 @@ function WorkspaceSupportPortal({
         250,
       );
     } else if (guidedStep === 4) {
+      onWorkspaceSectionChange("programme");
       onEditSessions();
     } else {
+      onWorkspaceSectionChange("programme");
       document
         .getElementById("client-programme")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2928,7 +2859,7 @@ function WorkspaceSupportPortal({
             <div>
               <p className="eyebrow">NEW CLIENT ONBOARDING</p>
               <h2 id="guided-onboarding-title">
-                A clear path from profile to first workout
+                New Client Onboarding
               </h2>
               <p>
                 Work through the stages in order, or jump to any stage when you
@@ -3463,7 +3394,7 @@ function ProgrammeQualityCardV2({
     screening,
     settings,
   });
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const [showOverride, setShowOverride] = useState(false);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -3566,7 +3497,7 @@ function ProgrammeQualityCardV3({
   onChanged: () => void;
   onOpenSection: (section: "overview" | "assessment" | "programme" | "quality" | "history") => void;
 }) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const [showOverride, setShowOverride] = useState(false);
   const [selectedKey, setSelectedKey] = useState("");
   const [reason, setReason] = useState("");
@@ -4733,10 +4664,14 @@ function ProgrammeLifecycleControls({
 
 function ProgrammeCalendar({
   schedule,
+  inline = false,
+  remainingOnly = false,
   onClose,
   onOpen,
 }: {
   schedule: OverviewData["schedule"];
+  inline?: boolean;
+  remainingOnly?: boolean;
   onClose: () => void;
   onOpen: (id: string, name: string) => void;
 }) {
@@ -4750,32 +4685,34 @@ function ProgrammeCalendar({
     "Sunday",
   ];
   const todayName = new Intl.DateTimeFormat("en-GB", { weekday: "long" }).format(new Date());
+  const today = new Date().toISOString().slice(0, 10);
+  const visibleSchedule = remainingOnly
+    ? schedule.filter((item) => item.date >= today)
+    : schedule;
   return (
-    <div className="calendar-backdrop">
+    <div className={inline ? "calendar-inline" : "calendar-backdrop"}>
       <section
-        className="calendar-panel"
-        role="dialog"
-        aria-modal="true"
+        className={`calendar-panel${inline ? " calendar-panel-inline" : ""}`}
+        role={inline ? undefined : "dialog"}
+        aria-modal={inline ? undefined : "true"}
         aria-labelledby="calendar-heading"
       >
         <header>
           <div>
             <p className="eyebrow">PT CALENDAR</p>
-            <h2 id="calendar-heading">This week&apos;s sessions</h2>
+            <h2 id="calendar-heading">{remainingOnly ? "Remaining this week" : "This week's sessions"}</h2>
             <p>
               Owner-scoped programme sessions from your saved client plans.
               Select a session to open that client&apos;s programme.
             </p>
           </div>
-          <button className="close-button" onClick={onClose}>
-            ×
-          </button>
+          {!inline && <button className="close-button" onClick={onClose}>×</button>}
         </header>
         <div className="calendar-grid">
           {days.map((day) => (
             <div className={`calendar-day${day === todayName ? " is-today" : ""}`} key={day}>
               <p>{day}{day === todayName && <strong>Today</strong>}</p>
-              {schedule
+              {visibleSchedule
                 .filter((item) =>
                   item.day
                     .toLowerCase()
