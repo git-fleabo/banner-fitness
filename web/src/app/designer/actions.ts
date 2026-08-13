@@ -717,8 +717,9 @@ export async function logWorkoutResultAction(rawInput: z.input<typeof workoutInp
   const db = getDb();
   const [client] = await db.select({ id: ptClients.id }).from(ptClients).where(and(eq(ptClients.ownerProfileId, owner.authUserId), eq(ptClients.id, input.clientId))).limit(1);
   if (!client) throw new Error("Save the client profile before logging a workout.");
-  const [session] = await db.select({ id: ptSessions.id }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptProgrammeWeeks.id, ptSessions.programmeWeekId)).innerJoin(ptProgrammes, eq(ptProgrammes.id, ptProgrammeWeeks.programmeId)).where(and(eq(ptSessions.id, input.sessionId), eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
+  const [session] = await db.select({ id: ptSessions.id, programmeStatus: ptProgrammes.status }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptProgrammeWeeks.id, ptSessions.programmeWeekId)).innerJoin(ptProgrammes, eq(ptProgrammes.id, ptProgrammeWeeks.programmeId)).where(and(eq(ptSessions.id, input.sessionId), eq(ptProgrammes.clientId, client.id), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
   if (!session) throw new Error("The selected session could not be found for this client.");
+  if (session.programmeStatus !== "active") throw new Error("Activate the programme before logging a workout result.");
   const prescriptions = await db.select({ id: ptExercisePrescriptions.id }).from(ptExercisePrescriptions).where(eq(ptExercisePrescriptions.sessionId, session.id));
   const allowed = new Set(prescriptions.map((prescription) => prescription.id));
   const setRows = input.sets?.filter((set) => allowed.has(set.prescriptionId)).map((set) => ({ workoutResultId: "", prescriptionId: set.prescriptionId, setNumber: set.setNumber, actualReps: set.reps ?? null, actualLoadKg: set.loadKg ?? null, actualRpe: set.rpe ?? null, actualRir: set.rir ?? null, techniqueAcceptable: set.techniqueAcceptable, painReported: set.painReported })) ?? [];
