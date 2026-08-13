@@ -127,10 +127,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* Banner Fitness visual language */
 .brand-mark { padding-bottom:36px; }
-.brand-mark img { display:block; width:190px; height:auto; border-radius:6px; }
+.brand-mark img { display:block; position:relative; z-index:1; width:190px; height:auto; border-radius:0; background:transparent; }
+.brand-mark,.mobile-brand { position:relative; overflow:hidden; }
+.brand-mark::after,.mobile-brand::after { content:""; position:absolute; z-index:0; top:0; right:-4px; width:62%; height:100%; opacity:.42; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='45' viewBox='0 0 52 45'%3E%3Cpath d='M13 1h26l13 22-13 22H13L0 23Z' fill='none' stroke='%23a8d94a' stroke-opacity='.7' stroke-width='1.5'/%3E%3C/svg%3E"); background-size:52px 45px; }
 .designer-sidebar > .brand-mark { justify-content:center; padding-left:0; padding-right:0; }
 .mobile-brand { align-items:center; }
-.mobile-brand img { display:block; width:154px; height:auto; border-radius:4px; }
+.mobile-brand img { display:block; position:relative; z-index:1; width:154px; height:auto; border-radius:0; background:transparent; }
 .ds-icon { display:block; width:18px; height:18px; flex:none; font-size:initial; }
 .stat-icon .ds-icon { width:17px; height:17px; }
 .header-search > .ds-icon { width:16px; height:16px; color:#87928e; }
