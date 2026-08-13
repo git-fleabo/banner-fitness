@@ -468,6 +468,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .workspace-support-history > .assessment-panel,.workspace-support-history > .workspace-actions-row,.workspace-support-history > .training-days-panel,.workspace-support-history > .location-equipment-panel,.workspace-support-history > .pt-tools-panel,.workspace-support-history > .rationale-panel,.workspace-support-history > .client-progress-panel { display:none; }
 .workspace-support-history > .workspace-support-grid > :not(.programme-history-panel) { display:none; }
 .workspace-support-programme > .workspace-support-grid > .programme-history-panel { display:none; }
+.workspace-support-quality > :not(.workspace-support-grid) { display:none; }
+.workspace-support-quality > .workspace-support-grid > :not(.quality-summary) { display:none; }
+.quality-tab-shell { min-height:260px; }
 .client-timeline-controls { display:flex; align-items:center; gap:12px; }
 .client-timeline-panel.is-collapsed { padding-bottom:12px; }
 
@@ -531,5 +534,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .calendar-session[class*="client-color-"] { background:var(--client-accent-soft); border-color:color-mix(in srgb, var(--client-accent) 45%, white); color:var(--client-accent); }
 .calendar-session[class*="client-color-"] span,.calendar-session[class*="client-color-"] strong,.calendar-session[class*="client-color-"] em { color:var(--client-accent); }
 .calendar-session[class*="client-color-"]:hover,.calendar-session[class*="client-color-"]:focus-visible { background:var(--client-accent-soft); border-color:var(--client-accent); }
+.calendar-day.is-today { border-color:var(--emerald); background:#f7fbf8; }
+.calendar-day > p strong { display:inline-flex; margin-left:7px; border-radius:999px; background:var(--emerald); color:#fff; padding:3px 6px; font:700 8px inherit; letter-spacing:.04em; }
+.schedule-card small { display:block; margin-top:4px; color:var(--client-accent); font-size:9px; font-weight:700; }
 .workspace-section-selected { outline:0; box-shadow:none; border:1px solid var(--designer-line); background:#fff; padding:18px; }
 .programme-difficulty { display:inline-flex; align-items:center; border:1px solid #d6bce8; border-radius:999px; background:#f0e5f8; color:var(--violet); padding:5px 8px; font-size:9px; font-weight:800; white-space:nowrap; }

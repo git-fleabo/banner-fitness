@@ -47,10 +47,20 @@ export async function GET() {
     attention.push({ id: `quality-${programme.id}`, clientId: programme.clientId, name: `${ownerClient.firstName} ${ownerClient.lastName}`, text: `Programme quality ${quality.score} · ${severity}`, tag: quality.blockingCount > 0 ? "Blocked" : "Quality", tone: quality.blockingCount > 0 ? "orange" : "blue" });
   }
   const scheduledSessions = await db.select({ id: ptSessions.id, clientId: ptProgrammes.clientId, firstName: ptClients.firstName, lastName: ptClients.lastName, dayOfWeek: ptSessions.dayOfWeek, name: ptSessions.name, sessionType: ptSessions.sessionType, durationMinutes: ptSessions.durationMinutes }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptSessions.programmeWeekId, ptProgrammeWeeks.id)).innerJoin(ptProgrammes, eq(ptProgrammeWeeks.programmeId, ptProgrammes.id)).innerJoin(ptClients, eq(ptProgrammes.clientId, ptClients.id)).where(and(eq(ptProgrammes.ownerProfileId, access.account.authUserId), eq(ptProgrammes.status, "active"), eq(ptProgrammeWeeks.weekNumber, ptProgrammes.currentWeek))).orderBy(ptSessions.dayOfWeek).limit(20);
-  const schedule = scheduledSessions.map((session) => ({ ...session, clientName: `${session.firstName} ${session.lastName}`, day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][session.dayOfWeek % 7] }));
+  const baseSchedule = scheduledSessions.map((session) => ({ ...session, clientName: `${session.firstName} ${session.lastName}`, day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][session.dayOfWeek % 7] }));
   const primaryGoals = await db.select({ clientId: ptGoals.clientId, goalType: ptGoals.goalType, target: ptGoals.target, metric: ptGoals.metric }).from(ptGoals).innerJoin(ptClients, eq(ptGoals.clientId, ptClients.id)).where(and(eq(ptClients.ownerProfileId, access.account.authUserId), eq(ptGoals.priority, "primary"))).orderBy(desc(ptGoals.updatedAt));
   const locations = await db.select({ clientId: ptLocations.clientId, name: ptLocations.name }).from(ptLocations).innerJoin(ptClients, eq(ptLocations.clientId, ptClients.id)).where(eq(ptClients.ownerProfileId, access.account.authUserId)).orderBy(desc(ptLocations.updatedAt));
-  const recentResults = await db.select({ clientId: ptWorkoutResults.clientId, scheduledDate: ptWorkoutResults.scheduledDate, status: ptWorkoutResults.status, painReported: ptWorkoutResults.painReported, energy: ptWorkoutResults.energy, sessionRpe: ptWorkoutResults.sessionRpe }).from(ptWorkoutResults).where(and(eq(ptWorkoutResults.ownerProfileId, access.account.authUserId), gte(ptWorkoutResults.scheduledDate, new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString().slice(0, 10)))).orderBy(desc(ptWorkoutResults.scheduledDate)).limit(1000);
+  const recentResults = await db.select({ clientId: ptWorkoutResults.clientId, sessionId: ptWorkoutResults.sessionId, scheduledDate: ptWorkoutResults.scheduledDate, status: ptWorkoutResults.status, painReported: ptWorkoutResults.painReported, energy: ptWorkoutResults.energy, sessionRpe: ptWorkoutResults.sessionRpe }).from(ptWorkoutResults).where(and(eq(ptWorkoutResults.ownerProfileId, access.account.authUserId), gte(ptWorkoutResults.scheduledDate, new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString().slice(0, 10)))).orderBy(desc(ptWorkoutResults.scheduledDate)).limit(1000);
+  const currentWeekMonday = new Date();
+  const currentWeekDay = currentWeekMonday.getDay() || 7;
+  currentWeekMonday.setDate(currentWeekMonday.getDate() - currentWeekDay + 1);
+  const schedule = baseSchedule.map((session) => {
+    const calendarDate = new Date(currentWeekMonday);
+    calendarDate.setDate(currentWeekMonday.getDate() + session.dayOfWeek - 1);
+    const date = calendarDate.toISOString().slice(0, 10);
+    const result = recentResults.find((item) => item.sessionId === session.id && item.scheduledDate === date);
+    return { ...session, date, status: result?.status ?? (date < today ? "pending" : date === today ? "today" : "upcoming") };
+  });
   const programmeByClient = new Map<string, typeof programmes[number]>();
   for (const programme of programmes) if (!programmeByClient.has(programme.clientId)) programmeByClient.set(programme.clientId, programme);
   const assessmentByClient = new Map<string, typeof assessments[number]>();
