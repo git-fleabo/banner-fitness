@@ -23,6 +23,8 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
   const [sessionDays, setSessionDays] = useState(initialState.days);
   const [activeDay, setActiveDay] = useState(initialState.days[0] ?? 1);
   const [names, setNames] = useState<Record<string, string>>(initialState.names);
+  const [times, setTimes] = useState<Record<string, string>>(Object.fromEntries(initialState.days.map((day) => [String(day), savedSessions?.find((session) => session.dayOfWeek === day)?.scheduledTime ?? ""])));
+  const [managementModes, setManagementModes] = useState<Record<string, "pt_managed" | "self_managed">>(Object.fromEntries(initialState.days.map((day) => [String(day), savedSessions?.find((session) => session.dayOfWeek === day)?.managementMode ?? "pt_managed"])) as Record<string, "pt_managed" | "self_managed">);
   const [sessions, setSessions] = useState<Record<string, EditorExercise[]>>(initialState.sessions);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -50,6 +52,8 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     setActiveDay(next.days[0] ?? 1);
     setNames(next.names);
     setSessions(next.sessions);
+    setTimes(Object.fromEntries(next.days.map((day) => [String(day), ""])));
+    setManagementModes(Object.fromEntries(next.days.map((day) => [String(day), "pt_managed"])) as Record<string, "pt_managed" | "self_managed">);
   }
   async function saveAsTemplate() {
     if (templateId) { await saveTemplateChanges(); return; }
@@ -103,7 +107,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     let saved = false;
     try {
       const firstSession = sessions[String(sessionDays[0])] ?? [];
-      await saveProgrammeAction({ clientId, clientName, goalSummary: effectiveGoal, trainingDays: sessionDays.length, sessionDurationMinutes: effectiveDuration ?? 45, sessionDays, sessionNames: names, exercises: firstSession.map(toDraftExercise), sessionExercises: Object.fromEntries(sessionDays.map((day) => [String(day), (sessions[String(day)] ?? []).map(toDraftExercise)])), methodology: importApproval?.methodology, rationale: importApproval?.rationale, weekPlans: importApproval?.weekPlans, importAudit: importApproval?.audit });
+      await saveProgrammeAction({ clientId, clientName, goalSummary: effectiveGoal, trainingDays: sessionDays.length, sessionDurationMinutes: effectiveDuration ?? 45, sessionDays, sessionNames: names, sessionTimes: times, sessionManagement: managementModes, exercises: firstSession.map(toDraftExercise), sessionExercises: Object.fromEntries(sessionDays.map((day) => [String(day), (sessions[String(day)] ?? []).map(toDraftExercise)])), methodology: importApproval?.methodology, rationale: importApproval?.rationale, weekPlans: importApproval?.weekPlans, importAudit: importApproval?.audit });
       // Finish local state updates before closing the modal. The parent refresh
       // can unmount this component immediately after onClose is called.
       setSaving(false);

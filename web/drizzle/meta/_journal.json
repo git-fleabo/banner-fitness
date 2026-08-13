@@ -155,6 +155,13 @@
       "when": 1786636894952,
       "tag": "0021_add_client_colour",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1786659837128,
+      "tag": "0022_add_session_scheduling",
+      "breakpoints": true
     }
   ]
 }

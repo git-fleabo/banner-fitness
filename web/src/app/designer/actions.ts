@@ -48,6 +48,7 @@ const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "p
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(120)).max(20), reason: z.string().trim().min(3).max(1000), decision: z.enum(["acknowledged", "overridden"]).optional() });
 const programmeTransitionSchema = z.object({ programmeId: z.string().uuid(), status: z.enum(["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]), reason: z.string().trim().max(1000).optional() });
+const sessionSchedulingSchema = z.object({ sessionId: z.string().uuid(), scheduledTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable(), managementMode: z.enum(["pt_managed", "self_managed"]) });
 const screeningReviewSchema = z.object({ clientId: z.string().uuid(), outcome: z.enum(["pt_review_completed", "professional_clearance_obtained"]), reason: z.string().trim().min(10).max(1000) });
 const clientAssessmentUpdateSchema = z.object({ clientId: z.string().uuid(), screening: z.record(z.string(), z.boolean()).optional(), injuryNotes: z.string().trim().max(4000).optional(), contraindicationNotes: z.string().trim().max(4000).optional(), clearanceRequired: z.boolean(), ptNotes: z.string().trim().max(4000).optional() });
 const qualitySettingsSchema = z.object({ checkScreening: z.boolean(), checkFrequency: z.boolean(), checkBalance: z.boolean(), checkVolume: z.boolean(), checkProgression: z.boolean(), checkDuration: z.boolean(), maxSetsPerSession: z.number().int().min(1).max(100), pressPullTolerance: z.number().int().min(0).max(10) });
@@ -107,6 +108,8 @@ const programmeInputSchema = z.object({
   sessionExercises: z.record(z.string(), z.array(exerciseDraftSchema)).optional(),
   sessionExercisesByWeek: z.record(z.string(), z.record(z.string(), z.array(exerciseDraftSchema))).optional(),
   sessionNames: z.record(z.string(), z.string().trim().min(1).max(120)).optional(),
+  sessionTimes: z.record(z.string(), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)).optional(),
+  sessionManagement: z.record(z.string(), z.enum(["pt_managed", "self_managed"])).optional(),
   sessionDays: z.array(z.number().int().min(1).max(7)).min(1).max(7).optional(),
   methodology: z.string().trim().max(300).optional(),
   rationale: z.string().trim().max(2000).optional(),
@@ -561,7 +564,7 @@ export async function saveProgrammeAction(rawInput: z.input<typeof programmeInpu
       return sessionDays.map((dayOfWeek) => {
         const sessionName = input.sessionNames?.[String(dayOfWeek)] || `Day ${dayOfWeek} - Full body`;
         const sessionType: "conditioning" | "strength" | "mixed" = /conditioning|interval|aerobic/i.test(sessionName) ? "conditioning" : /power|athletic/i.test(sessionName) ? "strength" : /strength/i.test(sessionName) ? "strength" : "mixed";
-        return { programmeWeekId, weekNumber: row.weekNumber, dayOfWeek, name: sessionName, sessionType, durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 };
+        return { programmeWeekId, weekNumber: row.weekNumber, dayOfWeek, scheduledTime: input.sessionTimes?.[String(dayOfWeek)] || null, managementMode: input.sessionManagement?.[String(dayOfWeek)] ?? "pt_managed", name: sessionName, sessionType, durationMinutes: input.sessionDurationMinutes, warmupMinutes: 5 };
       });
     });
     const savedSessions = await db.insert(ptSessions).values(sessionRows).returning({ id: ptSessions.id, programmeWeekId: ptSessions.programmeWeekId, dayOfWeek: ptSessions.dayOfWeek });
@@ -655,6 +658,17 @@ export async function transitionProgrammeAction(rawInput: z.input<typeof program
   await db.insert(ptProgrammeEvents).values({ programmeId: programme.id, actorProfileId: owner.authUserId, action: "status_changed", details: { from: programme.status, to: input.status, reason: input.reason ?? null, changedAt: now.toISOString() } });
   revalidatePath("/designer");
   return { programmeId: programme.id, status: input.status };
+}
+
+export async function updateSessionSchedulingAction(rawInput: z.input<typeof sessionSchedulingSchema>) {
+  const owner = await requireDesignerAccess();
+  const input = sessionSchedulingSchema.parse(rawInput);
+  const db = getDb();
+  const [session] = await db.select({ id: ptSessions.id }).from(ptSessions).innerJoin(ptProgrammeWeeks, eq(ptProgrammeWeeks.id, ptSessions.programmeWeekId)).innerJoin(ptProgrammes, eq(ptProgrammes.id, ptProgrammeWeeks.programmeId)).where(and(eq(ptSessions.id, input.sessionId), eq(ptProgrammes.ownerProfileId, owner.authUserId))).limit(1);
+  if (!session) throw new Error("Session not found.");
+  await db.update(ptSessions).set({ scheduledTime: input.scheduledTime, managementMode: input.managementMode, updatedAt: new Date() }).where(eq(ptSessions.id, input.sessionId));
+  revalidatePath("/designer");
+  return { ok: true };
 }
 
 export async function resolveScreeningAction(rawInput: z.input<typeof screeningReviewSchema>) {

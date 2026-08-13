@@ -11,6 +11,7 @@ import {
   resolveScreeningAction,
   saveProgrammeAction,
   transitionProgrammeAction,
+  updateSessionSchedulingAction,
   updateClientAction,
   updateClientAssessmentAction,
   updateClientLocationAction,
@@ -149,6 +150,8 @@ type OverviewData = {
     sessionType: string;
     durationMinutes: number;
     clientColour?: string | null;
+    scheduledTime: string | null;
+    managementMode: "pt_managed" | "self_managed";
     date: string;
     status: string;
   }>;
@@ -254,6 +257,8 @@ type ClientDetail = {
     sessions: Array<{
       id: string;
       dayOfWeek: number;
+      scheduledTime: string | null;
+      managementMode: "pt_managed" | "self_managed";
       name: string;
       sessionType: string;
       durationMinutes: number;
@@ -2219,6 +2224,12 @@ function ClientWorkspace({
             session.name,
           ]),
         ),
+        sessionTimes: Object.fromEntries(
+          draftSessions.map((session) => [String(session.dayOfWeek), session.scheduledTime ?? ""]),
+        ),
+        sessionManagement: Object.fromEntries(
+          draftSessions.map((session) => [String(session.dayOfWeek), session.managementMode ?? "pt_managed"]),
+        ),
         exercises: firstDraftExercises.map(toDraft),
         sessionExercises: Object.fromEntries(
           draftSessions.map((session) => [
@@ -2516,7 +2527,7 @@ function ClientWorkspace({
                       <div>
                         <h3>{selectedSession?.name ?? "Programme sessions"}</h3>
                         <p>
-                          {selectedSession?.durationMinutes ?? 0} min · Week{" "}
+                          {selectedSession?.durationMinutes ?? 0} min · {selectedSession?.scheduledTime ? `at ${selectedSession.scheduledTime} · ` : ""}{selectedSession?.managementMode === "self_managed" ? "Self-managed · " : "PT-managed · "}Week{" "}
                           {programme.week?.weekNumber ?? programme.currentWeek}
                         </p>
                       </div>
@@ -2535,6 +2546,15 @@ function ClientWorkspace({
                         </button>
                       </div>
                     </div>
+                    {selectedSession && (
+                      <SessionSchedulingPanel
+                        sessionId={selectedSession.id}
+                        scheduledTime={selectedSession.scheduledTime}
+                        managementMode={selectedSession.managementMode}
+                        onSaved={onProgrammeChanged}
+                        notify={notify}
+                      />
+                    )}
                     <div className="exercise-list">
                       {selectedExercises.length ? (
                         selectedExercises.map((exercise, index) => (
@@ -4633,6 +4653,60 @@ function ProgrammeLifecycleControls({
   );
 }
 
+function SessionSchedulingPanel({
+  sessionId,
+  scheduledTime,
+  managementMode,
+  onSaved,
+  notify,
+}: {
+  sessionId: string;
+  scheduledTime: string | null;
+  managementMode: "pt_managed" | "self_managed";
+  onSaved: () => void;
+  notify: (message: string) => void;
+}) {
+  const [time, setTime] = useState(scheduledTime ?? "");
+  const [mode, setMode] = useState<"pt_managed" | "self_managed">(managementMode);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    // The parent refresh replaces these props after a successful schedule update.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTime(scheduledTime ?? "");
+    setMode(managementMode);
+  }, [scheduledTime, managementMode]);
+  async function save() {
+    setSaving(true);
+    try {
+      await updateSessionSchedulingAction({ sessionId, scheduledTime: time || null, managementMode: mode });
+      notify("Session scheduling updated");
+      onSaved();
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Session scheduling could not be updated");
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <div className="session-scheduling-panel">
+      <label>
+        TIME
+        <input type="time" value={time} onChange={(event) => setTime(event.target.value)} />
+      </label>
+      <label>
+        DELIVERY
+        <select value={mode} onChange={(event) => setMode(event.target.value as "pt_managed" | "self_managed")}>
+          <option value="pt_managed">PT-managed</option>
+          <option value="self_managed">Self-managed</option>
+        </select>
+      </label>
+      <button type="button" className="secondary-button" onClick={() => void save()} disabled={saving}>
+        {saving ? "Saving…" : "Update schedule"}
+      </button>
+    </div>
+  );
+}
+
 function ProgrammeCalendar({
   schedule,
   inline = false,
@@ -4716,7 +4790,7 @@ function ProgrammeCalendar({
                     <span>{item.clientName}</span>
                     <strong>{item.name}</strong>
                     <small>
-                      {item.durationMinutes} min · {item.sessionType} · {new Date(`${item.date}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                      {item.durationMinutes} min · {item.sessionType} · {item.scheduledTime ? `${item.scheduledTime} · ` : ""}{item.managementMode === "self_managed" ? "Self-managed" : "PT-managed"} · {new Date(`${item.date}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </small>
                     <em>{item.status === "completed" || item.status === "partial" ? `Logged · ${item.status}` : item.status === "pending" ? "Pending result" : item.status === "today" ? "Today · not logged" : "Upcoming"}</em>
                   </button>

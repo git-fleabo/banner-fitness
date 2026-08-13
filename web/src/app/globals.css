@@ -577,6 +577,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .library-legend { display:flex; align-items:center; gap:5px; margin:0 44px 14px; }
 .quality-update-button { border:1px solid #9bc5a4; border-radius:5px; background:#e8f5e9; color:#2f7054; padding:7px 10px; font:800 10px Manrope,sans-serif; cursor:pointer; }
 .quality-update-button:hover,.quality-update-button:focus-visible { background:#d8eddb; border-color:#6ea87b; }
+.session-scheduling-panel { display:flex; align-items:flex-end; flex-wrap:wrap; gap:9px; margin:12px 0 14px; padding:10px; border:1px solid #e4ebe4; border-radius:6px; background:#f8fbf8; }
+.session-scheduling-panel label { display:grid; gap:5px; color:#7d8c86; font-size:9px; font-weight:800; letter-spacing:.08em; }
+.session-scheduling-panel input,.session-scheduling-panel select { border:1px solid var(--designer-line); border-radius:5px; background:#fff; color:var(--navy); padding:8px 9px; font:11px inherit; }
+.session-scheduling-panel button { padding:8px 10px; font-size:10px; }
+.session-scheduling-panel::after { content:\"Optional time · choose whether the session is trainer-delivered or completed independently\"; flex-basis:100%; color:#8a9791; font-size:9px; }
+@media (max-width:680px) { .session-scheduling-panel { align-items:stretch; }.session-scheduling-panel label,.session-scheduling-panel input,.session-scheduling-panel select,.session-scheduling-panel button { flex:1; min-width:0; } }
 .calendar-week-controls { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:14px; }
 .calendar-week-controls strong { min-width:82px; color:var(--navy); font-size:11px; text-align:center; }
 @media (max-width:680px) { .calendar-week-controls { justify-content:stretch; flex-wrap:wrap; }.calendar-week-controls button { flex:1; }.calendar-week-controls strong { order:-1; flex-basis:100%; } }

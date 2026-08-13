@@ -34,6 +34,7 @@ export const ptClientStatus = pgEnum("pt_client_status", ["active", "archived"])
 export const ptProgrammeStatus = pgEnum("pt_programme_status", ["draft", "reviewed", "assigned", "active", "paused", "completed", "archived"]);
 export const ptGoalPriority = pgEnum("pt_goal_priority", ["primary", "secondary"]);
 export const ptSessionType = pgEnum("pt_session_type", ["strength", "hypertrophy", "conditioning", "mobility", "mixed", "recovery"]);
+export const ptSessionManagement = pgEnum("pt_session_management", ["pt_managed", "self_managed"]);
 export const ptIntensityType = pgEnum("pt_intensity_type", ["rir", "rpe", "percent_1rm", "load", "pace", "heart_rate", "duration"]);
 export const ptWorkoutStatus = pgEnum("pt_workout_status", ["completed", "partial", "missed", "skipped"]);
 
@@ -206,6 +207,8 @@ export const ptSessions = pgTable("pt_sessions", {
   programmeWeekId: uuid("programme_week_id").notNull().references(() => ptProgrammeWeeks.id, { onDelete: "cascade" }),
   locationId: uuid("location_id").references(() => ptLocations.id, { onDelete: "set null" }),
   dayOfWeek: smallint("day_of_week").notNull(),
+  scheduledTime: text("scheduled_time"),
+  managementMode: ptSessionManagement("management_mode").default("pt_managed").notNull(),
   name: text("name").notNull(),
   sessionType: ptSessionType("session_type").notNull(),
   durationMinutes: smallint("duration_minutes").notNull(),
