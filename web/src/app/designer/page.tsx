@@ -69,6 +69,7 @@ type DashboardClient = {
   id: string;
   firstName: string;
   lastName: string;
+  clientColour?: string | null;
   status: string;
   updatedAt: string;
   programme: {
@@ -116,6 +117,7 @@ type OverviewData = {
     id: string;
     firstName: string;
     lastName: string;
+    clientColour?: string | null;
     updatedAt: string;
   }>;
   dashboardClients: DashboardClient[];
@@ -146,6 +148,7 @@ type OverviewData = {
     name: string;
     sessionType: string;
     durationMinutes: number;
+    clientColour?: string | null;
     date: string;
     status: string;
   }>;
@@ -172,6 +175,7 @@ type ClientDetail = {
     id: string;
     firstName: string;
     lastName: string;
+    clientColour?: string | null;
     dateOfBirth: string | null;
     sexOrGender: string | null;
     trainingExperience: string | null;
@@ -264,7 +268,9 @@ type ClientDetail = {
   } | null;
 };
 
-function clientColor(value: string) {
+function clientColor(value: string, storedColour?: string | null) {
+  const stored = ["emerald", "blue", "orange", "violet", "rose", "lime", "sky", "magenta", "ochre", "teal", "coral", "indigo"].indexOf(storedColour ?? "");
+  if (stored >= 0) return `client-color-${stored}`;
   let hash = 0;
   for (const character of value)
     hash = (hash * 31 + character.charCodeAt(0)) | 0;
@@ -484,41 +490,6 @@ export default function DesignerPage() {
       })
       .catch(() => undefined);
   };
-
-  useEffect(() => {
-    const applyClientColours = () => {
-      const selectors = [
-        [
-          ".dashboard-client-row .dashboard-client-name strong",
-          ".dashboard-client-row",
-        ],
-        [".attention-row .attention-copy strong", ".attention-row"],
-        [".schedule-card strong", ".schedule-card"],
-        [".calendar-session span", ".calendar-session"],
-      ] as const;
-      selectors.forEach(([nameSelector, targetSelector]) =>
-        document
-          .querySelectorAll<HTMLElement>(nameSelector)
-          .forEach((nameNode) =>
-            nameNode
-              .closest<HTMLElement>(targetSelector)
-              ?.classList.add(clientColor(nameNode.textContent ?? "client")),
-          ),
-      );
-      document
-        .querySelectorAll<HTMLElement>(".dashboard-client-row")
-        .forEach((row) => {
-          const name =
-            row.querySelector<HTMLElement>(".dashboard-client-name strong")
-              ?.textContent ?? "client";
-          row.classList.add(clientColor(name));
-        });
-      const drawer = document.querySelector<HTMLElement>(".workspace-drawer");
-      if (drawer && client) drawer.classList.add(clientColor(client));
-    };
-    const frame = window.requestAnimationFrame(applyClientColours);
-    return () => window.cancelAnimationFrame(frame);
-  }, [overview, showCalendar, showClient, client]);
 
   useEffect(() => {
     if (!showClient || !clientId) return;
@@ -1402,7 +1373,7 @@ function DashboardClientRoster({
           {visible.map((client) => (
             <button
               type="button"
-              className={`dashboard-client-row ${clientColor(`${client.firstName} ${client.lastName}`)}${client.needsAttention ? " needs-attention" : ""}`}
+              className={`dashboard-client-row ${clientColor(`${client.firstName} ${client.lastName}`, client.clientColour)}${client.needsAttention ? " needs-attention" : ""}`}
               key={client.id}
               onClick={() =>
                 onOpen(client.id, `${client.firstName} ${client.lastName}`)
@@ -1754,7 +1725,7 @@ function ProgrammeList({
             {sorted.map((programme) => (
               <button
                 key={programme.id}
-                className={`client-table-row ${clientColor(clientNames.get(programme.clientId) ?? "Client")}`}
+                className={`client-table-row ${clientColor(clientNames.get(programme.clientId) ?? "Client", clients.find((client) => client.id === programme.clientId)?.clientColour)}`}
                 onClick={() =>
                   onOpen(
                     programme.clientId,
@@ -1949,7 +1920,7 @@ function ClientListRow({
   onDelete: (item: OverviewData["clients"][number]) => void;
 }) {
   return (
-    <div className="client-table-row">
+    <div className={`client-table-row ${clientColor(`${item.firstName} ${item.lastName}`, item.clientColour)}`}>
       <button
         className="client-row-open"
         onClick={() => onOpen(item.id, `${item.firstName} ${item.lastName}`)}
@@ -2140,10 +2111,10 @@ function ClientWorkspace({
   useEffect(() => {
     const drawer = document.querySelector<HTMLElement>(".workspace-drawer");
     if (!drawer) return;
-    const colour = clientColor(name);
+    const colour = clientColor(name, detail?.client.clientColour);
     drawer.classList.add(colour);
     return () => drawer.classList.remove(colour);
-  }, [name, loading]);
+  }, [name, loading, detail?.client.clientColour]);
   function scrollToSection(
     _id: string,
     section:
@@ -4675,6 +4646,17 @@ function ProgrammeCalendar({
   onClose: () => void;
   onOpen: (id: string, name: string) => void;
 }) {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [loadedWeekSchedule, setLoadedWeekSchedule] = useState<OverviewData["schedule"] | null>(null);
+  useEffect(() => {
+    if (weekOffset === 0) return;
+    const controller = new AbortController();
+    fetch(`/api/designer/overview?weekOffset=${weekOffset}`, { credentials: "same-origin", cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() as Promise<OverviewData> : Promise.reject(new Error("Calendar could not be loaded")))
+      .then((data) => setLoadedWeekSchedule(data.schedule))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [weekOffset]);
   const days = [
     "Monday",
     "Tuesday",
@@ -4686,9 +4668,10 @@ function ProgrammeCalendar({
   ];
   const todayName = new Intl.DateTimeFormat("en-GB", { weekday: "long" }).format(new Date());
   const today = new Date().toISOString().slice(0, 10);
+  const weekSchedule = weekOffset === 0 ? schedule : loadedWeekSchedule ?? [];
   const visibleSchedule = remainingOnly
-    ? schedule.filter((item) => item.date >= today)
-    : schedule;
+    ? weekSchedule.filter((item) => item.date >= today || item.status === "completed" || item.status === "partial")
+    : weekSchedule;
   return (
     <div className={inline ? "calendar-inline" : "calendar-backdrop"}>
       <section
@@ -4706,6 +4689,11 @@ function ProgrammeCalendar({
               Select a session to open that client&apos;s programme.
             </p>
           </div>
+          <div className="calendar-week-controls">
+            <button type="button" className="secondary-button" onClick={() => setWeekOffset((value) => value - 1)}>← Previous week</button>
+            <strong>{weekOffset === 0 ? "This week" : weekOffset > 0 ? `Week +${weekOffset}` : `Week ${weekOffset}`}</strong>
+            <button type="button" className="secondary-button" onClick={() => setWeekOffset((value) => value + 1)}>Next week →</button>
+          </div>
           {!inline && <button className="close-button" onClick={onClose}>×</button>}
         </header>
         <div className="calendar-grid">
@@ -4721,7 +4709,7 @@ function ProgrammeCalendar({
                 .map((item) => (
                   <button
                     type="button"
-                    className={`calendar-session ${clientColor(item.clientName)}`}
+                    className={`calendar-session ${clientColor(item.clientName, item.clientColour)}`}
                     key={item.id}
                     onClick={() => onOpen(item.clientId, item.clientName)}
                   >

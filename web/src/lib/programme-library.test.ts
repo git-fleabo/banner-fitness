@@ -5,7 +5,7 @@ import { PT_GOALS } from "./pt-goals";
 
 describe("programme library", () => {
   it("ships a varied reusable catalogue", () => {
-    expect(programmeLibrarySeed).toHaveLength(36);
+    expect(programmeLibrarySeed).toHaveLength(38);
     expect(new Set(programmeLibrarySeed.map((template) => template.goal)).size).toBe(PT_GOALS.length);
     for (const goal of PT_GOALS) expect(programmeLibrarySeed.filter((template) => template.goal === goal).length).toBeGreaterThanOrEqual(3);
     expect(programmeLibrarySeed.every((template) => template.sessions.every((session) => session.exercises.length > 0))).toBe(true);

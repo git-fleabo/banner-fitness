@@ -129,7 +129,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .brand-mark { padding-bottom:36px; }
 .brand-mark img { display:block; position:relative; z-index:1; width:190px; height:auto; border-radius:0; background:transparent; }
 .brand-mark,.mobile-brand { position:relative; overflow:hidden; }
-.brand-mark::after,.mobile-brand::after { content:""; position:absolute; z-index:0; top:8%; right:0; width:52%; height:84%; opacity:.34; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='26' viewBox='0 0 30 26'%3E%3Cpath d='M7.5 1h15L30 13 22.5 25h-15L0 13Z' fill='none' stroke='%23b6e85b' stroke-opacity='.9' stroke-width='1.25'/%3E%3C/svg%3E"); background-size:30px 26px; }
+.brand-mark::after,.mobile-brand::after { content:""; position:absolute; z-index:0; top:8%; right:0; width:40%; height:84%; opacity:.34; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='26' viewBox='0 0 30 26'%3E%3Cpath d='M7.5 1h15L30 13 22.5 25h-15L0 13Z' fill='none' stroke='%23b6e85b' stroke-opacity='.9' stroke-width='1.25'/%3E%3C/svg%3E"); background-size:30px 26px; }
 .designer-sidebar > .brand-mark { justify-content:center; padding-left:0; padding-right:0; }
 .mobile-brand { align-items:center; }
 .mobile-brand img { display:block; position:relative; z-index:1; width:154px; height:auto; border-radius:0; background:transparent; }
@@ -572,3 +572,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .schedule-card small { display:block; margin-top:4px; color:var(--client-accent); font-size:9px; font-weight:700; }
 .workspace-section-selected { outline:0; box-shadow:none; border:1px solid var(--designer-line); background:#fff; padding:18px; }
 .programme-difficulty { display:inline-flex; align-items:center; border:1px solid #d6bce8; border-radius:999px; background:#f0e5f8; color:var(--violet); padding:5px 8px; font-size:9px; font-weight:800; white-space:nowrap; }
+.programme-library-card-heading { align-items:flex-start; }
+.programme-library-card-heading .programme-difficulty { margin-top:4px; }
+.library-legend { display:flex; align-items:center; gap:5px; margin:0 44px 14px; }
+.quality-update-button { border:1px solid #9bc5a4; border-radius:5px; background:#e8f5e9; color:#2f7054; padding:7px 10px; font:800 10px Manrope,sans-serif; cursor:pointer; }
+.quality-update-button:hover,.quality-update-button:focus-visible { background:#d8eddb; border-color:#6ea87b; }
+.calendar-week-controls { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:14px; }
+.calendar-week-controls strong { min-width:82px; color:var(--navy); font-size:11px; text-align:center; }
+@media (max-width:680px) { .calendar-week-controls { justify-content:stretch; flex-wrap:wrap; }.calendar-week-controls button { flex:1; }.calendar-week-controls strong { order:-1; flex-basis:100%; } }

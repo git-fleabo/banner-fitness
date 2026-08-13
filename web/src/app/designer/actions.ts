@@ -42,6 +42,8 @@ const deleteClientSchema = z.object({ clientId: z.string().uuid(), confirmation:
 const clientPreferencesSchema = z.object({ clientId: z.string().uuid(), likedExercises: z.array(z.string().trim().min(1)).max(30), dislikedExercises: z.array(z.string().trim().min(1)).max(30), preferredStyle: z.string().trim().max(120).optional(), preferredStructure: z.string().trim().max(120).optional(), preferredEquipment: z.array(z.string().trim().min(1)).max(30), cardioModalities: z.array(z.string().trim().min(1)).max(20), varietyPreference: z.string().trim().max(80).optional(), confidenceNotes: z.string().trim().max(2000).optional() });
 const performanceRecordSchema = z.object({ clientId: z.string().uuid(), exerciseId: z.string().uuid().optional(), metricType: z.enum(["one_rm", "estimated_one_rm", "rep_max", "other"]), metricName: z.string().trim().max(120).optional(), performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), value: z.number().positive().max(100000), unit: z.string().trim().min(1).max(20), repetitions: z.number().int().min(1).max(100).optional(), loadKg: z.number().positive().max(1000).optional(), source: z.enum(["tested", "estimated", "client_reported", "workout_result", "other"]), confidence: z.enum(["high", "moderate", "low"]).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean(), notes: z.string().trim().max(2000).optional() }).superRefine((input, context) => { if (!input.exerciseId && !input.metricName?.trim()) context.addIssue({ code: "custom", path: ["metricName"], message: "Add a metric name when no exercise is selected." }); if (input.metricType === "rep_max" && (!input.repetitions || !input.loadKg)) context.addIssue({ code: "custom", path: ["repetitions"], message: "Rep-max records need repetitions and load." }); });
 const clientLocationSchema = z.object({ clientId: z.string().uuid(), name: z.string().trim().min(1).max(120), locationType: z.string().trim().min(1).max(80), equipment: z.array(z.string().trim().min(1)).max(40) });
+const clientColours = ["emerald", "blue", "orange", "violet", "rose", "lime", "sky", "magenta", "ochre", "teal", "coral", "indigo"] as const;
+function clientColourForName(name: string) { let hash = 0; for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) | 0; return clientColours[Math.abs(hash) % clientColours.length]; }
 const caseStudySchema = z.object({ slug: z.enum(["ciara", "jessica", "kevin", "paul"]) });
 const caseStudyDraftSchema = z.object({ clientId: z.string().uuid() });
 const programmeOverrideSchema = z.object({ programmeId: z.string().uuid(), warningCodes: z.array(z.string().trim().min(1).max(120)).max(20), reason: z.string().trim().min(3).max(1000), decision: z.enum(["acknowledged", "overridden"]).optional() });
@@ -154,6 +156,7 @@ export async function createClientAction(rawInput: z.input<typeof clientInputSch
     ownerProfileId: owner.authUserId,
     firstName: input.firstName,
     lastName: input.lastName,
+    clientColour: clientColourForName(`${input.firstName} ${input.lastName}`),
     email: input.email || null,
     dateOfBirth: input.dateOfBirth || null,
     sexOrGender: input.sexOrGender || null,

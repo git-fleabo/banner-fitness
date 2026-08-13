@@ -442,6 +442,39 @@ const additionalProgrammeLibrarySeed: ProgrammeTemplateDefinition[] = [
       session("Sport power · C", [exercise("Broad Jump", "Plyometric", "Lower-body power", "Open space", 3, 5, 3, "Maximal intended speed"), exercise("Split Squat", "Lunge", "Quads · glutes", "Dumbbells", 8, 12, 3), exercise("Chest-Supported Row", "Horizontal pull", "Back · biceps", "Dumbbells, Bench", 8, 12, 3)]),
     ],
   },
+  {
+    id: "library-advanced-strength-4-day",
+    label: "Advanced strength exposure · 4 day",
+    description: "A four-day advanced strength structure with varied exposure across major lifts. Use only when technique, recovery, training age and current tolerance support the workload.",
+    goal: "General strength",
+    sessionDurationMinutes: 75,
+    experienceLevel: "Experienced",
+    frameworkType: "Advanced strength",
+    difficultyLevel: 3,
+    sessions: [
+      session("Advanced strength · Squat", [exercise("Barbell Back Squat", "Squat", "Quads · glutes", "Barbell, Rack", 3, 5, 4), exercise("Bulgarian Split Squat", "Lunge", "Quads · glutes", "Dumbbells", 6, 10, 3), exercise("Cable Pallof Press", "Anti-rotation", "Core", "Cable", 10, 15, 2)]),
+      session("Advanced strength · Bench", [exercise("Barbell Bench Press", "Horizontal push", "Chest · triceps", "Barbell, Rack", 3, 5, 4), exercise("Chest-Supported Row", "Horizontal pull", "Back · biceps", "Dumbbells, Bench", 6, 10, 4), exercise("Rope Triceps Pressdown", "Accessory", "Triceps", "Cable", 10, 15, 2)]),
+      session("Advanced strength · Hinge", [exercise("Trap-Bar Deadlift", "Hinge", "Glutes · hamstrings", "Trap bar", 2, 5, 4), exercise("Barbell Hip Thrust", "Hinge", "Glutes", "Barbell, Bench", 6, 10, 3), exercise("Lat Pulldown", "Vertical pull", "Lats · biceps", "Cable", 8, 12, 3)]),
+      session("Advanced strength · Press", [exercise("Dumbbell Shoulder Press", "Vertical push", "Shoulders · triceps", "Dumbbells", 4, 8, 4), exercise("Incline Dumbbell Press", "Horizontal push", "Upper chest · triceps", "Dumbbells, Bench", 6, 10, 3), exercise("Seated Cable Row", "Horizontal pull", "Back · biceps", "Cable", 8, 12, 3)]),
+    ],
+  },
+  {
+    id: "library-advanced-hypertrophy-5-day",
+    label: "Advanced hypertrophy rotation · 5 day",
+    description: "A higher-frequency hypertrophy rotation for experienced clients with established exercise tolerance and enough recovery capacity for five weekly exposures.",
+    goal: "Hypertrophy",
+    sessionDurationMinutes: 70,
+    experienceLevel: "Experienced",
+    frameworkType: "Advanced hypertrophy",
+    difficultyLevel: 3,
+    sessions: [
+      session("Hypertrophy · Upper push", [exercise("Barbell Bench Press", "Horizontal push", "Chest · triceps", "Barbell, Rack", 6, 10, 4), exercise("Dumbbell Shoulder Press", "Vertical push", "Shoulders · triceps", "Dumbbells", 8, 12, 3), exercise("Cable Lateral Raise", "Accessory", "Lateral delts", "Cable", 12, 20, 3)]),
+      session("Hypertrophy · Lower quad", [exercise("Hack Squat", "Squat", "Quads · glutes", "Machines", 8, 12, 4), exercise("Leg Press", "Squat", "Quads · glutes", "Machines", 10, 15, 3), exercise("Standing Calf Raise", "Accessory", "Calves", "Machines", 10, 15, 3)]),
+      session("Hypertrophy · Upper pull", [exercise("Lat Pulldown", "Vertical pull", "Lats · biceps", "Cable", 8, 12, 4), exercise("Chest-Supported Row", "Horizontal pull", "Back · biceps", "Dumbbells, Bench", 8, 12, 4), exercise("Cable Curl", "Accessory", "Biceps", "Cable", 10, 15, 3)]),
+      session("Hypertrophy · Lower posterior", [exercise("Barbell Romanian Deadlift", "Hinge", "Hamstrings · glutes", "Barbell", 6, 10, 4), exercise("Barbell Hip Thrust", "Hinge", "Glutes", "Barbell, Bench", 8, 12, 3), exercise("Bulgarian Split Squat", "Lunge", "Quads · glutes", "Dumbbells", 8, 12, 3)]),
+      session("Hypertrophy · Full body", [exercise("Front Squat", "Squat", "Quads · trunk", "Barbell, Rack", 8, 12, 3), exercise("Incline Dumbbell Press", "Horizontal push", "Upper chest · triceps", "Dumbbells, Bench", 8, 12, 3), exercise("Seated Cable Row", "Horizontal pull", "Back · biceps", "Cable", 8, 12, 3)]),
+    ],
+  },
 ];
 
 const catalogueMetadata: Record<string, { experienceLevel: string; frameworkType: string }> = {
@@ -478,6 +511,8 @@ const catalogueMetadata: Record<string, { experienceLevel: string; frameworkType
   "library-concurrent-strength-conditioning-4-day": { experienceLevel: "Intermediate", frameworkType: "Concurrent" },
   "library-running-support-strength-2-day": { experienceLevel: "Varied", frameworkType: "Sport support" },
   "library-field-sport-power-3-day": { experienceLevel: "Intermediate", frameworkType: "Sport support" },
+  "library-advanced-strength-4-day": { experienceLevel: "Experienced", frameworkType: "Advanced strength" },
+  "library-advanced-hypertrophy-5-day": { experienceLevel: "Experienced", frameworkType: "Advanced hypertrophy" },
 };
 
 const fatLossCoverageSeed: ProgrammeTemplateDefinition[] = [

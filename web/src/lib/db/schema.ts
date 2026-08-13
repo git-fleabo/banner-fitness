@@ -47,6 +47,7 @@ export const ptClients = pgTable("pt_clients", {
   ownerProfileId: text("owner_profile_id").notNull().references(() => profiles.authUserId, { onDelete: "cascade" }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
+  clientColour: text("client_colour").default("emerald").notNull(),
   email: text("email"),
   dateOfBirth: date("date_of_birth"),
   sexOrGender: text("sex_or_gender"),
