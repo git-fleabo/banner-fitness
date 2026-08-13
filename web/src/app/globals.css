@@ -1,9 +1,16 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
+
 :root {
   --cream: #f7f2e8;
   --cream-deep: #e9dfcf;
   --sand: #e5d1ad;
   --sand-light: #f1e8d8;
   --deep-teal: #163f3d;
+  --emerald: #176b59;
+  --emerald-bright: #2a8c6f;
+  --violet: #6f2da8;
+  --violet-light: #e7d8f4;
+  --lime: #a8d94a;
   --ink: #20302f;
   --muted: #66706d;
   --clay: #ad5847;
@@ -22,7 +29,7 @@ body {
   min-height: 100%;
   color: var(--ink);
   background: var(--cream);
-  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  font-family: "Manrope", "Avenir Next", Avenir, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -33,7 +40,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (forced-colors: active) { :focus-visible { outline-color: Highlight; } }
 
 /* Programme designer */
-.designer-shell { --navy:#172b35; --navy-soft:#29424a; --paper:#fbfaf7; --panel:#fff; --designer-line:#e9e5de; --designer-muted:#7e8987; display:flex; min-height:100vh; background:var(--paper); color:#263b3d; }
+.designer-shell { --navy:#163f3d; --navy-soft:#246b5c; --paper:#fbfff6; --panel:#fff; --designer-line:#dfe8dd; --designer-muted:#72817b; display:flex; min-height:100vh; background:var(--paper); color:#263b3d; }
 .designer-loading { min-height:100vh; display:grid; place-content:center; justify-items:center; gap:12px; background:var(--cream); color:var(--deep-teal); font-size:12px; }.loading-orbit { display:grid; place-items:center; width:42px; height:42px; border:1px solid #8ead9a; border-radius:50%; font:600 18px Georgia; }
 .designer-sidebar { width:248px; flex:none; box-sizing:border-box; background:var(--deep-teal); color:#e8efeb; padding:28px 18px 22px; display:flex; flex-direction:column; }
 .brand-mark { display:flex; align-items:center; gap:11px; padding:0 10px 42px; letter-spacing:.12em; }.brand-mark>span { display:grid; place-items:center; border:1px solid #9fb9a9; border-radius:50%; width:30px; height:30px; font:600 14px Georgia; color:#c6ddcd; }.brand-mark strong { display:block; font-size:13px; letter-spacing:.22em; }.brand-mark small { display:block; color:#9eb5ab; font-size:8px; letter-spacing:.2em; margin-top:3px; }
@@ -142,6 +149,18 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .mobile-nav-panel .brand-mark img { width:190px; }
 .mobile-nav-panel > button:not(.close-button) { display:flex; align-items:center; gap:10px; }
 .mobile-nav-panel > button:not(.close-button) .ds-icon { color:#a6c6b5; }
+
+/* Manrope and emerald/violet designer direction */
+.designer-shell h1,.designer-shell h2,.designer-shell h3,.designer-shell h4,
+.designer-shell button,.designer-shell input,.designer-shell select,.designer-shell textarea {
+  font-family:"Manrope", "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+.designer-shell .primary-button,.designer-shell .assign-button { background:var(--emerald); border-color:var(--emerald); }
+.designer-shell .primary-button:hover,.designer-shell .assign-button:hover { background:#125342; }
+.designer-shell .designer-nav button.active,.designer-shell .designer-nav button:hover { background:var(--violet); }
+.designer-shell .purple { background:var(--violet-light); color:var(--violet); }
+.designer-shell .rationale-link,.designer-shell .sparkle { color:var(--violet); }
+.designer-shell .status-pill,.designer-shell .status-pill.status-active { background:#e2f2ea; color:var(--emerald); }
 .inner-panel label,.onboarding-fields label,.wide-field,.session-name-label { line-height:1.25; }
 .location-equipment-panel .onboarding-fields label { color:#536a64; font-size:10px; letter-spacing:.04em; }
 @media (max-width: 680px) { .first-client-guide { margin:0 16px 20px; padding:17px; }.first-client-guide-steps { grid-template-columns:1fr; }.first-client-guide-steps small { min-height:0; }.client-timeline-panel { margin:0 15px 16px; padding:16px; } }
