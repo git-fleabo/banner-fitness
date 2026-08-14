@@ -62,6 +62,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     try {
       const templateSessions = sessionDays.map((day) => ({ name: names[String(day)]?.trim() || `${weekdayLabels[day]} session`, exercises: sessionsForTemplate(sessions[String(day)] ?? []) }));
       const result = await saveProgrammeTemplateAction({ name: templateName.trim(), goalSummary: goal, sessionDurationMinutes: sessionDurationMinutes ?? 45, sessions: templateSessions });
+      if ("error" in result) throw new Error(result.error);
       const savedTemplate: ProgrammeTemplateDefinition = { id: result.templateId, label: result.name, description: `${templateSessions.length} editable session${templateSessions.length === 1 ? "" : "s"} for ${goal}.`, goal, sessionDurationMinutes: sessionDurationMinutes ?? 45, sessions: templateSessions };
       setCustomTemplates((current) => [savedTemplate, ...current.filter((template) => template.id !== savedTemplate.id)]);
       setSelectedTemplateId(savedTemplate.id);

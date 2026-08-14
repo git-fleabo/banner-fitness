@@ -178,6 +178,7 @@ type ClientDetail = {
     id: string;
     firstName: string;
     lastName: string;
+    email: string | null;
     clientColour?: string | null;
     dateOfBirth: string | null;
     sexOrGender: string | null;
@@ -1337,7 +1338,10 @@ function DashboardClientRoster({
               {text}
               {value === "needs_attention" && (
                 <em>
-                  {clients.filter((client) => client.needsAttention).length}
+                  {clients.filter(
+                    (client) =>
+                      client.status === "active" && client.needsAttention,
+                  ).length}
                 </em>
               )}
             </button>
@@ -2358,8 +2362,10 @@ function ClientWorkspace({
                     </p>
                   </div>
                 </section>
-                <section className="warning-card">
-                  <div className="warning-symbol">!</div>
+                <section
+                  className={`warning-card ${screening ? "warning-card-attention" : "warning-card-clear"}`}
+                >
+                  <div className="warning-symbol">{screening ? "!" : "✓"}</div>
                   <div>
                     <strong>
                       {screening
@@ -2372,9 +2378,13 @@ function ClientWorkspace({
                         : "No current screening flags require escalation."}
                     </p>
                   </div>
-                  <button onClick={() => setShowScreeningReview(true)}>
-                    {screening ? "Review screening" : "View assessment"} →
-                  </button>
+                  {screening ? (
+                    <button onClick={() => setShowScreeningReview(true)}>
+                      Review screening →
+                    </button>
+                  ) : (
+                    <span className="warning-card-status">No action required</span>
+                  )}
                 </section>
                 <section className="inner-panel client-snapshot-panel">
                   <div className="inner-heading">
@@ -3966,6 +3976,7 @@ function ClientEditDialog({
 }) {
   const [firstName, setFirstName] = useState(client.firstName);
   const [lastName, setLastName] = useState(client.lastName);
+  const [email, setEmail] = useState(client.email ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(client.dateOfBirth ?? "");
   const [sexOrGender, setSexOrGender] = useState(client.sexOrGender ?? "");
   const [trainingExperience, setTrainingExperience] = useState(
@@ -3993,6 +4004,7 @@ function ClientEditDialog({
         clientId: client.id,
         firstName,
         lastName,
+        email,
         dateOfBirth,
         sexOrGender,
         trainingExperience,
@@ -4051,6 +4063,15 @@ function ClientEditDialog({
             <input
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
+            />
+          </label>
+          <label>
+            EMAIL
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Optional"
             />
           </label>
           <label>
@@ -4783,7 +4804,7 @@ function ProgrammeCalendar({
                 .map((item) => (
                   <button
                     type="button"
-                    className={`calendar-session ${clientColor(item.clientName, item.clientColour)}`}
+                    className={`calendar-session ${clientColor(item.clientName, item.clientColour)}${item.date < today ? " is-past" : ""}`}
                     key={item.id}
                     onClick={() => onOpen(item.clientId, item.clientName)}
                   >
@@ -4965,6 +4986,17 @@ function ClientOnboarding({
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [sexOrGender, setSexOrGender] = useState("");
+  const [trainingExperience, setTrainingExperience] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [dailyActivity, setDailyActivity] = useState("");
+  const [sleepHours, setSleepHours] = useState("");
+  const [stressLevel, setStressLevel] = useState("");
+  const [ptNotes, setPtNotes] = useState("");
   const [goalType, setGoalType] = useState("General fitness");
   const [trainingDays, setTrainingDays] = useState(3);
   const [preferredDays, setPreferredDays] = useState<number[]>([1, 3, 5]);
@@ -5059,6 +5091,17 @@ function ClientOnboarding({
       const result = await createClientAction({
         firstName,
         lastName,
+        email,
+        dateOfBirth,
+        sexOrGender,
+        trainingExperience,
+        heightCm: heightCm ? Number(heightCm) : undefined,
+        weightKg: weightKg ? Number(weightKg) : undefined,
+        occupation,
+        dailyActivity,
+        sleepHours,
+        stressLevel,
+        ptNotes,
         goalType,
         trainingDays,
         preferredDays,
@@ -5124,6 +5167,106 @@ function ClientOnboarding({
                   value={lastName}
                   onChange={(event) => setLastName(event.target.value)}
                   placeholder="Thompson"
+                />
+              </label>
+              <label>
+                EMAIL
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Optional"
+                />
+              </label>
+              <label>
+                DATE OF BIRTH
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(event) => setDateOfBirth(event.target.value)}
+                />
+              </label>
+              <label>
+                SEX / GENDER
+                <input
+                  value={sexOrGender}
+                  onChange={(event) => setSexOrGender(event.target.value)}
+                  placeholder="Optional"
+                />
+              </label>
+              <label>
+                TRAINING EXPERIENCE
+                <select
+                  value={trainingExperience}
+                  onChange={(event) => setTrainingExperience(event.target.value)}
+                >
+                  <option value="">Not recorded</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </label>
+              <label>
+                HEIGHT (CM)
+                <input
+                  type="number"
+                  min="50"
+                  max="260"
+                  value={heightCm}
+                  onChange={(event) => setHeightCm(event.target.value)}
+                />
+              </label>
+              <label>
+                WEIGHT (KG)
+                <input
+                  type="number"
+                  min="20"
+                  max="400"
+                  value={weightKg}
+                  onChange={(event) => setWeightKg(event.target.value)}
+                />
+              </label>
+              <label>
+                OCCUPATION
+                <input
+                  value={occupation}
+                  onChange={(event) => setOccupation(event.target.value)}
+                />
+              </label>
+              <label>
+                DAILY ACTIVITY
+                <textarea
+                  value={dailyActivity}
+                  onChange={(event) => setDailyActivity(event.target.value)}
+                  placeholder="Typical movement outside training"
+                />
+              </label>
+              <label>
+                SLEEP
+                <input
+                  value={sleepHours}
+                  onChange={(event) => setSleepHours(event.target.value)}
+                  placeholder="7–8 hours"
+                />
+              </label>
+              <label>
+                STRESS
+                <select
+                  value={stressLevel}
+                  onChange={(event) => setStressLevel(event.target.value)}
+                >
+                  <option value="">Not recorded</option>
+                  <option>Low</option>
+                  <option>Moderate</option>
+                  <option>High</option>
+                </select>
+              </label>
+              <label className="wide-field">
+                PT NOTES
+                <textarea
+                  value={ptNotes}
+                  onChange={(event) => setPtNotes(event.target.value)}
+                  placeholder="Goals, preferences, constraints and coaching observations…"
                 />
               </label>
               <label>

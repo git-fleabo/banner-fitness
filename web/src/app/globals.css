@@ -558,6 +558,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .calendar-session[class*="client-color-"] span,.calendar-session[class*="client-color-"] strong,.calendar-session[class*="client-color-"] em { color:var(--client-accent); }
 .calendar-session[class*="client-color-"]:hover,.calendar-session[class*="client-color-"]:focus-visible { background:var(--client-accent-soft); border-color:var(--client-accent); }
 .calendar-day.is-today { border-color:var(--emerald); background:#f7fbf8; }
+.calendar-session.is-past { filter:grayscale(1); opacity:.52; background:#eef0ed; border-color:#c8cfca; color:#77827e; }
+.warning-card-clear { background:#eef7ef; border-color:#d2e6d5; }
+.warning-card-clear .warning-symbol { background:#6eaa86; }
+.warning-card-clear strong { color:#3e7c56; }
+.warning-card-clear p { color:#648070; }
+.warning-card-clear button { color:#3e7c56; }
+.warning-card-status { margin-left:auto; flex:none; color:#3e7c56; font:700 10px inherit; }
+.modal-backdrop { z-index:100; pointer-events:auto; }
 .lifecycle-quick-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
 .lifecycle-quick-actions .lifecycle-summary { flex:1 1 100%; }
 .session-editor-actions { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:end; }

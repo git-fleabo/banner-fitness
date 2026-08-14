@@ -23,6 +23,12 @@ const clientInputSchema = z.object({
   dateOfBirth: z.string().optional(),
   sexOrGender: z.string().trim().max(80).optional(),
   trainingExperience: z.string().trim().max(80).optional(),
+  heightCm: z.number().int().min(50).max(260).optional(),
+  weightKg: z.number().int().min(20).max(400).optional(),
+  occupation: z.string().trim().max(160).optional(),
+  dailyActivity: z.string().trim().max(500).optional(),
+  sleepHours: z.string().trim().max(40).optional(),
+  stressLevel: z.string().trim().max(40).optional(),
   goalType: z.string().trim().min(1).max(120),
   trainingDays: z.number().int().min(1).max(7),
   sessionDurationMinutes: z.number().int().min(15).max(180),
@@ -37,7 +43,7 @@ const clientInputSchema = z.object({
 
 const exerciseDraftSchema = z.object({ name: z.string().trim().min(1), pattern: z.string().trim().min(1), sets: z.number().int().min(1).max(20), repsMin: z.number().int().min(1).max(100).optional(), repsMax: z.number().int().min(1).max(100).optional(), intensityValue: z.string().trim().min(1), restSeconds: z.number().int().min(0).max(1800).optional(), tempo: z.string().trim().max(30).optional(), technique: z.string().trim().max(80).optional(), notes: z.string().trim().max(500).optional(), groupKey: z.string().trim().max(80).optional(), progressionRule: z.string().trim().max(500).optional() });
 const clientUpdateSchema = z.object({ clientId: z.string().uuid(), goalType: z.string().trim().min(1).max(120), trainingDays: z.number().int().min(1).max(7), sessionDurationMinutes: z.number().int().min(15).max(180) });
-const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), trainingExperience: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
+const clientProfileUpdateSchema = z.object({ clientId: z.string().uuid(), firstName: z.string().trim().min(1).max(80), lastName: z.string().trim().min(1).max(80), email: z.string().trim().email().optional().or(z.literal("")), dateOfBirth: z.string().max(10).optional(), sexOrGender: z.string().trim().max(80).optional(), trainingExperience: z.string().trim().max(80).optional(), heightCm: z.number().int().min(50).max(260).optional(), weightKg: z.number().int().min(20).max(400).optional(), occupation: z.string().trim().max(160).optional(), dailyActivity: z.string().trim().max(500).optional(), sleepHours: z.string().trim().max(40).optional(), stressLevel: z.string().trim().max(40).optional(), sessionDurationMinutes: z.number().int().min(15).max(180), notes: z.string().trim().max(4000).optional() });
 const deleteClientSchema = z.object({ clientId: z.string().uuid(), confirmation: z.literal("DELETE CLIENT") });
 const clientPreferencesSchema = z.object({ clientId: z.string().uuid(), likedExercises: z.array(z.string().trim().min(1)).max(30), dislikedExercises: z.array(z.string().trim().min(1)).max(30), preferredStyle: z.string().trim().max(120).optional(), preferredStructure: z.string().trim().max(120).optional(), preferredEquipment: z.array(z.string().trim().min(1)).max(30), cardioModalities: z.array(z.string().trim().min(1)).max(20), varietyPreference: z.string().trim().max(80).optional(), confidenceNotes: z.string().trim().max(2000).optional() });
 const performanceRecordSchema = z.object({ clientId: z.string().uuid(), exerciseId: z.string().uuid().optional(), metricType: z.enum(["one_rm", "estimated_one_rm", "rep_max", "other"]), metricName: z.string().trim().max(120).optional(), performanceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), value: z.number().positive().max(100000), unit: z.string().trim().min(1).max(20), repetitions: z.number().int().min(1).max(100).optional(), loadKg: z.number().positive().max(1000).optional(), source: z.enum(["tested", "estimated", "client_reported", "workout_result", "other"]), confidence: z.enum(["high", "moderate", "low"]).optional(), techniqueAcceptable: z.boolean(), painReported: z.boolean(), notes: z.string().trim().max(2000).optional() }).superRefine((input, context) => { if (!input.exerciseId && !input.metricName?.trim()) context.addIssue({ code: "custom", path: ["metricName"], message: "Add a metric name when no exercise is selected." }); if (input.metricType === "rep_max" && (!input.repetitions || !input.loadKg)) context.addIssue({ code: "custom", path: ["repetitions"], message: "Rep-max records need repetitions and load." }); });
@@ -164,8 +170,14 @@ export async function createClientAction(rawInput: z.input<typeof clientInputSch
     dateOfBirth: input.dateOfBirth || null,
     sexOrGender: input.sexOrGender || null,
     trainingExperience: input.trainingExperience || null,
+    heightCm: input.heightCm ?? null,
+    weightKg: input.weightKg ?? null,
+    occupation: input.occupation || null,
+    dailyActivity: input.dailyActivity || null,
     sessionDurationMinutes: input.sessionDurationMinutes,
     preferredDays,
+    sleepHours: input.sleepHours || null,
+    stressLevel: input.stressLevel || null,
     notes: input.ptNotes || null,
   }).returning({ id: ptClients.id });
   if (!client) throw new Error("Client could not be created.");
@@ -329,7 +341,7 @@ export async function updateClientProfileAction(rawInput: z.input<typeof clientP
   const owner = await requireDesignerAccess();
   const input = clientProfileUpdateSchema.parse(rawInput);
   const db = getDb();
-  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, trainingExperience: input.trainingExperience || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), designerOwnership(ptClients.ownerProfileId, owner))).returning({ id: ptClients.id });
+  const [client] = await db.update(ptClients).set({ firstName: input.firstName, lastName: input.lastName, email: input.email || null, dateOfBirth: input.dateOfBirth || null, sexOrGender: input.sexOrGender || null, trainingExperience: input.trainingExperience || null, heightCm: input.heightCm ?? null, weightKg: input.weightKg ?? null, occupation: input.occupation || null, dailyActivity: input.dailyActivity || null, sleepHours: input.sleepHours || null, stressLevel: input.stressLevel || null, sessionDurationMinutes: input.sessionDurationMinutes, notes: input.notes || null, updatedAt: new Date() }).where(and(eq(ptClients.id, input.clientId), designerOwnership(ptClients.ownerProfileId, owner))).returning({ id: ptClients.id });
   if (!client) throw new Error("Client profile could not be updated.");
   await refreshClientProgrammeQuality(db, owner.authUserId, client.id);
   revalidatePath("/designer");
@@ -410,14 +422,20 @@ export async function listProgrammeTemplatesAction(): Promise<ProgrammeTemplateD
   });
 }
 
-export async function saveProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateSchema>) {
+export async function saveProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateSchema>): Promise<{ templateId: string; name: string } | { error: string }> {
   const owner = await requireDesignerAccess();
-  const input = programmeTemplateSchema.parse(rawInput);
+  const parsed = programmeTemplateSchema.safeParse(rawInput);
+  if (!parsed.success) return { error: parsed.error.issues.map((issue) => issue.message).join(" ") };
+  const input = parsed.data;
   const db = getDb();
-  const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, experienceLevel: input.experienceLevel ?? "varied", frameworkType: input.frameworkType ?? "custom", sessions: input.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
-  if (!template) throw new Error("Programme template could not be saved.");
-  revalidatePath("/designer");
-  return { templateId: template.id, name: template.name };
+  try {
+    const [template] = await db.insert(ptProgrammeTemplates).values({ ownerProfileId: owner.authUserId, name: input.name, description: input.description || `${input.sessions.length} editable session${input.sessions.length === 1 ? "" : "s"} for ${input.goalSummary}.`, goalSummary: input.goalSummary, sessionDurationMinutes: input.sessionDurationMinutes, experienceLevel: input.experienceLevel ?? "varied", frameworkType: input.frameworkType ?? "custom", sessions: input.sessions }).returning({ id: ptProgrammeTemplates.id, name: ptProgrammeTemplates.name });
+    if (!template) return { error: "Programme template could not be saved." };
+    revalidatePath("/designer");
+    return { templateId: template.id, name: template.name };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Programme template could not be saved." };
+  }
 }
 
 export async function deleteProgrammeTemplateAction(rawInput: z.input<typeof programmeTemplateDeleteSchema>) {
