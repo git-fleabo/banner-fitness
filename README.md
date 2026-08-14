@@ -1,56 +1,34 @@
-# PT Learning Lab
+# Banner Fitness PT workspace
 
-PT Learning Lab is a private, self-guided learning companion for the OriGym
-Level 3 Personal Trainer programme. The first product slice is a polished,
-squat-led anatomy and movement experience.
+Banner Fitness is a private personal-training workspace for managing clients,
+PAR-Q and assessment information, preferences, locations, programme design,
+workout results, performance records, programme quality review and the
+supporting PT prompt bundle.
 
-## Current stage
-
-Phase 1 implementation now includes the typed application foundation and live
-data/authentication boundary in `web/`: Human Movement Studio design tokens, a
-responsive prototype overview, validated five-lesson metadata, a versioned
-Neon/Drizzle schema, invitation-only Google OAuth authentication, server-side
-profile authorization and unit/E2E test harnesses.
-
-The product decisions, curriculum plan, research findings, wireframe decisions
-and frozen technical contract are recorded in the `PT_LEARNING_LAB_*.md`
-documents.
+The current product is deliberately focused on the PT workflow: create a
+client, screen and understand their context, design and review a programme,
+assign it, and record progress over time. The former curriculum and lesson
+feature has been retired.
 
 ## Repository contents
 
-- Product, curriculum, research, and design decision records
-- Human Movement Studio concept boards
-- Reviewed reference-source manifests and approved source files
-- Next.js application source and tests in `web/`
+- Banner Fitness PT application and tests in `web/`
+- PT prompt contract and generated public copy
+- Programme-library, quality-review and client-data governance documentation
+- Design references and private source-material manifests
 
 ## Local application
 
-From `web/`, copy `.env.example` to `.env.local` and supply the server-only Neon
-values before running database, authentication or production-build commands.
+From `web/`, copy `.env.example` to `.env.local` and supply the server-only
+Neon and authentication values before running database or production commands.
 
-- `npm run dev` — run the local application
-- `npm run typecheck` — check TypeScript contracts
-- `npm run lint` — run ESLint
-- `npm test` — run Vitest unit/component tests
-- `npm run build` — create the production build
-- `npm run cf-build` — validate the Cloudflare OpenNext bundle
-- `npm run db:check` — validate the tracked migration history
-- `npm run db:migrate` — apply unapplied migrations to `DATABASE_URL`
-- `./node_modules/.bin/playwright test` — run phone and laptop Playwright checks once Chromium is installed
+- `pnpm dev` — run the application
+- `pnpm typecheck` — check TypeScript contracts
+- `pnpm lint` — run ESLint
+- `pnpm test` — run unit/component tests
+- `pnpm build` — create the production build
+- `pnpm db:check` — validate the tracked migration history
+- `pnpm db:migrate` — apply unapplied migrations to `DATABASE_URL`
 
-## Source-material policy
-
-The wider working folder contains OriGym course resources, duplicate downloads,
-and private assessment records. Those folders are deliberately excluded from
-Git by default.
-
-Original source documents may be added to `references/` only after review. Each
-included file should be necessary for development, suitable for storage in a
-private repository, free of learner/client-identifiable information, and listed
-in the reference manifest with its source and permitted use. Public YouTube
-material should normally be recorded as a URL and provenance note rather than
-downloaded into the repository.
-
-Never commit certificates, assessor feedback, personal reports, completed
-programme cards, consultations, consent forms, health information, exported
-account archives, or other identifiable learner/client records.
+Identifiable client records, health information and exported account archives
+must not be committed to the repository.

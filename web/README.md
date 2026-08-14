@@ -1,11 +1,10 @@
-# PT Learning Lab application
+# Banner Fitness PT workspace
 
-This is the Next.js App Router application for the private PT Learning Lab.
-The current implementation contains the draft-only five-topic anatomy-and-
-movement revision library, shared lesson engine, interactive checks, meaningful
-progress and resume state, weak-area discovery, targeted revision, owner review
-gates, and Cloudflare Workers deployment configuration. It is a revision
-companion, not a replacement course.
+This is the Next.js App Router application for the private Banner Fitness PT
+workspace. It supports client records, PAR-Q and assessment review, goals,
+preferences, locations, exercise-library management, programme design,
+programme templates, workout and performance tracking, quality review and the
+PT prompt bundle. The former curriculum and lesson feature has been retired.
 
 ## Environment
 
@@ -31,13 +30,9 @@ pnpm db:migrate
 pnpm test:e2e
 ```
 
-The E2E suite expects a locally installed Playwright Chromium browser. The live
-Neon schema and authentication route are connected. Learner access still
-requires a provisioned application profile and published content; all five
-prototype topics remain draft-only. The private read-only draft preview is
-available separately for content inspection, while authenticated production
-smoke testing remains account-dependent.
+The workspace is invitation-gated. Use the designer for the PT workflow and
+`/account/data` for the authenticated PT-data export and deletion controls.
 
-## Banner Fitness PT workspace handoff
-
-The current product state, deployed URL, database/catalogue changes, verification boundaries and next steps are maintained in [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md). The PT prompt contract is maintained in [`skills/banner-fitness-pt-prompt/SKILL.md`](skills/banner-fitness-pt-prompt/SKILL.md) and mirrored to `public/banner-fitness-pt-prompt-skill.md` during builds.
+The current product state, deployment details, verification boundaries and
+next steps are maintained in [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md).
+The PT prompt contract is maintained in [`skills/banner-fitness-pt-prompt/SKILL.md`](skills/banner-fitness-pt-prompt/SKILL.md).

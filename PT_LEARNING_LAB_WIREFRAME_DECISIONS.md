@@ -1,5 +1,7 @@
 # PT Learning Lab — Prototype Wireframe Decisions
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Status: approved as a complete low-fidelity set; ready for Phase 1 implementation
 
 Date: 5 August 2026

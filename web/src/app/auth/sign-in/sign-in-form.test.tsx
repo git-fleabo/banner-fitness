@@ -75,7 +75,7 @@ describe("SignInForm", () => {
       cache: "no-store",
       body: JSON.stringify({ email: "learner@example.com", otp: "123456" }),
     });
-    expect(routerPush).toHaveBeenCalledWith("/learn");
+    expect(routerPush).toHaveBeenCalledWith("/designer");
   });
 
   it("keeps the code screen open and offers a fresh code after an expired OTP", async () => {

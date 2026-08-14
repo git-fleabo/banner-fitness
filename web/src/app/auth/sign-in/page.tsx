@@ -9,8 +9,8 @@ export default function SignInPage() {
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="sign-in-heading">
-        <Link className={styles.brand} href="/">PT Learning Lab</Link>
-        <p className={styles.eyebrow}>Private learning space</p>
+      <Link className={styles.brand} href="/">Banner Fitness</Link>
+      <p className={styles.eyebrow}>Private PT workspace</p>
         <h1 id="sign-in-heading">Welcome back</h1>
         <p className={styles.intro}>Enter the email address matching your invitation. We will send a one-time verification code; no password is required.</p>
         <SignInForm />

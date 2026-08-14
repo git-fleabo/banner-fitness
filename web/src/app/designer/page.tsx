@@ -454,7 +454,7 @@ export default function DesignerPage() {
           return;
         }
         if (!response.ok) {
-          router.replace("/learn");
+          router.replace("/auth/sign-in?access=designer");
           return;
         }
         void response

@@ -1,5 +1,7 @@
 # PT Learning Lab — Product Blueprint
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Status: Phase 0 complete enough to begin the approved vertical slice
 
 Working title: **PT Learning Lab**

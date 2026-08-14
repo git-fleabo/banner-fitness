@@ -107,7 +107,7 @@ export function SignInForm() {
 
     try {
       await withTimeout(verifySignInCode(email, otp));
-      router.push("/learn");
+      router.push("/designer");
     } catch (error) {
       setState("code");
       setErrorMessage(readableVerifyError(error));

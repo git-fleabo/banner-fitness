@@ -1,5 +1,7 @@
 # PT Learning Lab — OriGym Facebook Group Findings
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Status: initial anonymised thematic scan
 
 Date: 5 August 2026

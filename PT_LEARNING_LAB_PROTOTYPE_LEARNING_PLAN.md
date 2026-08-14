@@ -1,5 +1,7 @@
 # PT Learning Lab — Squat-led Prototype Learning Plan
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Status: approved learning contract for Phase 1 implementation
 
 Date: 5 August 2026

@@ -162,6 +162,13 @@
       "when": 1786659837128,
       "tag": "0022_add_session_scheduling",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1786746620137,
+      "tag": "0023_calm_metal_master",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,7 @@
 # Phase 1 architecture and authoring note
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Lessons are authored as the human-readable TypeScript package in
 `web/src/lib/content/prototype-seed.ts`. Zod validates lesson metadata,
 learning-object rhythm, questions, feedback, misconception codes, source keys

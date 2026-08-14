@@ -1,5 +1,7 @@
 # PT Learning Lab — Decision Register and Chat Handoff
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Last updated: 5 August 2026
 
 This is the concise source of truth for decisions made during the PT Learning Lab planning conversation. A future chat should read this file first, then `PT_LEARNING_LAB_PRODUCT_BLUEPRINT.md`, before proposing or building anything.

@@ -1,15 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { progressDataActionSchema } from "./data-controls";
+import { clientDataActionSchema } from "./data-controls";
 
-describe("progress data confirmations", () => {
-  it("requires the exact reset phrase", () => {
-    expect(progressDataActionSchema.safeParse({ intent: "reset", confirmation: "reset progress" }).success).toBe(false);
-    expect(progressDataActionSchema.safeParse({ intent: "reset", confirmation: "RESET PROGRESS" }).success).toBe(true);
+describe("PT data deletion confirmations", () => {
+  it("requires the exact PT deletion phrase", () => {
+    expect(clientDataActionSchema.safeParse({ intent: "delete", confirmation: "delete pt data" }).success).toBe(false);
+    expect(clientDataActionSchema.safeParse({ intent: "delete", confirmation: "DELETE PT DATA" }).success).toBe(true);
   });
 
-  it("does not accept a reset confirmation for full learning-data deletion", () => {
-    expect(progressDataActionSchema.safeParse({ intent: "delete", confirmation: "RESET PROGRESS" }).success).toBe(false);
-    expect(progressDataActionSchema.safeParse({ intent: "delete", confirmation: "DELETE LEARNING DATA" }).success).toBe(true);
+  it("does not accept an unrelated confirmation", () => {
+    expect(clientDataActionSchema.safeParse({ intent: "delete", confirmation: "DELETE CURRICULUM DATA" }).success).toBe(false);
   });
 });

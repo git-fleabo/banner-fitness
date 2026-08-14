@@ -1,5 +1,7 @@
 # PT Learning Lab - Phase 1 Build Readiness
 
+> Historical document: the PT Learning Lab direction was superseded by the current Banner Fitness PT workspace.
+
 Status: approved to begin the anatomy-and-movement vertical slice
 
 Date: 5 August 2026
