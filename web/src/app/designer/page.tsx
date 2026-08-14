@@ -624,7 +624,7 @@ export default function DesignerPage() {
     <main className="designer-shell">
       <aside className="designer-sidebar">
         <div className="brand-mark">
-          <img src="/banner-fitness-logo-transparent.png" alt="Banner Fitness" />
+          <img src="/banner-fitness-logo.jpg" alt="Banner Fitness" />
         </div>
         <div className="workspace-label">WORKSPACE</div>
         <nav className="designer-nav" aria-label="Main navigation">
@@ -687,7 +687,7 @@ export default function DesignerPage() {
       <section className="designer-content">
         <header className="designer-header">
           <div className="mobile-brand">
-            <img src="/banner-fitness-logo-transparent.png" alt="Banner Fitness" />
+            <img src="/banner-fitness-logo.jpg" alt="Banner Fitness" />
           </div>
           <form className="header-search" onSubmit={searchWorkspace}>
             <Icon name="search" />
