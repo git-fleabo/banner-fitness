@@ -127,12 +127,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* Banner Fitness visual language */
 .brand-mark { padding-bottom:36px; }
-.brand-mark img { display:block; position:relative; z-index:1; width:190px; height:auto; border-radius:0; background:transparent; }
-.brand-mark,.mobile-brand { position:relative; overflow:hidden; }
-.brand-mark::after,.mobile-brand::after { content:""; position:absolute; z-index:0; top:16%; right:0; width:56%; height:68%; opacity:.34; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='18' viewBox='0 0 20 18'%3E%3Cpath d='M5 1h10l5 8-5 8H5L0 9Z' fill='none' stroke='%23b6e85b' stroke-opacity='.9' stroke-width='1'/%3E%3C/svg%3E"); background-size:20px 18px; }
+.brand-mark img { display:block; width:210px; height:auto; border-radius:0; }
+.brand-mark,.mobile-brand { overflow:hidden; }
 .designer-sidebar > .brand-mark { justify-content:center; padding-left:0; padding-right:0; }
 .mobile-brand { align-items:center; }
-.mobile-brand img { display:block; position:relative; z-index:1; width:154px; height:auto; border-radius:0; background:transparent; }
+.mobile-brand img { display:block; width:172px; height:auto; border-radius:0; }
 .ds-icon { display:block; width:18px; height:18px; flex:none; font-size:initial; }
 .stat-icon .ds-icon { width:17px; height:17px; }
 .header-search > .ds-icon { width:16px; height:16px; color:#87928e; }
@@ -168,10 +167,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .designer-shell { height:100vh; overflow:hidden; }
 .designer-sidebar { height:100vh; overflow-y:auto; }
 .designer-content { height:100vh; overflow-y:auto; }
-
-/* The generated logo contains a dark matte; screen blending removes that matte
-   against the teal sidebar while preserving the light mark and wordmark. */
-.designer-sidebar .brand-mark img,.mobile-nav-panel .brand-mark img,.mobile-brand img { mix-blend-mode:screen; border-radius:0; }
 
 /* Give each client a visible, repeatable identity across roster and workspace. */
 .dashboard-client-row[class*="client-color-"] .dashboard-client-programme strong,
