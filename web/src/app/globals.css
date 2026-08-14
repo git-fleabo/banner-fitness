@@ -133,6 +133,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .designer-sidebar > .brand-mark { justify-content:center; padding-left:0; padding-right:0; }
 .mobile-brand { align-items:center; }
 .mobile-brand img { display:block; width:172px; height:auto; border-radius:0; }
+@media (max-width:680px) { .mobile-brand img { width:105px; max-width:100%; max-height:44px; object-fit:contain; } }
 .ds-icon { display:block; width:18px; height:18px; flex:none; font-size:initial; }
 .stat-icon .ds-icon { width:17px; height:17px; }
 .header-search > .ds-icon { width:16px; height:16px; color:#87928e; }
