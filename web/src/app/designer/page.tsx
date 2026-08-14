@@ -2638,10 +2638,14 @@ function ClientWorkspace({
                   </button>
                   <button
                     className="assign-button"
-                    onClick={saveDraft}
-                    disabled={saving || !selectedExercises.length}
+                    onClick={selectedExercises.length ? saveDraft : onEditSessions}
+                    disabled={saving}
                   >
-                    {saving ? "Saving draft…" : "Save draft & review →"}
+                    {saving
+                      ? "Saving draft…"
+                      : selectedExercises.length
+                        ? "Save draft & review →"
+                        : "Build programme →"}
                   </button>
                 </div>
               </aside>
@@ -4793,8 +4797,8 @@ function ProgrammeCalendar({
         </header>
         <div className="calendar-grid">
           {days.map((day) => (
-            <div className={`calendar-day${day === todayName ? " is-today" : ""}`} key={day}>
-              <p>{day}{day === todayName && <strong>Today</strong>}</p>
+            <div className={`calendar-day${weekOffset === 0 && day === todayName ? " is-today" : ""}`} key={day}>
+              <p>{day}{weekOffset === 0 && day === todayName && <strong>Today</strong>}</p>
               {visibleSchedule
                 .filter((item) =>
                   item.day
@@ -4816,7 +4820,7 @@ function ProgrammeCalendar({
                     <em>{item.status === "completed" || item.status === "partial" ? `Logged · ${item.status}` : item.status === "pending" ? "Pending result" : item.status === "today" ? "Today · not logged" : "Upcoming"}</em>
                   </button>
                 ))}
-              {!schedule.some((item) =>
+              {!weekSchedule.some((item) =>
                 item.day
                   .toLowerCase()
                   .startsWith(day.slice(0, 3).toLowerCase()),
