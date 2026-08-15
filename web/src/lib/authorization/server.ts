@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth/server";
 import { getDb } from "@/lib/db/client";
+import { getServerEnv } from "@/lib/env";
 import { profiles, ptInvitations } from "@/lib/db/schema";
 
 export type AccountAccess =
@@ -13,6 +14,36 @@ export type AccountAccess =
   | { state: "active"; account: typeof profiles.$inferSelect };
 
 export async function getAccountAccess(): Promise<AccountAccess> {
+  if (getServerEnv().DEV_BYPASS_AUTH) {
+    console.warn("!!! DEV_BYPASS_AUTH ENABLED: Neon Auth is bypassed; local development only !!!");
+    const db = getDb();
+    const [account] = await db
+      .insert(profiles)
+      .values({
+        authUserId: "dev-local-owner",
+        email: "dev-local-owner@localhost",
+        displayName: "Local Development Owner",
+        role: "owner",
+        status: "active",
+        activatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: profiles.authUserId,
+        set: {
+          email: "dev-local-owner@localhost",
+          displayName: "Local Development Owner",
+          role: "owner",
+          status: "active",
+          activatedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    if (!account) throw new Error("Unable to create the local development owner profile");
+    return { state: "active", account };
+  }
+
   const { data: session, error } = await auth.getSession();
 
   if (error || !session?.user) {
