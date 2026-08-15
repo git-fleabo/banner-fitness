@@ -46,6 +46,11 @@ import { mapLibraryTemplateToClientSessions } from "@/lib/programme-library";
 import type { AiProgrammeImportApproval } from "@/lib/pt-ai-import";
 import type { SavedSession } from "@/lib/programme-editor";
 import { PT_GOALS } from "@/lib/pt-goals";
+import {
+  ClientWorkspaceRoute,
+  DesignerDashboardRoute,
+  OnboardingRoute,
+} from "./designer-route-sections";
 
 type Exercise = {
   name: string;
@@ -230,6 +235,7 @@ type ClientDetail = {
     version: number;
     updatedAt: string;
     createdAt?: string;
+    aiImported?: boolean;
   }>;
   timeline: ClientTimelineItem[];
   quality: QualityReview | null;
@@ -242,6 +248,7 @@ type ClientDetail = {
     durationWeeks: number;
     version: number;
     rationale: string | null;
+    aiImported: boolean;
     week: {
       id: string;
       weekNumber: number;
@@ -685,6 +692,7 @@ export default function DesignerPage() {
         </div>
       </aside>
 
+      <DesignerDashboardRoute>
       <section className="designer-content">
         <header className="designer-header">
           <div className="mobile-brand">
@@ -899,8 +907,10 @@ export default function DesignerPage() {
           </>
         )}
       </section>
+      </DesignerDashboardRoute>
       {showClient && (
-        <ClientWorkspace
+        <ClientWorkspaceRoute>
+          <ClientWorkspace
           clientId={clientId ?? ""}
           name={client}
           goal={goal}
@@ -964,10 +974,12 @@ export default function DesignerPage() {
                 }
               : undefined
           }
-        />
+          />
+        </ClientWorkspaceRoute>
       )}
       {showClient && clientId && (
-        <WorkspaceSupportPortal
+        <ClientWorkspaceRoute>
+          <WorkspaceSupportPortal
           clientId={clientId}
           name={client}
           goal={goal}
@@ -1006,7 +1018,8 @@ export default function DesignerPage() {
             setDetailRefresh((current) => current + 1);
           }}
           notify={notify}
-        />
+          />
+        </ClientWorkspaceRoute>
       )}
       {showCalendar && (
         <ProgrammeCalendar
@@ -1088,7 +1101,8 @@ export default function DesignerPage() {
         />
       )}
       {showOnboarding && (
-        <ClientOnboarding
+        <OnboardingRoute>
+          <ClientOnboarding
           onClose={() => setShowOnboarding(false)}
           onCreated={(name, riskCount, createdClientId, guideNext) => {
             refreshOverview();
@@ -1105,7 +1119,8 @@ export default function DesignerPage() {
                 : "Client created and ready to programme",
             );
           }}
-        />
+          />
+        </OnboardingRoute>
       )}
       {showSettings && (
         <DesignerSettings
@@ -2243,6 +2258,7 @@ function ClientWorkspace({
         ),
       });
       notify(`Draft saved · version ${result.version}`);
+      onProgrammeChanged();
     } catch (error) {
       notify(
         error instanceof Error ? error.message : "Draft could not be saved",
@@ -2535,7 +2551,10 @@ function ClientWorkspace({
                     </div>
                     <div className="session-title">
                       <div>
-                        <h3>{selectedSession?.name ?? "Programme sessions"}</h3>
+                        <h3>
+                          {selectedSession?.name ?? "Programme sessions"}
+                          {programme.aiImported && <span className="ai-origin-badge">AI-drafted · PT approved</span>}
+                        </h3>
                         <p>
                           {selectedSession?.durationMinutes ?? 0} min · {selectedSession?.scheduledTime ? `at ${selectedSession.scheduledTime} · ` : ""}{selectedSession?.managementMode === "self_managed" ? "Self-managed · " : "PT-managed · "}Week{" "}
                           {programme.week?.weekNumber ?? programme.currentWeek}
@@ -2607,7 +2626,7 @@ function ClientWorkspace({
                     <p>
                       {programme
                         ? detail?.quality
-                          ? `${qualityReadiness} · ${detail.quality.counts.significant} significant · ${detail.quality.counts.advisory} advisories`
+                          ? `${qualityReadiness} · ${detail.quality.emptySessions} of ${detail.quality.scheduledSessions} scheduled sessions empty · ${detail.quality.counts.significant} significant · ${detail.quality.counts.advisory} advisories`
                           : "Quality review is not available yet."
                         : "Quality checks will appear after a draft programme is saved."}
                     </p>
@@ -2773,6 +2792,7 @@ function WorkspaceSupportPortal({
   const [guidedStep, setGuidedStep] = useState(1);
   const [completedStages, setCompletedStages] = useState<number[]>([0]);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [moreToolsOpen, setMoreToolsOpen] = useState(false);
   useEffect(() => {
     // The drawer is the sibling portal host created by the parent workspace.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -2981,11 +3001,17 @@ function WorkspaceSupportPortal({
           </p>
         </div>
         {screening && (
-          <p className="screening-note">
-            This information is carried into the review prompt. Resolve
-            screening or clearance decisions from the assessment workflow before
-            assigning where required.
-          </p>
+          <div className="screening-clearance-banner" role="alert">
+            <span className="screening-clearance-icon" aria-hidden="true">!</span>
+            <div>
+              <strong>Clearance / screening action required</strong>
+              <p>
+                This safety flag is carried into programme review and can block
+                assignment. Resolve the screening or clearance decision here
+                before assigning.
+              </p>
+            </div>
+          </div>
         )}
       </section>
       <ClientTimelinePanel items={detail.timeline} />
@@ -3053,6 +3079,7 @@ function WorkspaceSupportPortal({
           </p>
         </div>
         <div className="pt-tools-grid">
+          <div className="pt-tools-group-label">CORE TOOLS</div>
           <ClientProgressLauncher clientId={clientId} />
           <ClientPerformanceLauncher clientId={clientId} notify={notify} />
           <ClientPreferencesLauncher
@@ -3061,6 +3088,10 @@ function WorkspaceSupportPortal({
             open={preferencesOpen}
             onOpenChange={setPreferencesOpen}
           />
+          <button type="button" className="pt-tools-more-button" onClick={() => setMoreToolsOpen((value) => !value)} aria-expanded={moreToolsOpen}>
+            {moreToolsOpen ? "Hide advanced tools" : "More tools"}
+          </button>
+          {moreToolsOpen && (<div className="pt-tools-advanced"><div className="pt-tools-group-label">ADVANCED TOOLS</div>
           {programme && <ProgressionReviewLauncher clientId={clientId} />}{" "}
           {programme && (
             <SubstitutionReviewLauncher
@@ -3094,6 +3125,7 @@ function WorkspaceSupportPortal({
           >
             Export client record
           </a>
+          </div>)}
         </div>
       </section>
       {showRationale && programme && (
@@ -4520,6 +4552,7 @@ function ProgrammeHistoryPanel({
           <strong>Version {item.version}</strong>
           <span>
             {item.name} · {item.status}
+            {item.aiImported && <span className="ai-origin-badge">AI-drafted</span>}
           </span>
           <small>{new Date(item.updatedAt).toLocaleDateString("en-GB")}</small>
         </div>
