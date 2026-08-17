@@ -909,6 +909,8 @@ export function ClientWorkspace({
             }}
             onSaved={() => {
               setShowWorkoutLog(false);
+              onWorkspaceSectionChange("overview");
+              onProgrammeChanged();
               notify("Workout result saved");
             }}
           />
