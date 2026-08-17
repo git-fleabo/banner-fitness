@@ -658,3 +658,28 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .calendar-week-controls { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:14px; }
 .calendar-week-controls strong { min-width:82px; color:var(--navy); font-size:11px; text-align:center; }
 @media (max-width:680px) { .calendar-week-controls { justify-content:stretch; flex-wrap:wrap; }.calendar-week-controls button { flex:1; }.calendar-week-controls strong { order:-1; flex-basis:100%; } }
+
+/* Tablet overview: keep the floor entry reachable without forcing the desktop shell into a narrow column. */
+@media (min-width:681px) and (max-width:980px) {
+  .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); padding-left:25px; padding-right:25px; }
+  .dashboard-grid { grid-template-columns:1fr; padding-left:25px; padding-right:25px; }
+  .mobile-floor-entry { display:block; width:calc(100% - 50px); margin:0 25px 18px; padding:20px; border:1px solid #d4e4d7; border-radius:12px; background:linear-gradient(110deg,#f0f8f0,#fbfaf5); }
+  .mobile-floor-entry-card { display:grid; grid-template-columns:minmax(0,1fr) 120px; align-items:center; }
+  .mobile-floor-entry-card>div { min-width:0; }
+  .mobile-floor-entry-card .primary-button { width:100%; min-width:0; }
+  .calendar-inline { margin-left:25px; margin-right:25px; }
+}
+
+/* Tablet portrait and phones: use the same reachable navigation pattern. */
+@media (max-width:800px) {
+  .designer-sidebar { display:none; }
+  .designer-header { height:60px; padding:0 16px; background:var(--brand-teal); border-bottom-color:#315953; }
+  .mobile-brand { display:block; color:#e8efeb; font-size:10px; font-weight:800; letter-spacing:.13em; }
+  .mobile-brand img { width:105px; max-width:100%; max-height:44px; object-fit:contain; }
+  .header-search { display:none; }
+  .header-actions { margin-left:auto; }
+  .page-heading { padding:28px 16px 20px; align-items:flex-start; gap:15px; flex-direction:column; }
+  .stat-grid { padding-left:16px; padding-right:16px; }
+  .dashboard-grid { padding-left:16px; padding-right:16px; }
+  .mobile-menu-launcher { display:grid; place-items:center; position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:21; box-shadow:0 4px 12px #17363330; }
+}
