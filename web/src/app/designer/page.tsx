@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { MobileNav, SessionEditorModal } from "./designer-support";
 import { DesignerSettings } from "./designer-settings";
@@ -382,6 +382,10 @@ export default function DesignerPage() {
   const [detailError, setDetailError] = useState("");
   const [programmeWeek, setProgrammeWeek] = useState<number | null>(null);
   const [mobileWorkoutSessionId, setMobileWorkoutSessionId] = useState<string | null>(null);
+  const handleMobileWorkoutOpened = useCallback(
+    () => setMobileWorkoutSessionId(null),
+    [],
+  );
   const [qualitySettings, setQualitySettings] = useState<QualitySettings>(
     defaultQualitySettings,
   );
@@ -808,7 +812,8 @@ export default function DesignerPage() {
                 setClient(session.clientName);
                 setActiveWorkspaceSection("programme");
                 setMobileWorkoutSessionId(session.id);
-                setShowClient(true);
+                setShowClient(false);
+                window.setTimeout(() => setShowClient(true), 0);
               }}
             />
 
@@ -903,7 +908,7 @@ export default function DesignerPage() {
           loading={!clientDetail && !detailError}
           error={detailError}
           mobileWorkoutSessionId={mobileWorkoutSessionId}
-          onMobileWorkoutOpened={() => setMobileWorkoutSessionId(null)}
+          onMobileWorkoutOpened={handleMobileWorkoutOpened}
           weekNumber={programmeWeek}
           onWeekChange={setProgrammeWeek}
           qualitySettings={qualitySettings}
