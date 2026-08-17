@@ -2852,7 +2852,7 @@ function WorkoutLogModalV2({
     return () => window.clearTimeout(restoreTimer);
   }, [mobileDraftKey]);
   useEffect(() => {
-    if (!mobileDraftReady || !window.matchMedia("(max-width: 680px)").matches) return;
+    if (!mobileDraftReady || !window.matchMedia("(max-width: 980px)").matches) return;
     const saveTimer = window.setTimeout(() => {
       window.localStorage.setItem(
         mobileDraftKey,
