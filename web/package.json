@@ -2,7 +2,9 @@
   "name": "banner-fitness-pt-workspace",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=20 <23" },
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "sync:pt-prompt-skill": "node scripts/sync-pt-prompt-skill.mjs",
     "dev": "next dev",
@@ -31,6 +33,7 @@
     "@next/env": "16.3.0",
     "drizzle-orm": "0.45.2",
     "next": "16.3.0",
+    "pg-cloudflare": "1.4.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "4.4.3"
@@ -49,9 +52,9 @@
     "@vitejs/plugin-react": "6.0.5",
     "drizzle-kit": "0.31.10",
     "eslint": "^9",
-    "pg": "^8.16.3",
     "eslint-config-next": "16.3.0",
     "jsdom": "30.0.1",
+    "pg": "^8.16.3",
     "tsx": "4.23.5",
     "typescript": "^5",
     "vitest": "4.1.10",
