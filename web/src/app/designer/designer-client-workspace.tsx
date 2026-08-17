@@ -2804,6 +2804,72 @@ function WorkoutLogModalV2({
   const [mobileSetIndex, setMobileSetIndex] = useState(0);
   const [mobileReview, setMobileReview] = useState(false);
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const [mobileDraftReady, setMobileDraftReady] = useState(false);
+  const [mobileDraftRestored, setMobileDraftRestored] = useState(false);
+  const mobileDraftKey = `banner-floor-draft:${clientId}:${session.id}:${new Date().toISOString().slice(0, 10)}`;
+  useEffect(() => {
+    const restoreTimer = window.setTimeout(() => {
+      try {
+        const rawDraft = window.localStorage.getItem(mobileDraftKey);
+        if (rawDraft) {
+          const draft = JSON.parse(rawDraft) as {
+            sets?: typeof sets;
+            status?: typeof status;
+            sessionRpe?: number;
+            energy?: number;
+            painReported?: boolean;
+            notes?: string;
+            mobileSetIndex?: number;
+            mobileReview?: boolean;
+          };
+          if (Array.isArray(draft.sets) && draft.sets.length) setSets(draft.sets);
+          if (draft.status) setStatus(draft.status);
+          if (typeof draft.sessionRpe === "number") setSessionRpe(draft.sessionRpe);
+          if (typeof draft.energy === "number") setEnergy(draft.energy);
+          if (typeof draft.painReported === "boolean") setPainReported(draft.painReported);
+          if (typeof draft.notes === "string") setNotes(draft.notes);
+          if (typeof draft.mobileSetIndex === "number") setMobileSetIndex(Math.max(0, draft.mobileSetIndex));
+          if (typeof draft.mobileReview === "boolean") setMobileReview(draft.mobileReview);
+          setMobileDraftRestored(true);
+        }
+      } catch {
+        window.localStorage.removeItem(mobileDraftKey);
+      } finally {
+        setMobileDraftReady(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [mobileDraftKey]);
+  useEffect(() => {
+    if (!mobileDraftReady || !window.matchMedia("(max-width: 680px)").matches) return;
+    const saveTimer = window.setTimeout(() => {
+      window.localStorage.setItem(
+        mobileDraftKey,
+        JSON.stringify({
+          sets,
+          status,
+          sessionRpe,
+          energy,
+          painReported,
+          notes,
+          mobileSetIndex,
+          mobileReview,
+        }),
+      );
+    }, 250);
+    return () => window.clearTimeout(saveTimer);
+  }, [
+    mobileDraftKey,
+    mobileDraftReady,
+    mobileReview,
+    mobileSetIndex,
+    notes,
+    painReported,
+    energy,
+    sessionRpe,
+    sets,
+    status,
+  ]);
   const mobileSet = sets[mobileSetIndex];
   function updateSet(index: number, changes: Partial<(typeof sets)[number]>) {
     setSets((current) =>
@@ -2838,6 +2904,7 @@ function WorkoutLogModalV2({
             painReported: set.painReported,
           })),
       });
+      window.localStorage.removeItem(mobileDraftKey);
       onSaved(result.metrics);
     } catch (submitError) {
       setError(
@@ -2886,6 +2953,11 @@ function WorkoutLogModalV2({
                   ? `Set ${mobileSet.setNumber} of ${sets.filter((row) => row.exerciseName === mobileSet.exerciseName).length} · Exercise ${new Set(sets.slice(0, mobileSetIndex + 1).map((row) => row.exerciseName)).size} of ${new Set(sets.map((row) => row.exerciseName)).size}`
                   : "All prescribed sets are logged"}
               </p>
+              {mobileDraftRestored && (
+                <p className="mobile-floor-draft-notice" role="status">
+                  Draft restored from this device
+                </p>
+              )}
               {mobileSet ? (
                 <>
                   <div className="mobile-floor-set-card">
