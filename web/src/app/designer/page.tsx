@@ -755,6 +755,21 @@ export default function DesignerPage() {
               </button>
             </div>
 
+            <MobileFloorMode
+              schedule={overview?.schedule ?? []}
+              onStart={(session) => {
+                setProgrammeWeek(null);
+                setClientId(session.clientId);
+                setClientDetail(null);
+                setDetailError("");
+                setClient(session.clientName);
+                setActiveWorkspaceSection("programme");
+                setMobileWorkoutSessionId(session.id);
+                setShowClient(false);
+                window.setTimeout(() => setShowClient(true), 0);
+              }}
+            />
+
             <div className="stat-grid">
               <Stat
                 label="Active clients"
@@ -801,21 +816,6 @@ export default function DesignerPage() {
                 icon="sessions"
               />
             </div>
-
-            <MobileFloorMode
-              schedule={overview?.schedule ?? []}
-              onStart={(session) => {
-                setProgrammeWeek(null);
-                setClientId(session.clientId);
-                setClientDetail(null);
-                setDetailError("");
-                setClient(session.clientName);
-                setActiveWorkspaceSection("programme");
-                setMobileWorkoutSessionId(session.id);
-                setShowClient(false);
-                window.setTimeout(() => setShowClient(true), 0);
-              }}
-            />
 
             {overview && overview.counts.clients === 0 && (
               <FirstClientGuide
