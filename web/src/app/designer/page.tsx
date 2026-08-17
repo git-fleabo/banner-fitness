@@ -289,6 +289,52 @@ const preferredDayValues = (value: unknown) =>
       )
     : [];
 
+function MobileFloorMode({
+  schedule,
+  onStart,
+}: {
+  schedule: OverviewData["schedule"];
+  onStart: (session: OverviewData["schedule"][number]) => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const sessions = schedule.filter((session) => session.date === today).slice(0, 5);
+  return (
+    <section className="mobile-floor-entry" aria-label="Floor mode">
+      <div className="mobile-floor-entry-header">
+        <div>
+          <p className="eyebrow">BANNER FITNESS · FLOOR MODE</p>
+          <h2>Ready to train</h2>
+          <p>Open today&apos;s session and log it one set at a time.</p>
+        </div>
+        <span className="mobile-floor-entry-icon">＋</span>
+      </div>
+      {sessions.length ? (
+        <div className="mobile-floor-entry-list">
+          {sessions.map((session, index) => (
+            <article
+              className={index === 0 ? "mobile-floor-entry-card current" : "mobile-floor-entry-card"}
+              key={session.id}
+            >
+              <div>
+                <strong>{session.clientName}</strong>
+                <span>
+                  {session.name} · {session.durationMinutes} min
+                  {session.scheduledTime ? ` · ${session.scheduledTime}` : ""}
+                </span>
+              </div>
+              <button className="primary-button" type="button" onClick={() => onStart(session)}>
+                {index === 0 ? "Start" : "Open"}
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="mobile-floor-entry-empty">No sessions are scheduled for today.</p>
+      )}
+    </section>
+  );
+}
+
 export default function DesignerPage() {
   const router = useRouter();
   const [accessState, setAccessState] = useState<"checking" | "active">(
@@ -335,6 +381,7 @@ export default function DesignerPage() {
   >("all");
   const [detailError, setDetailError] = useState("");
   const [programmeWeek, setProgrammeWeek] = useState<number | null>(null);
+  const [mobileWorkoutSessionId, setMobileWorkoutSessionId] = useState<string | null>(null);
   const [qualitySettings, setQualitySettings] = useState<QualitySettings>(
     defaultQualitySettings,
   );
@@ -751,6 +798,20 @@ export default function DesignerPage() {
               />
             </div>
 
+            <MobileFloorMode
+              schedule={overview?.schedule ?? []}
+              onStart={(session) => {
+                setProgrammeWeek(null);
+                setClientId(session.clientId);
+                setClientDetail(null);
+                setDetailError("");
+                setClient(session.clientName);
+                setActiveWorkspaceSection("programme");
+                setMobileWorkoutSessionId(session.id);
+                setShowClient(true);
+              }}
+            />
+
             {overview && overview.counts.clients === 0 && (
               <FirstClientGuide
                 onNewClient={() => setShowOnboarding(true)}
@@ -841,6 +902,8 @@ export default function DesignerPage() {
           detail={clientDetail}
           loading={!clientDetail && !detailError}
           error={detailError}
+          mobileWorkoutSessionId={mobileWorkoutSessionId}
+          onMobileWorkoutOpened={() => setMobileWorkoutSessionId(null)}
           weekNumber={programmeWeek}
           onWeekChange={setProgrammeWeek}
           qualitySettings={qualitySettings}

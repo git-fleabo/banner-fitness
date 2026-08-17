@@ -263,6 +263,8 @@ export function ClientWorkspace({
   detail,
   loading,
   error,
+  mobileWorkoutSessionId,
+  onMobileWorkoutOpened,
   weekNumber,
   onWeekChange,
   qualitySettings,
@@ -296,6 +298,8 @@ export function ClientWorkspace({
   detail: ClientDetail | null;
   loading: boolean;
   error: string;
+  mobileWorkoutSessionId?: string | null;
+  onMobileWorkoutOpened?: () => void;
   weekNumber: number | null;
   onWeekChange: (week: number | null) => void;
   qualitySettings: QualitySettings;
@@ -315,8 +319,20 @@ export function ClientWorkspace({
   );
   const selectedSession =
     programme?.sessions.find((session) => session.id === selectedSessionId) ??
+    programme?.sessions.find((session) => session.id === mobileWorkoutSessionId) ??
     programme?.sessions[0];
   const selectedExercises = selectedSession?.exercises ?? week;
+  useEffect(() => {
+    if (!mobileWorkoutSessionId || loading || !programme?.sessions.length) return;
+    if (selectedSession?.id !== mobileWorkoutSessionId) {
+      return;
+    }
+    const openTimer = window.setTimeout(() => {
+      setShowWorkoutLog(true);
+      onMobileWorkoutOpened?.();
+    }, 0);
+    return () => window.clearTimeout(openTimer);
+  }, [loading, mobileWorkoutSessionId, onMobileWorkoutOpened, programme, selectedSession?.id]);
   useEffect(() => {
     if (programme || loading) return;
     const manageButton = document.querySelector<HTMLButtonElement>(
