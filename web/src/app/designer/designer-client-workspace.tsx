@@ -264,6 +264,8 @@ export function ClientWorkspace({
   loading,
   error,
   mobileWorkoutSessionId,
+  mobileWorkoutSessionName,
+  mobileWorkoutDayOfWeek,
   onMobileWorkoutOpened,
   weekNumber,
   onWeekChange,
@@ -299,6 +301,8 @@ export function ClientWorkspace({
   loading: boolean;
   error: string;
   mobileWorkoutSessionId?: string | null;
+  mobileWorkoutSessionName?: string | null;
+  mobileWorkoutDayOfWeek?: number | null;
   onMobileWorkoutOpened?: () => void;
   weekNumber: number | null;
   onWeekChange: (week: number | null) => void;
@@ -317,22 +321,29 @@ export function ClientWorkspace({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
-  const selectedSession =
-    programme?.sessions.find((session) => session.id === selectedSessionId) ??
+  const launchedSession =
     programme?.sessions.find((session) => session.id === mobileWorkoutSessionId) ??
+    programme?.sessions.find(
+      (session) =>
+        session.name === mobileWorkoutSessionName &&
+        session.dayOfWeek === mobileWorkoutDayOfWeek,
+    );
+  const selectedSession =
+    launchedSession ??
+    programme?.sessions.find((session) => session.id === selectedSessionId) ??
     programme?.sessions[0];
   const selectedExercises = selectedSession?.exercises ?? week;
   useEffect(() => {
-    if (!mobileWorkoutSessionId || loading || !programme?.sessions.length) return;
-    if (selectedSession?.id !== mobileWorkoutSessionId) {
-      return;
+    if (!mobileWorkoutSessionId || loading || !launchedSession) return;
+    if (selectedSession?.id !== launchedSession.id) {
+      setSelectedSessionId(launchedSession.id);
     }
     const openTimer = window.setTimeout(() => {
       setShowWorkoutLog(true);
       onMobileWorkoutOpened?.();
     }, 0);
     return () => window.clearTimeout(openTimer);
-  }, [loading, mobileWorkoutSessionId, onMobileWorkoutOpened, programme, selectedSession?.id]);
+  }, [launchedSession, loading, mobileWorkoutSessionId, onMobileWorkoutOpened, selectedSession?.id]);
   useEffect(() => {
     if (programme || loading) return;
     const manageButton = document.querySelector<HTMLButtonElement>(

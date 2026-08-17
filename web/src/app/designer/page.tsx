@@ -382,8 +382,14 @@ export default function DesignerPage() {
   const [detailError, setDetailError] = useState("");
   const [programmeWeek, setProgrammeWeek] = useState<number | null>(null);
   const [mobileWorkoutSessionId, setMobileWorkoutSessionId] = useState<string | null>(null);
+  const [mobileWorkoutSessionName, setMobileWorkoutSessionName] = useState<string | null>(null);
+  const [mobileWorkoutDayOfWeek, setMobileWorkoutDayOfWeek] = useState<number | null>(null);
   const handleMobileWorkoutOpened = useCallback(
-    () => setMobileWorkoutSessionId(null),
+    () => {
+      setMobileWorkoutSessionId(null);
+      setMobileWorkoutSessionName(null);
+      setMobileWorkoutDayOfWeek(null);
+    },
     [],
   );
   const [qualitySettings, setQualitySettings] = useState<QualitySettings>(
@@ -765,6 +771,8 @@ export default function DesignerPage() {
                 setClient(session.clientName);
                 setActiveWorkspaceSection("programme");
                 setMobileWorkoutSessionId(session.id);
+                setMobileWorkoutSessionName(session.name);
+                setMobileWorkoutDayOfWeek(session.dayOfWeek);
                 setShowClient(false);
                 window.setTimeout(() => setShowClient(true), 0);
               }}
@@ -908,6 +916,8 @@ export default function DesignerPage() {
           loading={!clientDetail && !detailError}
           error={detailError}
           mobileWorkoutSessionId={mobileWorkoutSessionId}
+          mobileWorkoutSessionName={mobileWorkoutSessionName}
+          mobileWorkoutDayOfWeek={mobileWorkoutDayOfWeek}
           onMobileWorkoutOpened={handleMobileWorkoutOpened}
           weekNumber={programmeWeek}
           onWeekChange={setProgrammeWeek}
