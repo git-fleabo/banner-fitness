@@ -2785,6 +2785,17 @@ function WorkoutLogModalV2({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [mobileSetIndex, setMobileSetIndex] = useState(0);
+  const [mobileReview, setMobileReview] = useState(false);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const mobileSet = sets[mobileSetIndex];
+  function updateSet(index: number, changes: Partial<(typeof sets)[number]>) {
+    setSets((current) =>
+      current.map((row, rowIndex) =>
+        rowIndex === index ? { ...row, ...changes } : row,
+      ),
+    );
+  }
   async function submit() {
     setSaving(true);
     setError("");
@@ -2845,6 +2856,211 @@ function WorkoutLogModalV2({
             ×
           </button>
         </header>
+        <div className="mobile-workout-floor">
+          {!mobileReview ? (
+            <>
+              <p className="mobile-floor-eyebrow">
+                {clientName} · {session.name}
+              </p>
+              <h3 className="mobile-floor-title">
+                {mobileSet?.exerciseName ?? "Session complete"}
+              </h3>
+              <p className="mobile-floor-muted">
+                {mobileSet
+                  ? `Set ${mobileSet.setNumber} of ${sets.filter((row) => row.exerciseName === mobileSet.exerciseName).length} · Exercise ${new Set(sets.slice(0, mobileSetIndex + 1).map((row) => row.exerciseName)).size} of ${new Set(sets.map((row) => row.exerciseName)).size}`
+                  : "All prescribed sets are logged"}
+              </p>
+              {mobileSet ? (
+                <>
+                  <div className="mobile-floor-set-card">
+                    <div className="mobile-floor-set-heading">
+                      <strong>SET {mobileSet.setNumber}</strong>
+                      <span>READY</span>
+                    </div>
+                    <div className="mobile-floor-inputs">
+                      <label>
+                        REPS
+                        <input
+                          inputMode="numeric"
+                          type="number"
+                          min="0"
+                          value={mobileSet.reps}
+                          onChange={(event) =>
+                            updateSet(mobileSetIndex, {
+                              reps: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        LOAD · KG
+                        <input
+                          inputMode="decimal"
+                          type="number"
+                          min="0"
+                          value={mobileSet.loadKg}
+                          onChange={(event) =>
+                            updateSet(mobileSetIndex, {
+                              loadKg: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="mobile-floor-helper">
+                      <span>RPE {mobileSet.rpe} · RIR {mobileSet.rir}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateSet(mobileSetIndex, {
+                            reps: mobileSet.reps,
+                            loadKg: mobileSet.loadKg,
+                          })
+                        }
+                      >
+                        Repeat last set
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mobile-floor-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() =>
+                        setMobileSetIndex((current) =>
+                          Math.min(current + 1, sets.length),
+                        )
+                      }
+                    >
+                      Skip
+                    </button>
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() => {
+                        if (mobileSetIndex >= sets.length - 1) {
+                          setMobileReview(true);
+                        } else {
+                          setMobileSetIndex((current) => current + 1);
+                        }
+                      }}
+                    >
+                      {mobileSetIndex >= sets.length - 1
+                        ? "Review session →"
+                        : "Complete set →"}
+                    </button>
+                  </div>
+                  <button
+                    className="mobile-floor-details"
+                    type="button"
+                    onClick={() => setMobileDetailsOpen((current) => !current)}
+                  >
+                    Technique, RPE, RIR and pain <span>{mobileDetailsOpen ? "Hide details⌃" : "More details⌄"}</span>
+                  </button>
+                  {mobileDetailsOpen && (
+                    <div className="mobile-floor-details-panel">
+                      <label>
+                        RPE
+                        <input
+                          inputMode="numeric"
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={mobileSet.rpe}
+                          onChange={(event) =>
+                            updateSet(mobileSetIndex, {
+                              rpe: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        RIR
+                        <input
+                          inputMode="numeric"
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={mobileSet.rir}
+                          onChange={(event) =>
+                            updateSet(mobileSetIndex, {
+                              rir: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </label>
+                      <label className="mobile-floor-pain">
+                        <input
+                          type="checkbox"
+                          checked={mobileSet.painReported}
+                          onChange={(event) =>
+                            updateSet(mobileSetIndex, {
+                              painReported: event.target.checked,
+                            })
+                          }
+                        />
+                        Pain or discomfort
+                      </label>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  className="primary-button mobile-floor-wide-button"
+                  type="button"
+                  onClick={() => setMobileReview(true)}
+                >
+                  Review session →
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="mobile-floor-eyebrow">SESSION REVIEW</p>
+              <h3 className="mobile-floor-title">Ready to finish?</h3>
+              <p className="mobile-floor-muted">
+                Review the session before saving it to the client record.
+              </p>
+              <div className="mobile-floor-summary">
+                <div><strong>{new Set(sets.slice(0, mobileSetIndex + 1).map((row) => row.exerciseName)).size}/{new Set(sets.map((row) => row.exerciseName)).size}</strong><span>Exercises</span></div>
+                <div><strong>{mobileSetIndex + 1}</strong><span>Sets logged</span></div>
+                <div><strong>{sessionRpe}</strong><span>Session RPE</span></div>
+              </div>
+              <label className="mobile-floor-check">
+                <input
+                  type="checkbox"
+                  checked={painReported}
+                  onChange={(event) => setPainReported(event.target.checked)}
+                />
+                Client reported pain or discomfort
+              </label>
+              <label className="mobile-floor-notes">
+                NOTES
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Technique, recovery, substitutions..."
+                />
+              </label>
+              <button
+                className="primary-button mobile-floor-wide-button"
+                type="button"
+                onClick={submit}
+                disabled={saving || !clientId}
+              >
+                {saving ? "Saving result…" : "Save workout result ✓"}
+              </button>
+              <button
+                className="secondary-button mobile-floor-wide-button"
+                type="button"
+                onClick={() => setMobileReview(false)}
+              >
+                Back to session
+              </button>
+            </>
+          )}
+        </div>
+        <div className="desktop-workout-log">
         <div className="log-fields">
           <label>
             STATUS
@@ -3004,6 +3220,7 @@ function WorkoutLogModalV2({
             {saving ? "Saving result…" : "Save workout result →"}
           </button>
         </footer>
+        </div>
       </section>
     </div>
   );
