@@ -108,7 +108,7 @@ export function SessionEditorModal({ clientId, clientName, goal, days, preferred
     let saved = false;
     try {
       const firstSession = sessions[String(sessionDays[0])] ?? [];
-      await saveProgrammeAction({ clientId, clientName, goalSummary: effectiveGoal, trainingDays: sessionDays.length, sessionDurationMinutes: effectiveDuration ?? 45, sessionDays, sessionNames: names, sessionTimes: times, sessionManagement: managementModes, exercises: firstSession.map(toDraftExercise), sessionExercises: Object.fromEntries(sessionDays.map((day) => [String(day), (sessions[String(day)] ?? []).map(toDraftExercise)])), methodology: importApproval?.methodology, rationale: importApproval?.rationale, weekPlans: importApproval?.weekPlans, importAudit: importApproval?.audit });
+      await saveProgrammeAction({ clientId, clientName, goalSummary: effectiveGoal, trainingDays: sessionDays.length, sessionDurationMinutes: effectiveDuration ?? 45, sessionDays, sessionNames: names, sessionTimes: Object.fromEntries(Object.entries(times).filter(([, value]) => value)), sessionManagement: managementModes, exercises: firstSession.map(toDraftExercise), sessionExercises: Object.fromEntries(sessionDays.map((day) => [String(day), (sessions[String(day)] ?? []).map(toDraftExercise)])), methodology: importApproval?.methodology, rationale: importApproval?.rationale, weekPlans: importApproval?.weekPlans, importAudit: importApproval?.audit });
       // Finish local state updates before closing the modal. The parent refresh
       // can unmount this component immediately after onClose is called.
       setSaving(false);
