@@ -683,3 +683,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .dashboard-grid { padding-left:16px; padding-right:16px; }
   .mobile-menu-launcher { display:grid; place-items:center; position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:21; box-shadow:0 4px 12px #17363330; }
 }
+
+/* Keep wide calendar and roster content contained by their own scroll boxes. */
+.calendar-grid,
+.calendar-inline,
+.calendar-panel-inline,
+.dashboard-roster-table { min-width:0; }
+.designer-content > .calendar-inline { width:auto; max-width:100%; margin-left:0; margin-right:0; }
+.designer-content { flex:1 1 0; width:100%; max-width:calc(100vw - 248px); overflow-x:hidden; }
+@media (max-width:980px) { .designer-content { max-width:calc(100vw - 205px); } }
+@media (max-width:800px) { .designer-content { flex:1 1 0; width:100vw; max-width:100%; } }
